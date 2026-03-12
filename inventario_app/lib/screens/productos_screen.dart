@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
+import '../config/app_theme.dart';
 
 class ProductosScreen extends StatefulWidget {
   final Categoria categoria;
@@ -23,12 +24,23 @@ class _ProductosScreenState extends State<ProductosScreen> {
   }
 
   Future<void> _loadProductos() async {
-    setState(() { _isLoading = true; _error = null; });
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     try {
-      final productos = await _apiService.getProductosPorCategoria(widget.categoria.id!);
-      setState(() { _productos = productos; _isLoading = false; });
+      final productos = await _apiService.getProductosPorCategoria(
+        widget.categoria.id!,
+      );
+      setState(() {
+        _productos = productos;
+        _isLoading = false;
+      });
     } catch (e) {
-      setState(() { _error = e.toString(); _isLoading = false; });
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
     }
   }
 
@@ -40,10 +52,15 @@ class _ProductosScreenState extends State<ProductosScreen> {
         title: const Text('¿Eliminar producto?'),
         content: Text('Vas a eliminar "${producto.nombre}".'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(
+              foregroundColor: SubliriumColors.deleteText,
+            ),
             child: const Text('Eliminar'),
           ),
         ],
@@ -53,9 +70,15 @@ class _ProductosScreenState extends State<ProductosScreen> {
       try {
         await _apiService.deleteProducto(producto.id!);
         _loadProductos();
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Producto eliminado')));
+        if (mounted)
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Producto eliminado')));
       } catch (e) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        if (mounted)
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -64,18 +87,30 @@ class _ProductosScreenState extends State<ProductosScreen> {
     final nuevaCantidad = producto.cantidad + cambio;
     if (nuevaCantidad < 0) return;
     try {
-      final productoActualizado = producto.copyWith(cantidad: nuevaCantidad, fechaActualizacion: DateTime.now());
+      final productoActualizado = producto.copyWith(
+        cantidad: nuevaCantidad,
+        fechaActualizacion: DateTime.now(),
+      );
       await _apiService.updateProducto(productoActualizado);
       _loadProductos();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
   void _showProductoDialog([Producto? producto]) {
-    final nombreController = TextEditingController(text: producto?.nombre ?? '');
-    final descripcionController = TextEditingController(text: producto?.descripcion ?? '');
-    final cantidadController = TextEditingController(text: producto?.cantidad.toString() ?? '0');
+    final nombreController = TextEditingController(
+      text: producto?.nombre ?? '',
+    );
+    final descripcionController = TextEditingController(
+      text: producto?.descripcion ?? '',
+    );
+    final cantidadController = TextEditingController(
+      text: producto?.cantidad.toString() ?? '0',
+    );
     final isEditing = producto != null;
 
     showDialog(
@@ -87,26 +122,52 @@ class _ProductosScreenState extends State<ProductosScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: nombreController, decoration: const InputDecoration(labelText: 'Nombre', border: OutlineInputBorder())),
+              TextField(
+                controller: nombreController,
+                decoration: const InputDecoration(
+                  labelText: 'Nombre',
+                  border: OutlineInputBorder(),
+                ),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: descripcionController, decoration: const InputDecoration(labelText: 'Descripción', border: OutlineInputBorder()), maxLines: 2),
+              TextField(
+                controller: descripcionController,
+                decoration: const InputDecoration(
+                  labelText: 'Descripción',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
+              ),
               const SizedBox(height: 12),
-              TextField(controller: cantidadController, decoration: const InputDecoration(labelText: 'Cantidad', border: OutlineInputBorder()), keyboardType: TextInputType.number),
+              TextField(
+                controller: cantidadController,
+                decoration: const InputDecoration(
+                  labelText: 'Cantidad',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+              ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
           ElevatedButton(
             onPressed: () async {
               final nombre = nombreController.text.trim();
               if (nombre.isEmpty) return;
-              final cantidad = int.tryParse(cantidadController.text.trim()) ?? 0;
+              final cantidad =
+                  int.tryParse(cantidadController.text.trim()) ?? 0;
               final nuevoProducto = Producto(
                 id: producto?.id,
                 categoriaId: widget.categoria.id!,
                 nombre: nombre,
-                descripcion: descripcionController.text.trim().isEmpty ? null : descripcionController.text.trim(),
+                descripcion: descripcionController.text.trim().isEmpty
+                    ? null
+                    : descripcionController.text.trim(),
                 cantidad: cantidad,
                 fechaActualizacion: DateTime.now(),
               );
@@ -119,7 +180,10 @@ class _ProductosScreenState extends State<ProductosScreen> {
                 _loadProductos();
                 if (mounted) Navigator.pop(context);
               } catch (e) {
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                if (mounted)
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Error: $e')));
               }
             },
             child: Text(isEditing ? 'Actualizar' : 'Guardar'),
@@ -140,20 +204,38 @@ class _ProductosScreenState extends State<ProductosScreen> {
             expandedHeight: 90,
             floating: false,
             pinned: true,
-            leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.pop(context)),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => Navigator.pop(context),
+            ),
             flexibleSpace: FlexibleSpaceBar(
-              title: Text(widget.categoria.nombre, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
+              title: Text(
+                widget.categoria.nombre,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 14,
+                ),
+              ),
               background: Container(
                 decoration: const BoxDecoration(
-                  gradient: LinearGradient(colors: [Color(0xFF2ABDE8), Color(0xFF7B2FBE), Color(0xFFD81B8A)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                  gradient: SubliriumColors.headerGradient,
                 ),
               ),
             ),
             actions: [
               Container(
-                width: 36, height: 36,
-                decoration: BoxDecoration(color: _getCategoryColor(widget.categoria.emoji), borderRadius: BorderRadius.circular(9)),
-                child: Center(child: Text(widget.categoria.emoji, style: const TextStyle(fontSize: 18))),
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: _getCategoryColor(widget.categoria.emoji),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: Center(
+                  child: Text(
+                    widget.categoria.emoji,
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                ),
               ),
               const SizedBox(width: 16),
             ],
@@ -165,8 +247,22 @@ class _ProductosScreenState extends State<ProductosScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Total en inventario:', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
-                  Text('$_totalInventario unidades', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF7B2FBE))),
+                  const Text(
+                    'Total en inventario:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                      color: Colors.black,
+                    ),
+                  ),
+                  Text(
+                    '$_totalInventario unidades',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 14,
+                      color: Colors.black,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -176,85 +272,213 @@ class _ProductosScreenState extends State<ProductosScreen> {
               padding: const EdgeInsets.all(12),
               child: Container(
                 height: 36,
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(9), border: Border.all(color: const Color(0xFFE5E7EB))),
-                child: const Row(children: [SizedBox(width: 12), Icon(Icons.search, size: 16, color: Colors.grey), SizedBox(width: 8), Text('Buscar...', style: TextStyle(fontSize: 12, color: Colors.grey))]),
+                decoration: BoxDecoration(
+                  color: SubliriumColors.cardBackground,
+                  borderRadius: BorderRadius.circular(9),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                ),
+                child: const Row(
+                  children: [
+                    SizedBox(width: 12),
+                    Icon(
+                      Icons.search,
+                      size: 16,
+                      color: Colors.black,
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      'Buscar...',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
           if (_isLoading)
-            const SliverFillRemaining(child: Center(child: CircularProgressIndicator()))
+            const SliverFillRemaining(
+              child: Center(child: CircularProgressIndicator()),
+            )
           else if (_error != null)
             SliverFillRemaining(
-              child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                const Icon(Icons.wifi_off, size: 48, color: Colors.grey),
-                const SizedBox(height: 8),
-                ElevatedButton(onPressed: _loadProductos, child: const Text('Reintentar')),
-              ])),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.wifi_off,
+                      size: 48,
+                      color: Colors.black,
+                    ),
+                    const SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: _loadProductos,
+                      child: const Text('Reintentar'),
+                    ),
+                  ],
+                ),
+              ),
             )
           else if (_productos.isEmpty)
             SliverFillRemaining(
-              child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey[400]),
-                const SizedBox(height: 8),
-                Text('Sin productos', style: TextStyle(color: Colors.grey[600])),
-                const SizedBox(height: 4),
-                Text('Toca + para agregar', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
-              ])),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.inventory_2_outlined,
+                      size: 48,
+                      color: Colors.black,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Sin productos',
+                      style: TextStyle(color: Colors.black),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Toca + para agregar',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             )
           else
             SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final producto = _productos[index];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    child: Container(
-                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE5E7EB))),
-                      padding: const EdgeInsets.all(10),
-                      child: Row(children: [
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final producto = _productos[index];
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: SubliriumColors.cardBackground,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE5E7EB)),
+                    ),
+                    padding: const EdgeInsets.all(10),
+                    child: Row(
+                      children: [
                         Expanded(
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Text(producto.nombre, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 11)),
-                            if (producto.descripcion != null) Text(producto.descripcion!, style: const TextStyle(fontSize: 9, color: Colors.grey)),
-                          ]),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                producto.nombre,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 11,
+                                  color: Colors.black,
+                                ),
+                              ),
+                              if (producto.descripcion != null)
+                                Text(
+                                  producto.descripcion!,
+                                  style: const TextStyle(
+                                    fontSize: 9,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
                         _buildStockBadge(producto.cantidad),
                         const SizedBox(width: 8),
                         Container(
-                          decoration: BoxDecoration(color: producto.cantidad > 0 ? const Color(0xFFF0FDF4) : const Color(0xFFFFF1F2), borderRadius: BorderRadius.circular(8)),
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          child: Row(children: [
-                            GestureDetector(
-                              onTap: producto.cantidad > 0 ? () => _updateCantidad(producto, -1) : null,
-                              child: const Icon(Icons.remove, size: 16, color: Color(0xFFE11D48)),
-                            ),
-                            Container(
-                              constraints: const BoxConstraints(minWidth: 28),
-                              alignment: Alignment.center,
-                              child: Text('${producto.cantidad}', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: producto.cantidad > 0 ? const Color(0xFF16A34A) : const Color(0xFFE11D48))),
-                            ),
-                            GestureDetector(
-                              onTap: () => _updateCantidad(producto, 1),
-                              child: const Icon(Icons.add, size: 16, color: Color(0xFF16A34A)),
-                            ),
-                          ]),
+                          decoration: BoxDecoration(
+                            color: producto.cantidad > 0
+                                ? const Color(0xFFF0FDF4)
+                                : const Color(0xFFFFF1F2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          child: Row(
+                            children: [
+                              GestureDetector(
+                                onTap: producto.cantidad > 0
+                                    ? () => _updateCantidad(producto, -1)
+                                    : null,
+                                child: const Icon(
+                                  Icons.remove,
+                                  size: 16,
+                                  color: Color(0xFFE11D48),
+                                ),
+                              ),
+                              Container(
+                                constraints: const BoxConstraints(minWidth: 28),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  '${producto.cantidad}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 14,
+                                    color: producto.cantidad > 0
+                                        ? const Color(0xFF16A34A)
+                                        : const Color(0xFFE11D48),
+                                  ),
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () => _updateCantidad(producto, 1),
+                                child: const Icon(
+                                  Icons.add,
+                                  size: 16,
+                                  color: Color(0xFF16A34A),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         const SizedBox(width: 4),
-                        GestureDetector(onTap: () => _showProductoDialog(producto), child: Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: const Color(0xFFF0F9FF), borderRadius: BorderRadius.circular(6)), child: const Icon(Icons.edit, size: 14))),
-                        GestureDetector(onTap: () => _deleteProducto(producto), child: Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: const Color(0xFFFFF1F2), borderRadius: BorderRadius.circular(6)), child: Icon(Icons.delete, size: 14, color: Colors.red[300]))),
-                      ]),
+                        GestureDetector(
+                          onTap: () => _showProductoDialog(producto),
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF0F9FF),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Icon(Icons.edit, size: 14),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => _deleteProducto(producto),
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF1F2),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Icon(
+                              Icons.delete,
+                              size: 14,
+                              color: Colors.red[300],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  );
-                },
-                childCount: _productos.length,
-              ),
+                  ),
+                );
+              }, childCount: _productos.length),
             ),
           const SliverToBoxAdapter(child: SizedBox(height: 80)),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showProductoDialog(),
-        backgroundColor: const Color(0xFFD81B8A),
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
@@ -264,14 +488,34 @@ class _ProductosScreenState extends State<ProductosScreen> {
     if (cantidad == 0) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(color: const Color(0xFFF5F5F5), borderRadius: BorderRadius.circular(6)),
-        child: const Text('—', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF9CA3AF))),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF5F5F5),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: const Text(
+          '—',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            color: Color(0xFF9CA3AF),
+          ),
+        ),
       );
     } else if (cantidad > 0) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(color: const Color(0xFFF0FDF4), borderRadius: BorderRadius.circular(6)),
-        child: const Text('Stock', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w800, color: Color(0xFF16A34A))),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0FDF4),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: const Text(
+          'Stock',
+          style: TextStyle(
+            fontSize: 8,
+            fontWeight: FontWeight.w800,
+            color: Color(0xFF16A34A),
+          ),
+        ),
       );
     }
     return const SizedBox();
