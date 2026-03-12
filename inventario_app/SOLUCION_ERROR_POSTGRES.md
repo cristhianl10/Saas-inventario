@@ -1,7 +1,14 @@
 # 🔧 Solución al Error de PostgreSQL
 
-## ❌ Error Actual
+## ❌ Errores Actuales
 
+### Error 1: Al crear/editar categorías
+```
+PostgrestException(message: Could not find the 'descripcion' column of 'categorias' 
+in the schema cache, code: PGRST204, details: Bad Request, hint: null)
+```
+
+### Error 2: Al crear/editar productos
 ```
 PostgrestException(message: Could not find the 'fecha_venta' column of 'productos' 
 in the schema cache, code: PGRST204, details: Bad Request, hint: null)
@@ -9,13 +16,18 @@ in the schema cache, code: PGRST204, details: Bad Request, hint: null)
 
 ## 🎯 Causa del Problema
 
-Tu tabla `productos` no tiene las columnas que la app necesita para registrar ventas:
+Tu base de datos tiene columnas faltantes:
+
+**Tabla `categorias`** le falta:
+- `descripcion` (TEXT)
+
+**Tabla `productos`** le faltan:
 - `vendido` (BOOLEAN)
 - `fecha_venta` (TIMESTAMP)
 - `vendido_a` (TEXT)
 - `precio_venta` (DECIMAL)
 
-## ✅ Solución (3 pasos)
+## ✅ Solución Rápida (3 pasos)
 
 ### Paso 1: Ir a Supabase SQL Editor
 
@@ -29,7 +41,11 @@ Tu tabla `productos` no tiene las columnas que la app necesita para registrar ve
 Copia y pega este código en el editor SQL:
 
 ```sql
--- Agregar columnas faltantes a la tabla productos
+-- Agregar columna descripcion a categorias
+ALTER TABLE categorias 
+ADD COLUMN IF NOT EXISTS descripcion TEXT;
+
+-- Agregar columnas faltantes a productos
 ALTER TABLE productos 
 ADD COLUMN IF NOT EXISTS vendido BOOLEAN DEFAULT FALSE,
 ADD COLUMN IF NOT EXISTS fecha_venta TIMESTAMP WITH TIME ZONE,
@@ -44,13 +60,27 @@ Luego haz clic en **Run** (Ejecutar) o presiona `Ctrl + Enter`
 Ejecuta esta consulta para verificar:
 
 ```sql
+-- Ver columnas de categorias
+SELECT column_name, data_type 
+FROM information_schema.columns
+WHERE table_name = 'categorias'
+ORDER BY ordinal_position;
+
+-- Ver columnas de productos
 SELECT column_name, data_type 
 FROM information_schema.columns
 WHERE table_name = 'productos'
 ORDER BY ordinal_position;
 ```
 
-Deberías ver estas columnas:
+**Tabla categorias** debe tener:
+- id
+- nombre
+- emoji
+- color
+- **descripcion** ← Nueva
+
+**Tabla productos** debe tener:
 - id
 - categoria_id
 - nombre
@@ -141,8 +171,10 @@ Después de ejecutar el script:
 
 1. **Cierra la app** completamente (no solo minimizar)
 2. **Abre la app** nuevamente
-3. **Intenta editar un producto**
-4. **Debería funcionar sin errores** ✅
+3. **Intenta crear una categoría** → Debería funcionar ✅
+4. **Intenta editar una categoría** → Debería funcionar ✅
+5. **Intenta crear un producto** → Debería funcionar ✅
+6. **Intenta editar un producto** → Debería funcionar ✅
 
 ---
 
@@ -153,8 +185,8 @@ Después de ejecutar el script:
 - nombre (TEXT)
 - emoji (TEXT)
 - color (TEXT)
-- descripcion (TEXT) - opcional
-- created_at (TIMESTAMP)
+- **descripcion (TEXT)** ← Necesaria
+- created_at (TIMESTAMP) - opcional
 
 ### Tabla: productos
 - id (BIGINT, PK)
