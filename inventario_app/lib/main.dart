@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/screens.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  await Supabase.initialize(
+    url: 'https://exsgifatkfmjidnzyhhj.supabase.co',
+    anonKey: 'sb_publishable_pDFya-MmHrd7vzWsEoN3mw_isV6cCm_',
+  );
+  
   runApp(const InventarioApp());
 }
 
@@ -54,7 +62,7 @@ class InventarioApp extends StatelessWidget {
         ),
       ),
       themeMode: ThemeMode.system,
-      home: const CategoriasScreen(),
+      home: const HomeScreen(),
     );
   }
 }
