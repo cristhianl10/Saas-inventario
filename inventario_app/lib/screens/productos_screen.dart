@@ -61,12 +61,12 @@ class _ProductosScreenState extends State<ProductosScreen> {
         break;
       case FiltroStock.enStock:
         _productosFiltrados = _productos
-            .where((p) => p.cantidad > 0 && !p.vendido)
+            .where((p) => p.cantidad > 0)
             .toList();
         break;
       case FiltroStock.sinStock:
         _productosFiltrados = _productos
-            .where((p) => p.cantidad == 0 && !p.vendido)
+            .where((p) => p.cantidad == 0)
             .toList();
         break;
     }
@@ -512,7 +512,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
   }
 
   int get _totalInventario =>
-      _productos.where((p) => !p.vendido).fold(0, (sum, p) => sum + p.cantidad);
+      _productos.fold(0, (sum, p) => sum + p.cantidad);
 
   @override
   Widget build(BuildContext context) {
@@ -670,9 +670,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
                   ),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: producto.vendido
-                          ? SubliriumColors.stockZeroBg
-                          : SubliriumColors.cardBackground,
+                      color: SubliriumColors.cardBackground,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: SubliriumColors.border),
                     ),
@@ -688,31 +686,6 @@ class _ProductosScreenState extends State<ProductosScreen> {
                                 children: [
                                   Row(
                                     children: [
-                                      if (producto.vendido)
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 6,
-                                            vertical: 2,
-                                          ),
-                                          margin: const EdgeInsets.only(
-                                            right: 8,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: SubliriumColors.stockLowBg,
-                                            borderRadius: BorderRadius.circular(
-                                              4,
-                                            ),
-                                          ),
-                                          child: const Text(
-                                            'VENDIDO',
-                                            style: TextStyle(
-                                              fontSize: 8,
-                                              fontWeight: FontWeight.w900,
-                                              color:
-                                                  SubliriumColors.stockLowText,
-                                            ),
-                                          ),
-                                        ),
                                       Expanded(
                                         child: Text(
                                           producto.nombre,
@@ -758,32 +731,31 @@ class _ProductosScreenState extends State<ProductosScreen> {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        if (!producto.vendido)
-                          Row(
-                            children: [
-                              _buildStockBadge(producto.cantidad),
-                              const SizedBox(width: 8),
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: producto.cantidad > 0
-                                      ? SubliriumColors.stockOkBg
-                                      : SubliriumColors.stockZeroBg,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                child: Row(
-                                  children: [
-                                    GestureDetector(
-                                      onTap: producto.cantidad > 0
-                                          ? () => _updateCantidad(producto, -1)
-                                          : null,
-                                      child: const Icon(
-                                        Icons.remove,
-                                        size: 16,
-                                        color: SubliriumColors.stockLowText,
+                        Row(
+                          children: [
+                            _buildStockBadge(producto.cantidad),
+                            const SizedBox(width: 8),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: producto.cantidad > 0
+                                    ? SubliriumColors.stockOkBg
+                                    : SubliriumColors.stockZeroBg,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              child: Row(
+                                children: [
+                                  GestureDetector(
+                                    onTap: producto.cantidad > 0
+                                        ? () => _updateCantidad(producto, -1)
+                                        : null,
+                                    child: const Icon(
+                                      Icons.remove,
+                                      size: 16,
+                                      color: SubliriumColors.stockLowText,
                                       ),
                                     ),
                                     Container(
@@ -868,51 +840,10 @@ class _ProductosScreenState extends State<ProductosScreen> {
                               ),
                             ],
                           )
-                        else
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: SubliriumColors.stockLowBg,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.person,
-                                  size: 14,
-                                  color: SubliriumColors.stockLowText,
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    producto.vendidoA ?? 'Cliente',
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      color: SubliriumColors.stockLowText,
-                                    ),
-                                  ),
-                                ),
-                                const Icon(
-                                  Icons.attach_money,
-                                  size: 14,
-                                  color: SubliriumColors.stockLowText,
-                                ),
-                                Text(
-                                  producto.precioVenta?.toStringAsFixed(2) ??
-                                      '0',
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w900,
-                                    color: SubliriumColors.stockLowText,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                );
+                  );
               }, childCount: _productosFiltrados.length),
             ),
           const SliverToBoxAdapter(child: SizedBox(height: 80)),
