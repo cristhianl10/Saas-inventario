@@ -609,13 +609,14 @@ class _ProductosScreenState extends State<ProductosScreen> {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: _getCategoryColor(widget.categoria!.emoji),
+                        color: SubliriumColors.cyan.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(9),
                       ),
-                      child: Center(
-                        child: Text(
-                          widget.categoria!.emoji,
-                          style: const TextStyle(fontSize: 18),
+                      child: const Center(
+                        child: Icon(
+                          Icons.folder,
+                          size: 18,
+                          color: SubliriumColors.cyan,
                         ),
                       ),
                     ),
@@ -982,26 +983,5 @@ class _ProductosScreenState extends State<ProductosScreen> {
       );
     }
     return const SizedBox();
-  }
-
-  Color _getCategoryColor(String emoji) {
-    final colors = {
-      '☕': const Color(0xFFFFF8F0),
-      '🧊': const Color(0xFFF0FBFF),
-      '🥤': const Color(0xFFF0FFF8),
-      '🚰': const Color(0xFFFFFBF0),
-      '👕': const Color(0xFFFDF4FF),
-      '🧢': const Color(0xFFF0F8FF),
-      '🖱️': const Color(0xFFF5F0FF),
-      '🪨': const Color(0xFFF0FFF8),
-      '👜': const Color(0xFFFFF8F0),
-      '⏰': const Color(0xFFF0F8FF),
-      '🖼️': const Color(0xFFFDF4FF),
-      '📓': const Color(0xFFFFFBF0),
-      '🔑': const Color(0xFFF0FFF8),
-      '🪵': const Color(0xFFF5F0FF),
-      '🛏️': const Color(0xFFFFF0F8),
-    };
-    return colors[emoji] ?? Colors.white;
   }
 }

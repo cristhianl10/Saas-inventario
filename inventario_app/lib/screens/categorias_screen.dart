@@ -13,6 +13,7 @@ class CategoriasScreen extends StatefulWidget {
 class _CategoriasScreenState extends State<CategoriasScreen> {
   final ApiService _apiService = ApiService();
   List<Categoria> _categorias = [];
+  Map<int, int> _productosCount = {};
   bool _isLoading = true;
   String? _error;
 
@@ -30,8 +31,10 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
 
     try {
       final categorias = await _apiService.getCategorias();
+      final counts = await _apiService.getProductosCountPorCategoria();
       setState(() {
         _categorias = categorias;
+        _productosCount = counts;
         _isLoading = false;
       });
     } catch (e) {
@@ -88,9 +91,6 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
     final nombreController = TextEditingController(
       text: categoria?.nombre ?? '',
     );
-    final descripcionController = TextEditingController(
-      text: categoria?.descripcion ?? '',
-    );
     final isEditing = categoria != null;
 
     showDialog(
@@ -107,15 +107,6 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
                 border: OutlineInputBorder(),
               ),
               autofocus: true,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: descripcionController,
-              decoration: const InputDecoration(
-                labelText: 'Descripción (opcional)',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 2,
             ),
           ],
         ),
@@ -137,9 +128,6 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
               final nuevaCategoria = Categoria(
                 id: categoria?.id,
                 nombre: nombre,
-                descripcion: descripcionController.text.trim().isEmpty
-                    ? null
-                    : descripcionController.text.trim(),
               );
 
               try {
@@ -243,6 +231,7 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
         itemCount: _categorias.length,
         itemBuilder: (context, index) {
           final categoria = _categorias[index];
+          final count = _productosCount[categoria.id] ?? 0;
           return Card(
             margin: const EdgeInsets.only(bottom: 12),
             child: ListTile(
@@ -264,13 +253,10 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
                 categoria.nombre,
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
-              subtitle: categoria.descripcion != null
-                  ? Text(
-                      categoria.descripcion!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    )
-                  : null,
+              subtitle: Text(
+                '$count productos',
+                style: const TextStyle(fontSize: 12),
+              ),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [

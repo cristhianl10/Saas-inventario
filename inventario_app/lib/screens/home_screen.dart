@@ -112,9 +112,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final nombreController = TextEditingController(
       text: categoria?.nombre ?? '',
     );
-    final emojiController = TextEditingController(
-      text: categoria?.emoji ?? '📦',
-    );
     final isEditing = categoria != null;
 
     showDialog(
@@ -133,14 +130,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               autofocus: true,
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: emojiController,
-              decoration: const InputDecoration(
-                labelText: 'Emoji',
-                border: OutlineInputBorder(),
-              ),
-            ),
           ],
         ),
         actions: [
@@ -155,7 +144,6 @@ class _HomeScreenState extends State<HomeScreen> {
               final nuevaCategoria = Categoria(
                 id: categoria?.id,
                 nombre: nombre,
-                emoji: emojiController.text.trim(),
               );
               try {
                 if (isEditing) {
@@ -444,13 +432,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: _getCategoryColor(categoria.emoji),
+                        color: SubliriumColors.cyan.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(9),
                       ),
-                      child: Center(
-                        child: Text(
-                          categoria.emoji,
-                          style: const TextStyle(fontSize: 18),
+                      child: const Center(
+                        child: Icon(
+                          Icons.folder,
+                          size: 18,
+                          color: SubliriumColors.cyan,
                         ),
                       ),
                     ),
@@ -598,26 +587,5 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
-  }
-
-  Color _getCategoryColor(String emoji) {
-    final colors = {
-      '☕': const Color(0xFFFFF8F0),
-      '🧊': const Color(0xFFF0FBFF),
-      '🥤': const Color(0xFFF0FFF8),
-      '🚰': const Color(0xFFFFFBF0),
-      '👕': const Color(0xFFFDF4FF),
-      '🧢': const Color(0xFFF0F8FF),
-      '🖱️': const Color(0xFFF5F0FF),
-      '🪨': const Color(0xFFF0FFF8),
-      '👜': const Color(0xFFFFF8F0),
-      '⏰': const Color(0xFFF0F8FF),
-      '🖼️': const Color(0xFFFDF4FF),
-      '📓': const Color(0xFFFFFBF0),
-      '🔑': const Color(0xFFF0FFF8),
-      '🪵': const Color(0xFFF5F0FF),
-      '🛏️': const Color(0xFFFFF0F8),
-    };
-    return colors[emoji] ?? SubliriumColors.cardBackground;
   }
 }

@@ -67,9 +67,9 @@ class _ResumenScreenState extends State<ResumenScreen> {
     return prod?.nombre ?? 'Producto #${productoId}';
   }
 
-  String _getEmojiCategoria(int categoriaId) {
+  String _getNombreCategoria(int categoriaId) {
     final cat = _categorias.where((c) => c.id == categoriaId).firstOrNull;
-    return cat?.emoji ?? '📦';
+    return cat?.nombre ?? 'Sin categoría';
   }
 
   int _getCategoriaId(int productoId) {
@@ -599,13 +599,14 @@ class _ResumenScreenState extends State<ResumenScreen> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: SubliriumColors.stockOkBg,
+                  color: SubliriumColors.cyan.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Center(
-                  child: Text(
-                    _getEmojiCategoria(_getCategoriaId(venta.productoId)),
-                    style: const TextStyle(fontSize: 20),
+                child: const Center(
+                  child: Icon(
+                    Icons.folder,
+                    size: 20,
+                    color: SubliriumColors.cyan,
                   ),
                 ),
               ),
