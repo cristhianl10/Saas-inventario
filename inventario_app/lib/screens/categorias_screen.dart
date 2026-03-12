@@ -70,23 +70,27 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
         await _apiService.deleteCategoria(categoria.id!);
         _loadCategorias();
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Categoría eliminada')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Categoría eliminada')));
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error: $e')));
         }
       }
     }
   }
 
   void _showCategoriaDialog([Categoria? categoria]) {
-    final nombreController = TextEditingController(text: categoria?.nombre ?? '');
-    final descripcionController = TextEditingController(text: categoria?.descripcion ?? '');
+    final nombreController = TextEditingController(
+      text: categoria?.nombre ?? '',
+    );
+    final descripcionController = TextEditingController(
+      text: categoria?.descripcion ?? '',
+    );
     final isEditing = categoria != null;
 
     showDialog(
@@ -148,9 +152,9 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
                 if (mounted) Navigator.pop(context);
               } catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e')),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Error: $e')));
                 }
               }
             },
@@ -164,10 +168,7 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Categorías'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Categorías'), centerTitle: true),
       body: _buildBody(),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showCategoriaDialog(),
@@ -198,7 +199,7 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
               child: Text(
                 _error!,
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey[600]),
+                style: const TextStyle(color: Colors.black),
               ),
             ),
             const SizedBox(height: 24),
@@ -217,18 +218,18 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.folder_open, size: 64, color: Colors.grey[400]),
+            Icon(Icons.folder_open, size: 64, color: Colors.black.withOpacity(0.3)),
             const SizedBox(height: 16),
             Text(
               'No hay categorías',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(color: Colors.black),
             ),
             const SizedBox(height: 8),
             Text(
               'Toca el botón + para crear una',
-              style: TextStyle(color: Colors.grey[500]),
+              style: TextStyle(color: Colors.black),
             ),
           ],
         ),

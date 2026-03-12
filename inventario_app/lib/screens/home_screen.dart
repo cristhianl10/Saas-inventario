@@ -511,9 +511,9 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text(icon, style: TextStyle(fontSize: 18, color: active ? SubliriumColors.cyan : SubliriumColors.textSecondary)),
+            Text(icon, style: TextStyle(fontSize: 18, color: active ? SubliriumColors.cyan : Colors.black)),
             const SizedBox(height: 2),
-            Text(label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: active ? SubliriumColors.cyan : SubliriumColors.textSecondary)),
+            Text(label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: active ? SubliriumColors.cyan : Colors.black)),
           ]),
         ),
       ),

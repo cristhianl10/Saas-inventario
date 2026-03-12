@@ -91,4 +91,43 @@ class ApiService {
         .delete()
         .eq('id', id);
   }
+
+  // ==================== VENTAS ====================
+
+  Future<List<Venta>> getVentas() async {
+    final response = await _client
+        .from('ventas')
+        .select()
+        .order('fecha_venta', ascending: false);
+    
+    return response.map((json) => Venta.fromJson(json)).toList();
+  }
+
+  Future<Venta> createVenta(Venta venta) async {
+    final response = await _client
+        .from('ventas')
+        .insert(venta.toJson())
+        .select()
+        .single();
+    
+    return Venta.fromJson(response);
+  }
+
+  Future<Venta> updateVenta(Venta venta) async {
+    final response = await _client
+        .from('ventas')
+        .update(venta.toJson())
+        .eq('id', venta.id!)
+        .select()
+        .single();
+    
+    return Venta.fromJson(response);
+  }
+
+  Future<void> deleteVenta(int id) async {
+    await _client
+        .from('ventas')
+        .delete()
+        .eq('id', id);
+  }
 }
