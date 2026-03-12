@@ -3,6 +3,7 @@ import '../models/models.dart';
 import '../services/api_service.dart';
 import '../config/app_theme.dart';
 import 'productos_screen.dart';
+import 'resumen_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -485,45 +486,35 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       decoration: const BoxDecoration(
         color: SubliriumColors.cardBackground,
-        border: Border(top: BorderSide(color: Color(0xFFE5E7EB), width: 1.5)),
+        border: Border(top: BorderSide(color: SubliriumColors.border, width: 1.5)),
       ),
-      child: Row(
-        children: [
-          _buildNavItem(0, '🏠', 'Inicio', _currentIndex == 0),
-          _buildNavItem(1, '📦', 'Productos', _currentIndex == 1),
-          _buildNavItem(2, '📊', 'Resumen', _currentIndex == 2),
-        ],
+      child: SafeArea(
+        child: Row(children: [
+          _buildNavItem(0, '🏠', 'Inicio', _currentIndex == 0, () {
+            setState(() => _currentIndex = 0);
+          }),
+          _buildNavItem(1, '📦', 'Productos', _currentIndex == 1, () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductosScreen()));
+          }),
+          _buildNavItem(2, '📊', 'Resumen', _currentIndex == 2, () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const ResumenScreen()));
+          }),
+        ]),
       ),
     );
   }
 
-  Widget _buildNavItem(int index, String icon, String label, bool active) {
+  Widget _buildNavItem(int index, String icon, String label, bool active, VoidCallback onTap) {
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => _currentIndex = index),
+        onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                icon,
-                style: TextStyle(
-                  fontSize: 18,
-                  color: active ? SubliriumColors.magenta : Colors.black,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w800,
-                  color: active ? SubliriumColors.magenta : Colors.black,
-                ),
-              ),
-            ],
-          ),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(icon, style: TextStyle(fontSize: 18, color: active ? SubliriumColors.cyan : SubliriumColors.textSecondary)),
+            const SizedBox(height: 2),
+            Text(label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: active ? SubliriumColors.cyan : SubliriumColors.textSecondary)),
+          ]),
         ),
       ),
     );

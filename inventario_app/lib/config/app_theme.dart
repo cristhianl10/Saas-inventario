@@ -32,6 +32,7 @@ class SubliriumColors {
   static const magenta = Color(0xFFD81B8A);
   static const cyan = Color(0xFF2ABDE8);
   static const purple = Color(0xFF7B2FBE);
+  static const logoOrange = Color(0xFFF06B1A);
 
   // FONDOS
   static const background = Color(0xFFF9F8F5);
