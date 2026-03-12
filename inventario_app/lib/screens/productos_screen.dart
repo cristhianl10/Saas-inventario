@@ -474,10 +474,20 @@ class _ProductosScreenState extends State<ProductosScreen> {
           ElevatedButton(
             onPressed: () async {
               final nombre = nombreController.text.trim();
-              if (nombre.isEmpty) return;
-              final cantidad =
-                  int.tryParse(cantidadController.text.trim()) ?? 0;
+              if (nombre.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('El nombre es obligatorio')));
+                return;
+              }
+              final cantidad = int.tryParse(cantidadController.text.trim()) ?? 0;
+              if (cantidad < 0) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('La cantidad no puede ser negativa')));
+                return;
+              }
               final precio = double.tryParse(precioController.text.trim());
+              if (precio != null && precio < 0) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('El precio no puede ser negativo')));
+                return;
+              }
               final nuevoProducto = Producto(
                 id: producto?.id,
                 categoriaId: widget.categoria?.id ?? producto?.categoriaId ?? 1,
