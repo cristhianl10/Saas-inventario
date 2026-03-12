@@ -157,8 +157,10 @@ class _HomeScreenState extends State<HomeScreen> {
               try {
                 if (isEditing) {
                   await _apiService.updateCategoria(nuevaCategoria);
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Categoría actualizada con éxito'), backgroundColor: SubliriumColors.stockOkText));
                 } else {
                   await _apiService.createCategoria(nuevaCategoria);
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Categoría creada con éxito'), backgroundColor: SubliriumColors.stockOkText));
                 }
                 _loadCategorias();
                 if (mounted) Navigator.pop(context);

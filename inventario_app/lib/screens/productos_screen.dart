@@ -121,6 +121,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
       );
       await _apiService.updateProducto(productoActualizado);
       _loadProductos();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cantidad actualizada'), backgroundColor: SubliriumColors.stockOkText));
     } catch (e) {
       if (mounted)
         ScaffoldMessenger.of(
@@ -502,8 +503,10 @@ class _ProductosScreenState extends State<ProductosScreen> {
               try {
                 if (isEditing) {
                   await _apiService.updateProducto(nuevoProducto);
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Producto actualizado con éxito'), backgroundColor: SubliriumColors.stockOkText));
                 } else {
                   await _apiService.createProducto(nuevoProducto);
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Producto creado con éxito'), backgroundColor: SubliriumColors.stockOkText));
                 }
                 _loadProductos();
                 if (mounted) Navigator.pop(context);

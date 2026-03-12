@@ -1,47 +1,48 @@
 import 'package:flutter/material.dart';
 
 class SubliriumColors {
-  // GRADIENTES
+  // ========================================
+  // COLORES OFICIALES DE LA MARCA SUBLIRIUM
+  // ========================================
+  static const negro = Color(0xFF010101); // #010101 - Negro principal
+  static const crema = Color(0xFFFBF8F1); // #FBF8F1 - Fondo crema
+  static const rosa = Color(0xFFC1356F); // #C1356F - Rosa
+  static const naranja = Color(0xFFE57836); // #E57836 - Naranja
+  static const amarillo = Color(0xFFF9C706); // #F9C706 - Amarillo
+  static const azul = Color(0xFF597FA9); // #597FA9 - Azul
+
+  // GRADIENTES DE LA MARCA
   static const headerGradient = LinearGradient(
-    colors: [Color(0xFF2ABDE8), Color(0xFF7B2FBE), Color(0xFFD81B8A)],
+    colors: [azul, rosa, naranja],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const fabGradient = LinearGradient(
-    colors: [Color(0xFFD0185A), Color(0xFFF06B1A), Color(0xFFF5C200)],
+    colors: [rosa, naranja, amarillo],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
-  // Logo "S" gradient
   static const logoSGradient = LinearGradient(
-    colors: [Color(0xFF2ABDE8), Color(0xFF7B2FBE)],
+    colors: [azul, rosa],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
-  // Logo "R" gradient
   static const logoRGradient = LinearGradient(
-    colors: [Color(0xFFD0185A), Color(0xFFF06B1A), Color(0xFFF5C200)],
+    colors: [rosa, naranja, amarillo],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-
-  // Colores individuales
-  static const magenta = Color(0xFFD81B8A);
-  static const cyan = Color(0xFF2ABDE8);
-  static const purple = Color(0xFF7B2FBE);
-  static const logoOrange = Color(0xFFF06B1A);
 
   // FONDOS
-  static const background = Color(0xFFF9F8F5);
-  static const cream = Color(0xFFF5F0E8);
+  static const background = crema;
   static const cardBackground = Colors.white;
 
-  // TEXTOS - todos en negro
-  static const textPrimary = Color(0xFF111111);
-  static const textSecondary = Color(0xFF111111);
+  // TEXTOS
+  static const textPrimary = negro;
+  static const textSecondary = negro;
 
   // BORDES
   static const border = Color(0xFFE5E7EB);
@@ -60,28 +61,44 @@ class SubliriumColors {
   static const pendingText = Color(0xFF92400E);
 
   // ACCIONES
-  static const backButton = Color(0xFF2ABDE8);
+  static const backButton = azul;
   static const deleteBorder = Color(0xFFFECDD3);
   static const deleteText = Color(0xFFE11D48);
-  static const inputFocusedBorder = Color(0xFF2ABDE8);
-  static const inputFocusedBg = Color(0xFFF0FBFF);
-  static const cancelBg = Color(0xFFF9F8F5);
+  static const inputFocusedBorder = azul;
+  static const inputFocusedBg = Color(0xFFF0F9FF);
+  static const cancelBg = crema;
   static const cancelText = Color(0xFF6B7280);
 
   // Logo circle
-  static const logoCircleBg = Color(0xFFF5F0E8);
-  static const logoCircleBorder = Color(0xFF111111);
+  static const logoCircleBg = crema;
+  static const logoCircleBorder = negro;
+
+  // Aliases para compatibilidad con código existente
+  static const cyan = azul;
+  static const purple = rosa;
+  static const magenta = rosa;
+  static const logoOrange = naranja;
+  static const logoCyan = azul;
+  static const logoPurple = rosa;
+  static const logoPink = rosa;
+  static const logoYellow = amarillo;
+  static const cream = crema;
+
+  // Gradiente principal (alias)
+  static const primaryGradient = headerGradient;
 }
 
 class AppTheme {
   static ThemeData lightTheme() {
     return ThemeData(
       colorScheme: ColorScheme.fromSeed(
-        seedColor: SubliriumColors.stockLowText,
-        primary: SubliriumColors.stockLowText,
-        secondary: SubliriumColors.backButton,
+        seedColor: SubliriumColors.rosa,
+        primary: SubliriumColors.rosa,
+        secondary: SubliriumColors.azul,
+        tertiary: SubliriumColors.naranja,
         brightness: Brightness.light,
         surface: SubliriumColors.cardBackground,
+        background: SubliriumColors.background,
       ),
       useMaterial3: true,
       scaffoldBackgroundColor: SubliriumColors.background,
@@ -107,13 +124,13 @@ class AppTheme {
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         elevation: 4,
-        backgroundColor: SubliriumColors.stockLowText,
+        backgroundColor: SubliriumColors.rosa,
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: SubliriumColors.stockLowText,
+          backgroundColor: SubliriumColors.rosa,
           foregroundColor: Colors.white,
           elevation: 2,
           shape: RoundedRectangleBorder(
@@ -134,27 +151,24 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(
-            color: SubliriumColors.inputFocusedBorder,
-            width: 2,
-          ),
+          borderSide: const BorderSide(color: SubliriumColors.azul, width: 2),
         ),
-        labelStyle: const TextStyle(color: SubliriumColors.textSecondary),
+        labelStyle: const TextStyle(color: SubliriumColors.negro),
       ),
       textTheme: const TextTheme(
-        bodyLarge: TextStyle(color: SubliriumColors.textPrimary),
-        bodyMedium: TextStyle(color: SubliriumColors.textPrimary),
-        bodySmall: TextStyle(color: SubliriumColors.textSecondary),
+        bodyLarge: TextStyle(color: SubliriumColors.negro),
+        bodyMedium: TextStyle(color: SubliriumColors.negro),
+        bodySmall: TextStyle(color: SubliriumColors.negro),
         titleLarge: TextStyle(
-          color: SubliriumColors.textPrimary,
+          color: SubliriumColors.negro,
           fontWeight: FontWeight.w900,
         ),
         titleMedium: TextStyle(
-          color: SubliriumColors.textPrimary,
+          color: SubliriumColors.negro,
           fontWeight: FontWeight.w700,
         ),
         titleSmall: TextStyle(
-          color: SubliriumColors.textSecondary,
+          color: SubliriumColors.negro,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -164,7 +178,7 @@ class AppTheme {
   static ThemeData darkTheme() {
     return ThemeData(
       colorScheme: ColorScheme.fromSeed(
-        seedColor: SubliriumColors.stockLowText,
+        seedColor: SubliriumColors.rosa,
         brightness: Brightness.dark,
       ),
       useMaterial3: true,
