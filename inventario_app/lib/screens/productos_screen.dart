@@ -1,7 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
 import '../config/app_theme.dart';
+
+String _parsePrice(String value) {
+  if (value.isEmpty) return value;
+  String parsed = value.replaceAll(',', '.');
+  final regex = RegExp(r'^\d*\.?\d*$');
+  if (!regex.hasMatch(parsed)) {
+    return '';
+  }
+  return parsed;
+}
+
+int? _parseQuantity(String value) {
+  if (value.isEmpty) return null;
+  final parsed = int.tryParse(value.trim());
+  return parsed;
+}
 
 enum FiltroStock { todos, enStock, sinStock }
 
@@ -215,6 +232,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
                       border: OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     onChanged: (_) => setDialogState(() {}),
                   ),
                   const SizedBox(height: 12),
@@ -254,7 +272,19 @@ class _ProductosScreenState extends State<ProductosScreen> {
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
-                    onChanged: (_) => setDialogState(() {}),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[\d,.]')),
+                    ],
+                    onChanged: (value) {
+                      final parsed = _parsePrice(value);
+                      if (parsed != value) {
+                        precioController.value = TextEditingValue(
+                          text: parsed,
+                          selection: TextSelection.collapsed(offset: parsed.length),
+                        );
+                      }
+                      setDialogState(() {});
+                    },
                   ),
 
                   // Total calculado
@@ -317,12 +347,12 @@ class _ProductosScreenState extends State<ProductosScreen> {
                   color: SubliriumColors.stockOkText,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: ElevatedButton(
+                child:               ElevatedButton(
                   onPressed: () async {
                     final cantidadVenta =
                         int.tryParse(cantidadController.text) ?? 1;
-                    final precioUnit =
-                        double.tryParse(precioController.text) ?? 0;
+                    final precioText = _parsePrice(precioController.text);
+                    final precioUnit = double.tryParse(precioText) ?? 0;
 
                     if (cantidadVenta <= 0 ||
                         cantidadVenta > producto.cantidad) {
@@ -451,6 +481,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               ),
               const SizedBox(height: 12),
               TextField(
@@ -463,6 +494,18 @@ class _ProductosScreenState extends State<ProductosScreen> {
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[\d,.]')),
+                ],
+                onChanged: (value) {
+                  final parsed = _parsePrice(value);
+                  if (parsed != value) {
+                    precioController.value = TextEditingValue(
+                      text: parsed,
+                      selection: TextSelection.collapsed(offset: parsed.length),
+                    );
+                  }
+                },
               ),
             ],
           ),
@@ -479,12 +522,13 @@ class _ProductosScreenState extends State<ProductosScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('El nombre es obligatorio')));
                 return;
               }
-              final cantidad = int.tryParse(cantidadController.text.trim()) ?? 0;
-              if (cantidad < 0) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('La cantidad no puede ser negativa')));
+              final cantidad = int.tryParse(cantidadController.text.trim());
+              if (cantidad == null || cantidad < 0) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ingrese una cantidad válida (número entero)')));
                 return;
               }
-              final precio = double.tryParse(precioController.text.trim());
+              final precioText = _parsePrice(precioController.text.trim());
+              final precio = double.tryParse(precioText);
               if (precio != null && precio < 0) {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('El precio no puede ser negativo')));
                 return;

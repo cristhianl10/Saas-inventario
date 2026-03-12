@@ -54,6 +54,17 @@ class ApiService {
     return response.map((json) => Producto.fromJson(json)).toList();
   }
 
+  Future<Map<int, int>> getProductosCountPorCategoria() async {
+    final productos = await getProductos();
+    final counts = <int, int>{};
+    for (final p in productos) {
+      if (p.categoriaId != null) {
+        counts[p.categoriaId!] = (counts[p.categoriaId!] ?? 0) + 1;
+      }
+    }
+    return counts;
+  }
+
   Future<List<Producto>> getProductosPorCategoria(int categoriaId) async {
     final response = await _client
         .from('productos')

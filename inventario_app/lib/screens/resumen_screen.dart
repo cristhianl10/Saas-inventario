@@ -1,7 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
 import '../config/app_theme.dart';
+
+String _parsePrice(String value) {
+  if (value.isEmpty) return value;
+  String parsed = value.replaceAll(',', '.');
+  final regex = RegExp(r'^\d*\.?\d*$');
+  if (!regex.hasMatch(parsed)) {
+    return '';
+  }
+  return parsed;
+}
 
 class ResumenScreen extends StatefulWidget {
   const ResumenScreen({super.key});
@@ -215,6 +226,7 @@ class _ResumenScreenState extends State<ResumenScreen> {
                       border: OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     onChanged: (_) => setDialogState(() {}),
                   ),
                   const SizedBox(height: 12),
@@ -229,7 +241,19 @@ class _ResumenScreenState extends State<ResumenScreen> {
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
-                    onChanged: (_) => setDialogState(() {}),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[\d,.]')),
+                    ],
+                    onChanged: (value) {
+                      final parsed = _parsePrice(value);
+                      if (parsed != value) {
+                        precioController.value = TextEditingValue(
+                          text: parsed,
+                          selection: TextSelection.collapsed(offset: parsed.length),
+                        );
+                      }
+                      setDialogState(() {});
+                    },
                   ),
 
                   Container(
@@ -293,8 +317,8 @@ class _ResumenScreenState extends State<ResumenScreen> {
                   onPressed: () async {
                     final cantidadNueva =
                         int.tryParse(cantidadController.text) ?? 1;
-                    final precioNuevo =
-                        double.tryParse(precioController.text) ?? 0;
+                    final precioText = _parsePrice(precioController.text);
+                    final precioNuevo = double.tryParse(precioText) ?? 0;
 
                     if (cantidadNueva <= 0 || precioNuevo <= 0) {
                       ScaffoldMessenger.of(dialogContext).showSnackBar(

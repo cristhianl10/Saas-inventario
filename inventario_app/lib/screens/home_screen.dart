@@ -16,6 +16,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final ApiService _apiService = ApiService();
   final TextEditingController _searchController = TextEditingController();
   List<Categoria> _categorias = [];
+  Map<int, int> _productosCount = {};
   String _searchQuery = '';
   bool _isLoading = true;
   String? _error;
@@ -54,8 +55,10 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     try {
       final categorias = await _apiService.getCategorias();
+      final counts = await _apiService.getProductosCountPorCategoria();
       setState(() {
         _categorias = categorias;
+        _productosCount = counts;
         _isLoading = false;
       });
     } catch (e) {
@@ -420,60 +423,55 @@ class _HomeScreenState extends State<HomeScreen> {
           SliverList(
             delegate: SliverChildBuilderDelegate((context, index) {
               final categoria = _categoriasFiltradas[index];
-              return FutureBuilder<int>(
-                future: _apiService
-                    .getProductosPorCategoria(categoria.id!)
-                    .then((p) => p.length),
-                builder: (context, snapshot) {
-                  final count = snapshot.data ?? 0;
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(
+              final count = _productosCount[categoria.id] ?? 0;
+              return Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: SubliriumColors.cardBackground,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                  ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 4,
                     ),
-                    child: Container(
+                    leading: Container(
+                      width: 36,
+                      height: 36,
                       decoration: BoxDecoration(
-                        color: SubliriumColors.cardBackground,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFE5E7EB)),
+                        color: _getCategoryColor(categoria.emoji),
+                        borderRadius: BorderRadius.circular(9),
                       ),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 4,
+                      child: Center(
+                        child: Text(
+                          categoria.emoji,
+                          style: const TextStyle(fontSize: 18),
                         ),
-                        leading: Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: _getCategoryColor(categoria.emoji),
-                            borderRadius: BorderRadius.circular(9),
-                          ),
-                          child: Center(
-                            child: Text(
-                              categoria.emoji,
-                              style: const TextStyle(fontSize: 18),
-                            ),
-                          ),
-                        ),
-                        title: Text(
-                          categoria.nombre,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 12,
-                            color: Colors.black,
-                          ),
-                        ),
-                        subtitle: Text(
-                          '$count productos',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: Colors.black,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
+                      ),
+                    ),
+                    title: Text(
+                      categoria.nombre,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 12,
+                        color: Colors.black,
+                      ),
+                    ),
+                    subtitle: Text(
+                      '$count productos',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: Colors.black,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
                               icon: const Icon(Icons.edit, size: 16),
@@ -505,10 +503,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   );
-                },
-              );
-            }, childCount: _categoriasFiltradas.length),
-          ),
+                }, childCount: _categoriasFiltradas.length),
+              ),
         const SliverToBoxAdapter(child: SizedBox(height: 80)),
       ],
     );
