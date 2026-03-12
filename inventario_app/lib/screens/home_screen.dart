@@ -14,7 +14,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final ApiService _apiService = ApiService();
+  final TextEditingController _searchController = TextEditingController();
   List<Categoria> _categorias = [];
+  String _searchQuery = '';
   bool _isLoading = true;
   String? _error;
   int _currentIndex = 0;
@@ -23,6 +25,26 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadCategorias();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.toLowerCase();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Categoria> get _categoriasFiltradas {
+    if (_searchQuery.isEmpty) {
+      return _categorias;
+    }
+    return _categorias.where((categoria) {
+      return categoria.nombre.toLowerCase().contains(_searchQuery);
+    }).toList();
   }
 
   Future<void> _loadCategorias() async {
@@ -271,24 +293,44 @@ class _HomeScreenState extends State<HomeScreen> {
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.all(12),
-            child: Container(
-              height: 36,
-              decoration: BoxDecoration(
-                color: SubliriumColors.cardBackground,
-                borderRadius: BorderRadius.circular(9),
-                border: Border.all(color: SubliriumColors.border),
-              ),
-              child: Row(
-                children: [
-                  const SizedBox(width: 12),
-                  const Icon(Icons.search, size: 16, color: Colors.black),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Buscar categoría...',
-                    style: TextStyle(fontSize: 12, color: Colors.black),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Buscar categoría...',
+                hintStyle: const TextStyle(fontSize: 12, color: Colors.grey),
+                prefixIcon: const Icon(
+                  Icons.search,
+                  size: 16,
+                  color: Colors.black,
+                ),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 16),
+                        onPressed: () {
+                          _searchController.clear();
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: SubliriumColors.cardBackground,
+                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(9),
+                  borderSide: BorderSide(color: SubliriumColors.border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(9),
+                  borderSide: BorderSide(color: SubliriumColors.border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(9),
+                  borderSide: const BorderSide(
+                    color: SubliriumColors.cyan,
+                    width: 2,
                   ),
-                ],
+                ),
               ),
+              style: const TextStyle(fontSize: 12, color: Colors.black),
             ),
           ),
         ),
@@ -307,7 +349,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 Text(
-                  '${_categorias.length} categorías',
+                  '${_categoriasFiltradas.length} categorías',
                   style: const TextStyle(
                     color: Colors.black,
                     fontSize: 11,
@@ -343,22 +385,30 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           )
-        else if (_categorias.isEmpty)
+        else if (_categoriasFiltradas.isEmpty)
           SliverFillRemaining(
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.folder_open, size: 48, color: Colors.black),
+                  Icon(
+                    _searchQuery.isEmpty ? Icons.folder_open : Icons.search_off,
+                    size: 48,
+                    color: Colors.black,
+                  ),
                   const SizedBox(height: 8),
                   Text(
-                    'No hay categorías',
-                    style: TextStyle(color: Colors.black),
+                    _searchQuery.isEmpty
+                        ? 'No hay categorías'
+                        : 'No se encontraron categorías',
+                    style: const TextStyle(color: Colors.black),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Toca + para crear una',
-                    style: TextStyle(color: Colors.black, fontSize: 12),
+                    _searchQuery.isEmpty
+                        ? 'Toca + para crear una'
+                        : 'Intenta con otro término de búsqueda',
+                    style: const TextStyle(color: Colors.black, fontSize: 12),
                   ),
                 ],
               ),
@@ -367,7 +417,7 @@ class _HomeScreenState extends State<HomeScreen> {
         else
           SliverList(
             delegate: SliverChildBuilderDelegate((context, index) {
-              final categoria = _categorias[index];
+              final categoria = _categoriasFiltradas[index];
               return FutureBuilder<int>(
                 future: _apiService
                     .getProductosPorCategoria(categoria.id!)
@@ -455,7 +505,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 },
               );
-            }, childCount: _categorias.length),
+            }, childCount: _categoriasFiltradas.length),
           ),
         const SliverToBoxAdapter(child: SizedBox(height: 80)),
       ],
@@ -486,35 +536,67 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       decoration: const BoxDecoration(
         color: SubliriumColors.cardBackground,
-        border: Border(top: BorderSide(color: SubliriumColors.border, width: 1.5)),
+        border: Border(
+          top: BorderSide(color: SubliriumColors.border, width: 1.5),
+        ),
       ),
       child: SafeArea(
-        child: Row(children: [
-          _buildNavItem(0, '🏠', 'Inicio', _currentIndex == 0, () {
-            setState(() => _currentIndex = 0);
-          }),
-          _buildNavItem(1, '📦', 'Productos', _currentIndex == 1, () {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductosScreen()));
-          }),
-          _buildNavItem(2, '📊', 'Resumen', _currentIndex == 2, () {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const ResumenScreen()));
-          }),
-        ]),
+        child: Row(
+          children: [
+            _buildNavItem(0, '🏠', 'Inicio', _currentIndex == 0, () {
+              setState(() => _currentIndex = 0);
+            }),
+            _buildNavItem(1, '📦', 'Productos', _currentIndex == 1, () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProductosScreen()),
+              );
+            }),
+            _buildNavItem(2, '📊', 'Resumen', _currentIndex == 2, () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ResumenScreen()),
+              );
+            }),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildNavItem(int index, String icon, String label, bool active, VoidCallback onTap) {
+  Widget _buildNavItem(
+    int index,
+    String icon,
+    String label,
+    bool active,
+    VoidCallback onTap,
+  ) {
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text(icon, style: TextStyle(fontSize: 18, color: active ? SubliriumColors.cyan : Colors.black)),
-            const SizedBox(height: 2),
-            Text(label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: active ? SubliriumColors.cyan : Colors.black)),
-          ]),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                icon,
+                style: TextStyle(
+                  fontSize: 18,
+                  color: active ? SubliriumColors.cyan : Colors.black,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  color: active ? SubliriumColors.cyan : Colors.black,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

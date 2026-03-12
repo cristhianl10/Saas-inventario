@@ -170,9 +170,7 @@ class _ResumenScreenState extends State<ResumenScreen> {
                       _getDescripcionProducto(venta.productoId)!,
                       style: TextStyle(
                         fontSize: 11,
-                        color: Colors.black.withValues(
-                          alpha: 0.7,
-                        ),
+                        color: Colors.black.withValues(alpha: 0.7),
                       ),
                     ),
                   const SizedBox(height: 16),
@@ -468,9 +466,7 @@ class _ResumenScreenState extends State<ResumenScreen> {
                               SizedBox(height: 8),
                               Text(
                                 'No hay ventas registradas',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                ),
+                                style: TextStyle(color: Colors.black),
                               ),
                             ],
                           ),
@@ -494,7 +490,7 @@ class _ResumenScreenState extends State<ResumenScreen> {
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w900,
-                        color: Colors.black,
+                        color: Colors.white,
                         letterSpacing: 1,
                       ),
                     ),
@@ -553,10 +549,7 @@ class _ResumenScreenState extends State<ResumenScreen> {
             const SizedBox(height: 2),
             Text(
               titulo,
-              style: const TextStyle(
-                fontSize: 10,
-                color: Colors.black,
-              ),
+              style: const TextStyle(fontSize: 10, color: Colors.black),
             ),
           ],
         ),
@@ -607,11 +600,7 @@ class _ResumenScreenState extends State<ResumenScreen> {
                     const SizedBox(height: 2),
                     Row(
                       children: [
-                        const Icon(
-                          Icons.person,
-                          size: 12,
-                          color: Colors.black,
-                        ),
+                        const Icon(Icons.person, size: 12, color: Colors.black),
                         const SizedBox(width: 4),
                         Text(
                           venta.vendidoA ?? 'Cliente',
@@ -638,10 +627,7 @@ class _ResumenScreenState extends State<ResumenScreen> {
                   ),
                   Text(
                     '${venta.cantidad} x \$${venta.precioUnitario.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontSize: 9,
-                      color: Colors.black,
-                    ),
+                    style: const TextStyle(fontSize: 9, color: Colors.black),
                   ),
                 ],
               ),
@@ -650,35 +636,21 @@ class _ResumenScreenState extends State<ResumenScreen> {
           const SizedBox(height: 8),
           Row(
             children: [
-              const Icon(
-                Icons.calendar_today,
-                size: 12,
-                color: Colors.black,
-              ),
+              const Icon(Icons.calendar_today, size: 12, color: Colors.black),
               const SizedBox(width: 4),
               Text(
                 _formatFecha(venta.fechaVenta),
-                style: const TextStyle(
-                  fontSize: 10,
-                  color: Colors.black,
-                ),
+                style: const TextStyle(fontSize: 10, color: Colors.black),
               ),
               if (venta.observaciones != null &&
                   venta.observaciones!.isNotEmpty) ...[
                 const SizedBox(width: 8),
-                const Icon(
-                  Icons.note,
-                  size: 12,
-                  color: Colors.black,
-                ),
+                const Icon(Icons.note, size: 12, color: Colors.black),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     venta.observaciones!,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: Colors.black,
-                    ),
+                    style: const TextStyle(fontSize: 10, color: Colors.black),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
