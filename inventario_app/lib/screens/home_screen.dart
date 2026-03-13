@@ -232,9 +232,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 height: 40,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: SubliriumColors.logoCircleBg,
+                  color: SubliriumColors.cardBackground,
                   border: Border.all(
-                    color: SubliriumColors.logoCircleBorder,
+                    color: SubliriumColors.cyan,
                     width: 2,
                   ),
                   boxShadow: [
@@ -245,39 +245,20 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // S
-                    ShaderMask(
-                      shaderCallback: (bounds) =>
-                          SubliriumColors.logoSGradient.createShader(bounds),
-                      child: const Text(
-                        'S',
-                        style: TextStyle(
-                          color: SubliriumColors.cardBackground,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                    // R (aparece a la derecha del S)
-                    Positioned(
-                      left: 18,
-                      child: ShaderMask(
-                        shaderCallback: (bounds) =>
-                            SubliriumColors.logoRGradient.createShader(bounds),
-                        child: const Text(
-                          'R',
-                          style: TextStyle(
-                            color: SubliriumColors.cardBackground,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                child: ClipOval(
+                  child: Image.asset(
+                    'assets/logos/logo sublirium.jpeg',
+                    fit: BoxFit.cover,
+                    width: 36,
+                    height: 36,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(
+                        Icons.store,
+                        color: SubliriumColors.cyan,
+                        size: 20,
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
