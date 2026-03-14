@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'package:intl/intl.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
 import '../config/app_theme.dart';
@@ -34,6 +38,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
   final ApiService _apiService = ApiService();
   List<Producto> _productos = [];
   List<Producto> _productosFiltrados = [];
+  List<Categoria> _categorias = [];
   bool _isLoading = true;
   String? _error;
   FiltroStock _filtroActual = FiltroStock.todos;
@@ -58,8 +63,10 @@ class _ProductosScreenState extends State<ProductosScreen> {
       } else {
         productos = await _apiService.getProductos();
       }
+      final categorias = await _apiService.getCategorias();
       setState(() {
         _productos = productos;
+        _categorias = categorias;
         _aplicarFiltro();
         _isLoading = false;
       });
@@ -602,26 +609,31 @@ class _ProductosScreenState extends State<ProductosScreen> {
                 ),
               ),
             ),
-            actions: esVistaGlobal
-                ? null
-                : [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: SubliriumColors.cyan.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(9),
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.folder,
-                          size: 18,
-                          color: SubliriumColors.cyan,
-                        ),
-                      ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
+                onPressed: _generarPdfProductos,
+                tooltip: 'Descargar PDF',
+              ),
+              if (!esVistaGlobal) ...[
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: SubliriumColors.cyan.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.folder,
+                      size: 18,
+                      color: SubliriumColors.cyan,
                     ),
-                    const SizedBox(width: 16),
-                  ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+              ],
+            ],
           ),
           SliverToBoxAdapter(
             child: Container(
@@ -983,5 +995,119 @@ class _ProductosScreenState extends State<ProductosScreen> {
       );
     }
     return const SizedBox();
+  }
+
+  String _getNombreCategoria(int categoriaId) {
+    final cat = _categorias.where((c) => c.id == categoriaId).firstOrNull;
+    return cat?.nombre ?? 'Sin categoría';
+  }
+
+  Future<void> _generarPdfProductos() async {
+    final pdf = pw.Document();
+    final fecha = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
+    final productosAExportar = widget.categoria != null
+        ? _productos
+        : _productosFiltrados;
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        build: (context) => [
+          pw.Header(
+            level: 0,
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  'Sublirium - Inventario',
+                  style: pw.TextStyle(
+                    fontSize: 24,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+                pw.SizedBox(height: 4),
+                pw.Text(
+                  'Fecha de descarga: $fecha',
+                  style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey700),
+                ),
+                pw.SizedBox(height: 4),
+                pw.Text(
+                  widget.categoria != null
+                      ? 'Categoría: ${widget.categoria!.nombre}'
+                      : 'Todos los productos',
+                  style: const pw.TextStyle(fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+          pw.SizedBox(height: 20),
+          if (widget.categoria == null) ...[
+            for (final categoria in _categorias.where((c) => productosAExportar.any((p) => p.categoriaId == c.id)))
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Container(
+                    padding: const pw.EdgeInsets.all(8),
+                    color: PdfColors.cyan100,
+                    child: pw.Text(
+                      categoria.nombre,
+                      style: pw.TextStyle(
+                        fontSize: 16,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  pw.TableHelper.fromTextArray(
+                    headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+                    cellStyle: const pw.TextStyle(fontSize: 9),
+                    cellAlignments: {
+                      0: pw.Alignment.centerLeft,
+                      1: pw.Alignment.centerLeft,
+                      2: pw.Alignment.centerRight,
+                      3: pw.Alignment.centerRight,
+                    },
+                    headers: ['Producto', 'Descripción', 'Cantidad', 'Precio'],
+                    data: productosAExportar
+                        .where((p) => p.categoriaId == categoria.id)
+                        .map((p) => [
+                              p.nombre,
+                              p.descripcion ?? '-',
+                              p.cantidad.toString(),
+                              '\$${p.precio?.toStringAsFixed(2) ?? '0.00'}',
+                            ])
+                        .toList(),
+                  ),
+                  pw.SizedBox(height: 16),
+                ],
+              ),
+          ] else ...[
+            pw.TableHelper.fromTextArray(
+              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+              cellStyle: const pw.TextStyle(fontSize: 9),
+              cellAlignments: {
+                0: pw.Alignment.centerLeft,
+                1: pw.Alignment.centerLeft,
+                2: pw.Alignment.centerRight,
+                3: pw.Alignment.centerRight,
+              },
+              headers: ['Producto', 'Descripción', 'Cantidad', 'Precio'],
+              data: productosAExportar
+                  .map((p) => [
+                        p.nombre,
+                        p.descripcion ?? '-',
+                        p.cantidad.toString(),
+                        '\$${p.precio?.toStringAsFixed(2) ?? '0.00'}',
+                      ])
+                  .toList(),
+            ),
+          ],
+        ],
+      ),
+    );
+
+    await Printing.layoutPdf(
+      onLayout: (format) async => pdf.save(),
+      name: 'inventario_sublirium_${DateTime.now().millisecondsSinceEpoch}.pdf',
+    );
   }
 }
