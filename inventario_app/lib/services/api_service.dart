@@ -141,4 +141,61 @@ class ApiService {
         .delete()
         .eq('id', id);
   }
+
+  // ==================== TARIFAS DE PRECIOS ====================
+
+  Future<List<PrecioTarifa>> getTarifasPorProducto(int productoId) async {
+    final response = await _client
+        .from('tarifa_precios')
+        .select()
+        .eq('producto_id', productoId)
+        .order('cantidad_min');
+    
+    return response.map((json) => PrecioTarifa.fromJson(json)).toList();
+  }
+
+  Future<List<PrecioTarifa>> getTodasTarifas() async {
+    final response = await _client
+        .from('tarifa_precios')
+        .select()
+        .order('producto_id')
+        .order('cantidad_min');
+    
+    return response.map((json) => PrecioTarifa.fromJson(json)).toList();
+  }
+
+  Future<PrecioTarifa> createTarifa(PrecioTarifa tarifa) async {
+    final response = await _client
+        .from('tarifa_precios')
+        .insert(tarifa.toJson())
+        .select()
+        .single();
+    
+    return PrecioTarifa.fromJson(response);
+  }
+
+  Future<PrecioTarifa> updateTarifa(PrecioTarifa tarifa) async {
+    final response = await _client
+        .from('tarifa_precios')
+        .update(tarifa.toJson())
+        .eq('id', tarifa.id!)
+        .select()
+        .single();
+    
+    return PrecioTarifa.fromJson(response);
+  }
+
+  Future<void> deleteTarifa(int id) async {
+    await _client
+        .from('tarifa_precios')
+        .delete()
+        .eq('id', id);
+  }
+
+  Future<void> deleteTarifasPorProducto(int productoId) async {
+    await _client
+        .from('tarifa_precios')
+        .delete()
+        .eq('producto_id', productoId);
+  }
 }

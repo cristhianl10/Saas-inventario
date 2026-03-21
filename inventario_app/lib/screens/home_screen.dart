@@ -4,6 +4,7 @@ import '../services/api_service.dart';
 import '../config/app_theme.dart';
 import 'productos_screen.dart';
 import 'resumen_screen.dart';
+import 'tabla_precios_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -319,7 +320,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: 12,
-                    color: Colors.black,
+                    color: Colors.white,
                   ),
                 ),
                 Text(
@@ -524,6 +525,12 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const ResumenScreen()),
+              );
+            }),
+            _buildNavItem(3, '💰', 'Precios', _currentIndex == 3, () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TablaPreciosScreen()),
               );
             }),
           ],

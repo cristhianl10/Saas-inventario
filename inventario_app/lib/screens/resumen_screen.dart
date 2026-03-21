@@ -174,6 +174,7 @@ class _ResumenScreenState extends State<ResumenScreen> {
                     style: const TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 14,
+                      color: Colors.white,
                     ),
                   ),
                   if (_getDescripcionProducto(venta.productoId) != null)
@@ -620,6 +621,7 @@ class _ResumenScreenState extends State<ResumenScreen> {
                       style: const TextStyle(
                         fontWeight: FontWeight.w900,
                         fontSize: 12,
+                        color: Colors.black,
                       ),
                     ),
                     const SizedBox(height: 2),

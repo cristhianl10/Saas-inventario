@@ -187,7 +187,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
                     style: const TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 14,
-                      color: Colors.black,
+                      color: Colors.white,
                     ),
                   ),
                   if (producto.descripcion != null)
@@ -554,6 +554,24 @@ class _ProductosScreenState extends State<ProductosScreen> {
               try {
                 if (isEditing) {
                   await _apiService.updateProducto(nuevoProducto);
+
+                  // Sincronizar precio base con tarifa de cantidad = 1
+                  if (precio != null) {
+                    final tarifas = await _apiService.getTarifasPorProducto(producto!.id!);
+                    final tarifaBase = tarifas.where((t) => t.cantidadMin == 1).firstOrNull;
+                    if (tarifaBase != null) {
+                      // Actualizar tarifa existente
+                      await _apiService.updateTarifa(tarifaBase.copyWith(precioUnitario: precio));
+                    } else {
+                      // Crear nueva tarifa para cantidad = 1
+                      await _apiService.createTarifa(PrecioTarifa(
+                        productoId: producto!.id!,
+                        cantidadMin: 1,
+                        precioUnitario: precio,
+                      ));
+                    }
+                  }
+
                   if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Producto actualizado con éxito'), backgroundColor: SubliriumColors.stockOkText));
                 } else {
                   await _apiService.createProducto(nuevoProducto);
@@ -997,6 +1015,10 @@ class _ProductosScreenState extends State<ProductosScreen> {
     return const SizedBox();
   }
 
+  double _calcularTotalCategoria(List<Producto> productos) {
+    return productos.fold(0.0, (sum, p) => sum + (p.cantidad * (p.precio ?? 0)));
+  }
+
   String _getNombreCategoria(int categoriaId) {
     final cat = _categorias.where((c) => c.id == categoriaId).firstOrNull;
     return cat?.nombre ?? 'Sin categoría';
@@ -1066,7 +1088,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
                       2: pw.Alignment.centerRight,
                       3: pw.Alignment.centerRight,
                     },
-                    headers: ['Producto', 'Descripción', 'Cantidad', 'Precio'],
+                    headers: ['Producto', 'Descripción', 'Cantidad', 'Precio c/u'],
                     data: productosAExportar
                         .where((p) => p.categoriaId == categoria.id)
                         .map((p) => [
@@ -1077,9 +1099,43 @@ class _ProductosScreenState extends State<ProductosScreen> {
                             ])
                         .toList(),
                   ),
+                  pw.SizedBox(height: 8),
+                  pw.Container(
+                    alignment: pw.Alignment.centerRight,
+                    child: pw.Text(
+                      'Total ${categoria.nombre}: \$${_calcularTotalCategoria(productosAExportar.where((p) => p.categoriaId == categoria.id).toList()).toStringAsFixed(2)}',
+                      style: pw.TextStyle(
+                        fontSize: 12,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                  ),
                   pw.SizedBox(height: 16),
                 ],
               ),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(12),
+              color: PdfColors.cyan200,
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text(
+                    'VALOR TOTAL DEL INVENTARIO',
+                    style: pw.TextStyle(
+                      fontSize: 16,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                  pw.Text(
+                    '\$${_calcularTotalCategoria(productosAExportar).toStringAsFixed(2)}',
+                    style: pw.TextStyle(
+                      fontSize: 18,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ] else ...[
             pw.TableHelper.fromTextArray(
               headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
@@ -1090,7 +1146,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
                 2: pw.Alignment.centerRight,
                 3: pw.Alignment.centerRight,
               },
-              headers: ['Producto', 'Descripción', 'Cantidad', 'Precio'],
+              headers: ['Producto', 'Descripción', 'Cantidad', 'Precio c/u'],
               data: productosAExportar
                   .map((p) => [
                         p.nombre,
@@ -1099,6 +1155,30 @@ class _ProductosScreenState extends State<ProductosScreen> {
                         '\$${p.precio?.toStringAsFixed(2) ?? '0.00'}',
                       ])
                   .toList(),
+            ),
+            pw.SizedBox(height: 8),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(12),
+              color: PdfColors.cyan200,
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text(
+                    'VALOR TOTAL',
+                    style: pw.TextStyle(
+                      fontSize: 16,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                  pw.Text(
+                    '\$${_calcularTotalCategoria(productosAExportar).toStringAsFixed(2)}',
+                    style: pw.TextStyle(
+                      fontSize: 18,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ],
