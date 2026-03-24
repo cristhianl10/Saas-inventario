@@ -159,88 +159,171 @@ class _ProductosScreenState extends State<ProductosScreen> {
   }
 
   void _showVendidoDialog(Producto producto) {
+    final precioController = TextEditingController(text: producto.precio?.toStringAsFixed(2) ?? '');
     final cantidadController = TextEditingController(text: '1');
     final vendedorController = TextEditingController();
     final observacionesController = TextEditingController();
+    DateTime fechaSeleccionada = DateTime.now();
+    bool precioPorUnidad = true;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Column(
-          children: [
-            Text(producto.nombre, style: const TextStyle(fontSize: 16)),
-            Text(
-              '\$${producto.precio?.toStringAsFixed(2) ?? '0.00'} c/u',
-              style: const TextStyle(fontSize: 12, color: SubliriumColors.cyan),
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final cantidad = int.tryParse(cantidadController.text) ?? 1;
+          final precio = double.tryParse(precioController.text) ?? 0;
+          final total = precioPorUnidad ? (cantidad * precio) : precio;
+
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Text('Registrar Venta'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(producto.nombre, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Colors.black)),
+                  if (producto.descripcion != null)
+                    Text(producto.descripcion!, style: const TextStyle(fontSize: 11, color: Colors.black)),
+                  const SizedBox(height: 16),
+                  GestureDetector(
+                    onTap: () async {
+                      final fecha = await showDatePicker(
+                        context: dialogContext,
+                        initialDate: fechaSeleccionada,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now(),
+                      );
+                      if (fecha != null) {
+                        setDialogState(() => fechaSeleccionada = fecha);
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(border: Border.all(color: SubliriumColors.border), borderRadius: BorderRadius.circular(8)),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.calendar_today, size: 18),
+                          const SizedBox(width: 8),
+                          Text('${fechaSeleccionada.day}/${fechaSeleccionada.month}/${fechaSeleccionada.year}'),
+                          const Spacer(),
+                          const Icon(Icons.arrow_drop_down),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: cantidadController,
+                    decoration: const InputDecoration(labelText: 'Cantidad', border: OutlineInputBorder()),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    onChanged: (_) => setDialogState(() {}),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Text('Precio por unidad', style: TextStyle(fontSize: 12)),
+                      const Spacer(),
+                      Switch(
+                        value: precioPorUnidad,
+                        onChanged: (v) => setDialogState(() => precioPorUnidad = v),
+                        activeColor: SubliriumColors.cyan,
+                      ),
+                      Text(precioPorUnidad ? 'x1' : 'Total', style: const TextStyle(fontSize: 12)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: precioController,
+                    decoration: InputDecoration(
+                      labelText: precioPorUnidad ? 'Precio unitario' : 'Precio total',
+                      prefixText: '\$ ',
+                      border: const OutlineInputBorder(),
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d,.]'))],
+                    onChanged: (value) {
+                      final parsed = _parsePrice(value);
+                      if (parsed != value) {
+                        precioController.value = TextEditingValue(text: parsed, selection: TextSelection.collapsed(offset: parsed.length));
+                      }
+                      setDialogState(() {});
+                    },
+                  ),
+                  Container(
+                    margin: const EdgeInsets.only(top: 12),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: SubliriumColors.stockOkBg, borderRadius: BorderRadius.circular(8)),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Total:', style: TextStyle(fontWeight: FontWeight.w900)),
+                        Text('\$${total.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: SubliriumColors.stockOkText)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: vendedorController,
+                    decoration: const InputDecoration(labelText: 'Vendido a (cliente)', border: OutlineInputBorder()),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: observacionesController,
+                    decoration: const InputDecoration(labelText: 'Observaciones (opcional)', border: OutlineInputBorder()),
+                    maxLines: 2,
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: cantidadController,
-                decoration: const InputDecoration(labelText: 'Cantidad', border: OutlineInputBorder()),
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: vendedorController,
-                decoration: const InputDecoration(labelText: 'Vendido a', border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: observacionesController,
-                decoration: const InputDecoration(labelText: 'Observaciones', border: OutlineInputBorder()),
-                maxLines: 2,
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancelar')),
+              Container(
+                decoration: BoxDecoration(color: SubliriumColors.stockOkText, borderRadius: BorderRadius.circular(8)),
+                child: ElevatedButton(
+                  onPressed: () async {
+                    final cantidadVenta = int.tryParse(cantidadController.text) ?? 1;
+                    final precioText = _parsePrice(precioController.text);
+                    final precioUnit = double.tryParse(precioText) ?? 0;
+
+                    if (cantidadVenta <= 0 || cantidadVenta > producto.cantidad) {
+                      ScaffoldMessenger.of(dialogContext).showSnackBar(SnackBar(content: Text('Cantidad inválida. Máximo disponible: ${producto.cantidad}')));
+                      return;
+                    }
+                    if (precioUnit <= 0) {
+                      ScaffoldMessenger.of(dialogContext).showSnackBar(const SnackBar(content: Text('Ingrese un precio válido')));
+                      return;
+                    }
+
+                    final venta = Venta(
+                      productoId: producto.id!,
+                      cantidad: cantidadVenta,
+                      precioUnitario: precioUnit,
+                      total: total,
+                      fechaVenta: fechaSeleccionada,
+                      vendidoA: vendedorController.text.trim().isEmpty ? null : vendedorController.text.trim(),
+                      observaciones: observacionesController.text.trim().isEmpty ? null : observacionesController.text.trim(),
+                    );
+
+                    try {
+                      await _apiService.createVenta(venta);
+                      final productoActualizado = producto.copyWith(cantidad: producto.cantidad - cantidadVenta, fechaActualizacion: DateTime.now());
+                      await _apiService.updateProducto(productoActualizado);
+                      _loadProductos();
+                      if (mounted) Navigator.pop(dialogContext);
+                      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Vendido: $cantidadVenta unidad(es) por \$${total.toStringAsFixed(2)}')));
+                    } catch (e) {
+                      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent),
+                  child: const Text('Registrar Venta', style: TextStyle(color: Colors.white)),
+                ),
               ),
             ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final cantidadVenta = int.tryParse(cantidadController.text.trim()) ?? 0;
-              if (cantidadVenta <= 0 || cantidadVenta > producto.cantidad) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Cantidad inválida. Máximo disponible: ${producto.cantidad}')),
-                );
-                return;
-              }
-              final venta = Venta(
-                productoId: producto.id!,
-                cantidad: cantidadVenta,
-                precioUnitario: producto.precio ?? 0,
-                total: (producto.precio ?? 0) * cantidadVenta,
-                fechaVenta: DateTime.now(),
-                vendidoA: vendedorController.text.trim().isEmpty ? null : vendedorController.text.trim(),
-                observaciones: observacionesController.text.trim().isEmpty ? null : observacionesController.text.trim(),
-              );
-              try {
-                await _apiService.createVenta(venta);
-                await _apiService.updateProducto(producto.copyWith(
-                  cantidad: producto.cantidad - cantidadVenta,
-                  fechaActualizacion: DateTime.now(),
-                ));
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Venta registrada'), backgroundColor: SubliriumColors.stockOkText),
-                );
-                _loadProductos();
-                if (mounted) Navigator.pop(context);
-              } catch (e) {
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-              }
-            },
-            child: const Text('Registrar Venta'),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -498,6 +581,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
                     const SizedBox(height: 8),
                     DropdownButtonFormField<Proveedor?>(
                       value: _proveedorSeleccionadoFiltro,
+                      style: const TextStyle(color: Colors.black),
                       decoration: InputDecoration(
                         labelText: 'Filtrar por proveedor',
                         labelStyle: const TextStyle(color: Colors.black),
@@ -505,8 +589,8 @@ class _ProductosScreenState extends State<ProductosScreen> {
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       ),
                       items: [
-                        const DropdownMenuItem<Proveedor?>(value: null, child: Text('Todos los proveedores')),
-                        ..._proveedores.map((p) => DropdownMenuItem(value: p, child: Text(p.nombre))),
+                        const DropdownMenuItem<Proveedor?>(value: null, child: Text('Todos los proveedores', style: TextStyle(color: Colors.white))),
+                        ..._proveedores.map((p) => DropdownMenuItem(value: p, child: Text(p.nombre, style: const TextStyle(color: Colors.white)))),
                       ],
                       onChanged: (value) => setState(() {
                         _proveedorSeleccionadoFiltro = value;
