@@ -5,6 +5,7 @@ import '../config/app_theme.dart';
 import 'productos_screen.dart';
 import 'resumen_screen.dart';
 import 'tabla_precios_screen.dart';
+import '../main.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -226,6 +227,18 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           actions: [
+            ValueListenableBuilder<ThemeMode>(
+              valueListenable: themeNotifier,
+              builder: (_, mode, __) {
+                return Switch(
+                  value: mode == ThemeMode.dark,
+                  activeColor: SubliriumColors.cyan,
+                  onChanged: (value) {
+                    themeNotifier.value = value ? ThemeMode.dark : ThemeMode.light;
+                  },
+                );
+              },
+            ),
             Padding(
               padding: const EdgeInsets.only(right: 16),
               child: Container(
@@ -315,12 +328,12 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Categorías',
                   style: TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: 12,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onBackground,
                   ),
                 ),
                 Text(

@@ -406,12 +406,12 @@ class _ResumenScreenState extends State<ResumenScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'ESTADÍSTICAS GENERALES',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w900,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onBackground,
                         letterSpacing: 1,
                       ),
                     ),
@@ -462,12 +462,12 @@ class _ResumenScreenState extends State<ResumenScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'REGISTRO DE VENTAS',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w900,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onBackground,
                         letterSpacing: 1,
                       ),
                     ),
@@ -510,12 +510,12 @@ class _ResumenScreenState extends State<ResumenScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'RESUMEN DE INVENTARIO',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w900,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onBackground,
                         letterSpacing: 1,
                       ),
                     ),

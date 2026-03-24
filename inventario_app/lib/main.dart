@@ -3,6 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/screens.dart';
 import 'config/app_theme.dart';
 
+final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.system);
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -19,13 +21,18 @@ class InventarioApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Sublirium Inventario',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme(),
-      darkTheme: AppTheme.darkTheme(),
-      themeMode: ThemeMode.system,
-      home: const HomeScreen(),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeNotifier,
+      builder: (_, ThemeMode currentMode, __) {
+        return MaterialApp(
+          title: 'Sublirium Inventario',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme(),
+          darkTheme: AppTheme.darkTheme(),
+          themeMode: currentMode,
+          home: const HomeScreen(),
+        );
+      },
     );
   }
 }
