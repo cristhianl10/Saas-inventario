@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
 import '../config/app_theme.dart';
+import '../utils/pdf_helper.dart';
 
 class TablaPreciosScreen extends StatefulWidget {
   const TablaPreciosScreen({super.key});
@@ -643,7 +644,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                 Expanded(
                   flex: 2,
                   child: Text(
-                    'Cantidad',
+                    'Rango de cantidad',
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w900,
@@ -833,33 +834,19 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
   }
 
   Future<void> _generarPdf() async {
+    await PdfHelper.loadLogo();
     final pdf = pw.Document();
     final fecha = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
 
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
+        header: (context) => PdfHelper.buildHeader(
+          title: 'Tabla de Precios',
+          subtitle: 'Fecha: $fecha',
+        ),
+        footer: (context) => PdfHelper.buildFooter(),
         build: (context) => [
-          pw.Header(
-            level: 0,
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text(
-                  'Sublirium - Tabla de Precios',
-                  style: pw.TextStyle(
-                    fontSize: 24,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-                pw.SizedBox(height: 4),
-                pw.Text(
-                  'Fecha de descarga: $fecha',
-                  style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey700),
-                ),
-              ],
-            ),
-          ),
           pw.SizedBox(height: 20),
           for (final categoria in _categorias.where((c) => _productos.any((p) => p.categoriaId == c.id)))
             pw.Column(
@@ -903,7 +890,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                                 children: [
                                   pw.Expanded(
                                     child: pw.Text(
-                                      'Cantidad',
+                                      'Rango de cantidad',
                                       style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
                                     ),
                                   ),

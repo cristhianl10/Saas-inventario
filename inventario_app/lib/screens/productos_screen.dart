@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
 import '../config/app_theme.dart';
+import '../utils/pdf_helper.dart';
 
 String _parsePrice(String value) {
   if (value.isEmpty) return value;
@@ -1025,6 +1026,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
   }
 
   Future<void> _generarPdfProductos() async {
+    await PdfHelper.loadLogo();
     final pdf = pw.Document();
     final fecha = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
     final productosAExportar = widget.categoria != null
@@ -1034,34 +1036,14 @@ class _ProductosScreenState extends State<ProductosScreen> {
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
+        header: (context) => PdfHelper.buildHeader(
+          title: 'Inventario de Productos',
+          subtitle: widget.categoria != null
+              ? 'Categoría: ${widget.categoria!.nombre}'
+              : 'Todos los productos',
+        ),
+        footer: (context) => PdfHelper.buildFooter(),
         build: (context) => [
-          pw.Header(
-            level: 0,
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text(
-                  'Sublirium - Inventario',
-                  style: pw.TextStyle(
-                    fontSize: 24,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-                pw.SizedBox(height: 4),
-                pw.Text(
-                  'Fecha de descarga: $fecha',
-                  style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey700),
-                ),
-                pw.SizedBox(height: 4),
-                pw.Text(
-                  widget.categoria != null
-                      ? 'Categoría: ${widget.categoria!.nombre}'
-                      : 'Todos los productos',
-                  style: const pw.TextStyle(fontSize: 14),
-                ),
-              ],
-            ),
-          ),
           pw.SizedBox(height: 20),
           if (widget.categoria == null) ...[
             for (final categoria in _categorias.where((c) => productosAExportar.any((p) => p.categoriaId == c.id)))

@@ -3,6 +3,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
 import '../models/models.dart';
 import '../config/app_theme.dart';
+import 'pdf_helper.dart';
 
 class PdfTablaPreciosBuilder {
   static Future<void> generateAndDownload({
@@ -11,6 +12,7 @@ class PdfTablaPreciosBuilder {
     required Map<int, List<PrecioTarifa>> tarifasPorProducto,
     Function(String)? onSave,
   }) async {
+    await PdfHelper.loadLogo();
     final pdf = pw.Document();
     final fecha = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
 
@@ -18,8 +20,11 @@ class PdfTablaPreciosBuilder {
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(32),
-        header: (context) => _buildHeader(fecha),
-        footer: (context) => _buildFooter(context),
+        header: (context) => PdfHelper.buildHeader(
+          title: 'Tabla de Precios',
+          subtitle: 'Fecha: $fecha',
+        ),
+        footer: (context) => PdfHelper.buildFooter(),
         build: (context) => _buildContent(categorias, productos, tarifasPorProducto),
       ),
     );
@@ -30,77 +35,6 @@ class PdfTablaPreciosBuilder {
     if (onSave != null) {
       onSave(fileName);
     }
-  }
-
-  static pw.Widget _buildHeader(String fecha) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.only(bottom: 16),
-      decoration: const pw.BoxDecoration(
-        border: pw.Border(bottom: pw.BorderSide(color: PdfColors.cyan, width: 2)),
-      ),
-      child: pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-        children: [
-          pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text(
-                'SUBLIRIUM',
-                style: pw.TextStyle(
-                  fontSize: 28,
-                  fontWeight: pw.FontWeight.bold,
-                  color: PdfColors.cyan700,
-                ),
-              ),
-              pw.SizedBox(height: 4),
-              pw.Text(
-                'Tabla de Precios',
-                style: pw.TextStyle(
-                  fontSize: 14,
-                  fontWeight: pw.FontWeight.normal,
-                  color: PdfColors.grey600,
-                ),
-              ),
-            ],
-          ),
-          pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.end,
-            children: [
-              pw.Text(
-                'Fecha de descarga',
-                style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey500),
-              ),
-              pw.Text(
-                fecha,
-                style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  static pw.Widget _buildFooter(pw.Context context) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.only(top: 8),
-      decoration: const pw.BoxDecoration(
-        border: pw.Border(top: pw.BorderSide(color: PdfColors.grey300)),
-      ),
-      child: pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-        children: [
-          pw.Text(
-            'Generado por Sublirium App',
-            style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey400),
-          ),
-          pw.Text(
-            'Página ${context.pageNumber} de ${context.pagesCount}',
-            style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey400),
-          ),
-        ],
-      ),
-    );
   }
 
   static List<pw.Widget> _buildContent(
@@ -211,7 +145,7 @@ class PdfTablaPreciosBuilder {
             pw.Padding(
               padding: const pw.EdgeInsets.all(6),
               child: pw.Text(
-                'Cantidad',
+                'Rango de cantidad',
                 style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
               ),
             ),
