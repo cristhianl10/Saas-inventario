@@ -24,11 +24,19 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
   Categoria? _categoriaSeleccionada;
   Producto? _productoSeleccionado;
   bool _isLoading = true;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -75,10 +83,40 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
   }
 
   List<Producto> get _productosFiltrados {
-    if (_categoriaSeleccionada == null) return _productos;
-    return _productos
-        .where((p) => p.categoriaId == _categoriaSeleccionada!.id)
-        .toList();
+    var productos = _productos;
+    
+    if (_categoriaSeleccionada != null) {
+      productos = productos.where((p) => p.categoriaId == _categoriaSeleccionada!.id).toList();
+    }
+    
+    if (_searchQuery.isNotEmpty) {
+      productos = productos.where((p) => 
+        p.nombre.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+        (p.descripcion?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false)
+      ).toList();
+    }
+    
+    return productos;
+  }
+
+  List<Producto> get _productosAgrupados {
+    if (_productoSeleccionado != null) {
+      return [_productoSeleccionado!];
+    }
+    
+    var productos = _productosFiltrados;
+    
+    if (_categoriaSeleccionada != null) {
+      productos = productos.where((p) => p.categoriaId == _categoriaSeleccionada!.id).toList();
+    }
+    
+    productos.sort((a, b) {
+      final catA = _categorias.where((c) => c.id == a.categoriaId).firstOrNull?.nombre ?? '';
+      final catB = _categorias.where((c) => c.id == b.categoriaId).firstOrNull?.nombre ?? '';
+      return catA.compareTo(catB);
+    });
+    
+    return productos;
   }
 
   List<PrecioTarifa> get _tarifasDelProducto {
@@ -426,6 +464,23 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      TextField(
+                        controller: _searchController,
+                        onChanged: (value) => setState(() => _searchQuery = value),
+                        decoration: InputDecoration(
+                          hintText: 'Buscar producto...',
+                          hintStyle: TextStyle(color: Colors.grey[500]),
+                          prefixIcon: const Icon(Icons.search, color: SubliriumColors.cyan),
+                          filled: true,
+                          fillColor: SubliriumColors.crema,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: SubliriumColors.border),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
                       const Text(
                         'Filtros',
                         style: TextStyle(
@@ -503,19 +558,19 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                   ),
                 ),
                 Expanded(
-                  child: _productoSeleccionado == null
+                  child: _productosAgrupados.isEmpty
                       ? Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                Icons.table_chart_outlined,
+                                Icons.search_off,
                                 size: 64,
                                 color: Colors.grey[400],
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                'Selecciona un producto',
+                                'Sin resultados',
                                 style: TextStyle(
                                   color: Colors.grey[600],
                                   fontSize: 16,
@@ -524,14 +579,16 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                             ],
                           ),
                         )
-                      : ListView(
-                          padding: const EdgeInsets.all(12),
-                          children: [
-                            _buildProductoCard(_productoSeleccionado!),
-                            const SizedBox(height: 12),
-                            _buildTablaPrecios(),
-                          ],
-                        ),
+                      : _productoSeleccionado == null
+                          ? _buildTodosLosProductos()
+                          : ListView(
+                              padding: const EdgeInsets.all(12),
+                              children: [
+                                _buildProductoCard(_productoSeleccionado!),
+                                const SizedBox(height: 12),
+                                _buildTablaPrecios(),
+                              ],
+                            ),
                 ),
               ],
             ),
@@ -1007,5 +1064,152 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
       return '1 - $maximoBase';
     }
     return '1';
+  }
+
+  Widget _buildTodosLosProductos() {
+    final Map<int, List<Producto>> productosPorCategoria = {};
+    
+    for (final producto in _productosAgrupados) {
+      productosPorCategoria.putIfAbsent(producto.categoriaId, () => []).add(producto);
+    }
+    
+    final categoriasOrdenadas = _categorias
+        .where((c) => productosPorCategoria.containsKey(c.id))
+        .toList();
+    
+    return ListView.builder(
+      padding: const EdgeInsets.all(12),
+      itemCount: categoriasOrdenadas.length,
+      itemBuilder: (context, index) {
+        final categoria = categoriasOrdenadas[index];
+        final productos = productosPorCategoria[categoria.id]!;
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                gradient: SubliriumColors.headerGradient,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                categoria.nombre,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...productos.map((producto) => _buildProductoItem(producto)),
+            const SizedBox(height: 16),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildProductoItem(Producto producto) {
+    final precioBase = producto.precio ?? 0;
+    final tarifas = _tarifasPorProducto[producto.id] ?? [];
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: SubliriumColors.cardBackground,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: SubliriumColors.border),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+          childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          title: Text(
+            producto.nombre,
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+              color: Colors.black,
+            ),
+          ),
+          subtitle: Text(
+            'Base: \$${precioBase.toStringAsFixed(2)} | ${tarifas.length} rango(s)',
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey[600],
+            ),
+          ),
+          trailing: Icon(Icons.expand_more, color: Colors.grey[600]),
+          children: [
+            if (tarifas.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  'Sin tarifas configuradas',
+                  style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                ),
+              )
+            else
+              ...tarifas.map((tarifa) {
+                final descuento = precioBase > 0
+                    ? ((precioBase - tarifa.precioUnitario) / precioBase * 100).round()
+                    : 0;
+                return Container(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey[200]!),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          tarifa.rangoCantidad,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '\$${tarifa.precioUnitario.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                          color: SubliriumColors.cyan,
+                        ),
+                      ),
+                      if (descuento > 0) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: SubliriumColors.stockOkBg,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            '-$descuento%',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              color: SubliriumColors.stockOkText,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              }),
+          ],
+        ),
+      ),
+    );
   }
 }
