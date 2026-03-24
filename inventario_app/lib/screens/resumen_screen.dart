@@ -174,7 +174,7 @@ class _ResumenScreenState extends State<ResumenScreen> {
                     style: const TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 14,
-                      color: Colors.white,
+                      color: Colors.black,
                     ),
                   ),
                   if (_getDescripcionProducto(venta.productoId) != null)
@@ -269,7 +269,7 @@ class _ResumenScreenState extends State<ResumenScreen> {
                       children: [
                         const Text(
                           'Total:',
-                          style: TextStyle(fontWeight: FontWeight.w900),
+                          style: TextStyle(fontWeight: FontWeight.w900, color: Colors.black),
                         ),
                         Text(
                           '\$${total.toStringAsFixed(2)}',
@@ -411,7 +411,7 @@ class _ResumenScreenState extends State<ResumenScreen> {
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w900,
-                        color: Colors.black,
+                        color: Colors.white,
                         letterSpacing: 1,
                       ),
                     ),
@@ -467,7 +467,7 @@ class _ResumenScreenState extends State<ResumenScreen> {
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w900,
-                        color: Colors.black,
+                        color: Colors.white,
                         letterSpacing: 1,
                       ),
                     ),

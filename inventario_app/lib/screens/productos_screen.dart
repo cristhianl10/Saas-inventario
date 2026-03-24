@@ -108,6 +108,13 @@ class _ProductosScreenState extends State<ProductosScreen> {
         p.proveedorId == _proveedorSeleccionadoFiltro!.id
       ).toList();
     }
+
+    // Ordenar por nombre de categoría
+    productosFiltrados.sort((a, b) {
+      final catA = _categorias.where((c) => c.id == a.categoriaId).firstOrNull?.nombre ?? '';
+      final catB = _categorias.where((c) => c.id == b.categoriaId).firstOrNull?.nombre ?? '';
+      return catA.compareTo(catB);
+    });
     
     _productosFiltrados = productosFiltrados;
   }
@@ -184,7 +191,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
                 children: [
                   Text(producto.nombre, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Colors.white)),
                   if (producto.descripcion != null)
-                    Text(producto.descripcion!, style: const TextStyle(fontSize: 11, color: Colors.black)),
+                    Text(producto.descripcion!, style: const TextStyle(fontSize: 11, color: Colors.white)),
                   const SizedBox(height: 16),
                   GestureDetector(
                     onTap: () async {
@@ -582,6 +589,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
                     DropdownButtonFormField<Proveedor?>(
                       value: _proveedorSeleccionadoFiltro,
                       style: const TextStyle(color: Colors.black),
+                      dropdownColor: Colors.white,
                       decoration: InputDecoration(
                         labelText: 'Filtrar por proveedor',
                         labelStyle: const TextStyle(color: Colors.black),
@@ -589,8 +597,8 @@ class _ProductosScreenState extends State<ProductosScreen> {
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       ),
                       items: [
-                        const DropdownMenuItem<Proveedor?>(value: null, child: Text('Todos los proveedores', style: TextStyle(color: Colors.white))),
-                        ..._proveedores.map((p) => DropdownMenuItem(value: p, child: Text(p.nombre, style: const TextStyle(color: Colors.white)))),
+                        const DropdownMenuItem<Proveedor?>(value: null, child: Text('Todos los proveedores', style: TextStyle(color: Colors.black))),
+                        ..._proveedores.map((p) => DropdownMenuItem(value: p, child: Text(p.nombre, style: const TextStyle(color: Colors.black)))),
                       ],
                       onChanged: (value) => setState(() {
                         _proveedorSeleccionadoFiltro = value;
@@ -614,9 +622,9 @@ class _ProductosScreenState extends State<ProductosScreen> {
             )
           else if (_productosFiltrados.isEmpty)
             SliverFillRemaining(child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Icon(Icons.inventory_2_outlined, size: 48, color: Colors.black.withValues(alpha: 0.5)),
+              Icon(Icons.inventory_2_outlined, size: 48, color: Colors.white.withValues(alpha: 0.7)),
               const SizedBox(height: 8),
-              Text('No hay productos', style: TextStyle(color: Colors.black.withValues(alpha: 0.5))),
+              Text('No hay productos', style: TextStyle(color: Colors.white.withValues(alpha: 0.7))),
             ])))
           else
             SliverPadding(
@@ -624,10 +632,9 @@ class _ProductosScreenState extends State<ProductosScreen> {
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
-                    final producto = _productosFiltrados[index];
-                    return _buildProductoCard(producto);
+                    return _buildProductosAgrupados();
                   },
-                  childCount: _productosFiltrados.length,
+                  childCount: 1,
                 ),
               ),
             ),
@@ -638,6 +645,51 @@ class _ProductosScreenState extends State<ProductosScreen> {
         backgroundColor: SubliriumColors.cyan,
         child: const Icon(Icons.add, color: Colors.white),
       ),
+    );
+  }
+
+  Widget _buildProductosAgrupados() {
+    final Map<int, List<Producto>> productosPorCategoria = {};
+    for (final producto in _productosFiltrados) {
+      productosPorCategoria.putIfAbsent(producto.categoriaId, () => []).add(producto);
+    }
+
+    final categoriasOrdenadas = _categorias
+        .where((c) => productosPorCategoria.containsKey(c.id))
+        .toList();
+
+    // Include products with unknown categories
+    final categoriaIdsConocidos = categoriasOrdenadas.map((c) => c.id).toSet();
+    final sinCategoria = _productosFiltrados.where((p) => !categoriaIdsConocidos.contains(p.categoriaId)).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ...categoriasOrdenadas.map((categoria) {
+          final productos = productosPorCategoria[categoria.id]!;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  gradient: SubliriumColors.headerGradient,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  categoria.nombre,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14),
+                ),
+              ),
+              const SizedBox(height: 8),
+              ...productos.map((p) => _buildProductoCard(p)),
+              const SizedBox(height: 8),
+            ],
+          );
+        }),
+        if (sinCategoria.isNotEmpty) ...sinCategoria.map((p) => _buildProductoCard(p)),
+      ],
     );
   }
 

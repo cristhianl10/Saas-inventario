@@ -521,7 +521,11 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                               },
                             ),
                           ),
-                          const SizedBox(width: 12),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
                           Expanded(
                             child: DropdownButtonFormField<Producto>(
                               value: _productoSeleccionado,
@@ -998,24 +1002,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                                       ],
                                     ),
                                   ),
-                              pw.SizedBox(height: 8),
-                              pw.Container(
-                                padding: const pw.EdgeInsets.all(6),
-                                color: PdfColors.cyan50,
-                                child: pw.Row(
-                                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    pw.Text(
-                                      'VALOR TOTAL INVENTARIO',
-                                      style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
-                                    ),
-                                    pw.Text(
-                                      '\$${_calcularTotalProducto(producto).toStringAsFixed(2)}',
-                                      style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.cyan700),
-                                    ),
-                                  ],
-                                ),
-                              ),
+
                             ],
                           ),
                         ),
