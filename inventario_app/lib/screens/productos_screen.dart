@@ -182,7 +182,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(producto.nombre, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Colors.black)),
+                  Text(producto.nombre, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Colors.white)),
                   if (producto.descripcion != null)
                     Text(producto.descripcion!, style: const TextStyle(fontSize: 11, color: Colors.black)),
                   const SizedBox(height: 16),
@@ -258,7 +258,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Total:', style: TextStyle(fontWeight: FontWeight.w900)),
+                        const Text('Total:', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.black)),
                         Text('\$${total.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: SubliriumColors.stockOkText)),
                       ],
                     ),
