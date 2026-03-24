@@ -198,4 +198,43 @@ class ApiService {
         .delete()
         .eq('producto_id', productoId);
   }
+
+  // ==================== PROVEEDORES ====================
+
+  Future<List<Proveedor>> getProveedores() async {
+    final response = await _client
+        .from('proveedores')
+        .select()
+        .order('nombre');
+    
+    return response.map((json) => Proveedor.fromJson(json)).toList();
+  }
+
+  Future<Proveedor> createProveedor(Proveedor proveedor) async {
+    final response = await _client
+        .from('proveedores')
+        .insert(proveedor.toJson())
+        .select()
+        .single();
+    
+    return Proveedor.fromJson(response);
+  }
+
+  Future<Proveedor> updateProveedor(Proveedor proveedor) async {
+    final response = await _client
+        .from('proveedores')
+        .update(proveedor.toJson())
+        .eq('id', proveedor.id!)
+        .select()
+        .single();
+    
+    return Proveedor.fromJson(response);
+  }
+
+  Future<void> deleteProveedor(int id) async {
+    await _client
+        .from('proveedores')
+        .delete()
+        .eq('id', id);
+  }
 }
