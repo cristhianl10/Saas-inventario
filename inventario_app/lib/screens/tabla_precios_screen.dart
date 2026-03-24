@@ -430,6 +430,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                         style: TextStyle(
                           fontWeight: FontWeight.w900,
                           fontSize: 12,
+                          color: Colors.black,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -680,14 +681,14 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                   flex: 2,
                   child: Row(
                     children: [
-                      Text(
-                        '1',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
-                          color: Colors.grey[600],
+                        Text(
+                          '1',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                            color: Colors.black,
+                          ),
                         ),
-                      ),
                       const SizedBox(width: 4),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -756,6 +757,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                           style: const TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
+                            color: Colors.black,
                           ),
                         ),
                         if (descuento > 0) ...[
@@ -918,7 +920,10 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                               pw.Row(
                                 children: [
                                   pw.Expanded(
-                                    child: pw.Text('1', style: const pw.TextStyle(fontSize: 9)),
+                                    child: pw.Text(
+                                      _getRangoBaseProducto(producto),
+                                      style: const pw.TextStyle(fontSize: 9),
+                                    ),
                                   ),
                                   pw.Expanded(
                                     child: pw.Text(
@@ -996,5 +1001,24 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
       }
     }
     return total;
+  }
+
+  String _getRangoBaseProducto(Producto producto) {
+    final tarifas = _tarifasPorProducto[producto.id];
+    if (tarifas == null || tarifas.isEmpty) {
+      return '1';
+    }
+    tarifas.sort((a, b) => a.cantidadMin.compareTo(b.cantidadMin));
+    int? maximoBase;
+    for (final tarifa in tarifas) {
+      if (tarifa.cantidadMin > 1) {
+        maximoBase = tarifa.cantidadMin - 1;
+        break;
+      }
+    }
+    if (maximoBase != null) {
+      return '1 - $maximoBase';
+    }
+    return '1';
   }
 }
