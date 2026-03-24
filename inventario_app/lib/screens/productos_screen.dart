@@ -8,6 +8,7 @@ import '../models/models.dart';
 import '../services/api_service.dart';
 import '../config/app_theme.dart';
 import '../utils/pdf_helper.dart';
+import 'tabla_precios_screen.dart';
 
 String _parsePrice(String value) {
   if (value.isEmpty) return value;
@@ -43,11 +44,19 @@ class _ProductosScreenState extends State<ProductosScreen> {
   bool _isLoading = true;
   String? _error;
   FiltroStock _filtroActual = FiltroStock.todos;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _loadProductos();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadProductos() async {
@@ -80,21 +89,32 @@ class _ProductosScreenState extends State<ProductosScreen> {
   }
 
   void _aplicarFiltro() {
+    var productosFiltrados = List<Producto>.from(_productos);
+    
     switch (_filtroActual) {
       case FiltroStock.todos:
-        _productosFiltrados = List.from(_productos);
+        productosFiltrados = List.from(_productos);
         break;
       case FiltroStock.enStock:
-        _productosFiltrados = _productos
+        productosFiltrados = _productos
             .where((p) => p.cantidad > 0)
             .toList();
         break;
       case FiltroStock.sinStock:
-        _productosFiltrados = _productos
+        productosFiltrados = _productos
             .where((p) => p.cantidad == 0)
             .toList();
         break;
     }
+    
+    if (_searchQuery.isNotEmpty) {
+      productosFiltrados = productosFiltrados.where((p) =>
+        p.nombre.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+        (p.descripcion?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false)
+      ).toList();
+    }
+    
+    _productosFiltrados = productosFiltrados;
   }
 
   Future<void> _deleteProducto(Producto producto) async {
@@ -685,6 +705,29 @@ class _ProductosScreenState extends State<ProductosScreen> {
                   ),
                   if (esVistaGlobal) ...[
                     const SizedBox(height: 12),
+                    TextField(
+                      controller: _searchController,
+                      onChanged: (value) {
+                        setState(() {
+                          _searchQuery = value;
+                          _aplicarFiltro();
+                        });
+                      },
+                      style: const TextStyle(color: Colors.black),
+                      decoration: InputDecoration(
+                        hintText: 'Buscar producto...',
+                        hintStyle: TextStyle(color: Colors.grey[500]),
+                        prefixIcon: const Icon(Icons.search, color: SubliriumColors.cyan),
+                        filled: true,
+                        fillColor: SubliriumColors.crema,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: SubliriumColors.border),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     Row(
                       children: [
                         _buildFiltroChip('Todos', FiltroStock.todos),
@@ -887,7 +930,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: const Text(
-                                    'Marcar como vendido',
+                                    'Registrar venta',
                                     style: TextStyle(
                                       fontSize: 9,
                                       fontWeight: FontWeight.w900,
@@ -909,6 +952,27 @@ class _ProductosScreenState extends State<ProductosScreen> {
                                     Icons.edit,
                                     size: 14,
                                     color: SubliriumColors.cyan,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const TablaPreciosScreen()),
+                                  );
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: SubliriumColors.naranja.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Icon(
+                                    Icons.attach_money,
+                                    size: 14,
+                                    color: SubliriumColors.naranja,
                                   ),
                                 ),
                               ),

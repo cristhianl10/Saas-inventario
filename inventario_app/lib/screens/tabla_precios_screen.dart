@@ -467,6 +467,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                       TextField(
                         controller: _searchController,
                         onChanged: (value) => setState(() => _searchQuery = value),
+                        style: const TextStyle(color: Colors.black),
                         decoration: InputDecoration(
                           hintText: 'Buscar producto...',
                           hintStyle: TextStyle(color: Colors.grey[500]),
