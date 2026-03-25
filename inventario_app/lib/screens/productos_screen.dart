@@ -39,18 +39,27 @@ class _ProductosScreenState extends State<ProductosScreen> {
   String? _error;
   FiltroStock _filtroActual = FiltroStock.todos;
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   String _searchQuery = '';
   Proveedor? _proveedorSeleccionadoFiltro;
+  bool _showScrollToTop = false;
 
   @override
   void initState() {
     super.initState();
     _loadProductos();
+    _scrollController.addListener(() {
+      final show = _scrollController.offset > 300;
+      if (show != _showScrollToTop) {
+        setState(() => _showScrollToTop = show);
+      }
+    });
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -180,6 +189,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
           final cantidad = int.tryParse(cantidadController.text) ?? 1;
           final precio = double.tryParse(precioController.text) ?? 0;
           final total = precioPorUnidad ? (cantidad * precio) : precio;
@@ -192,9 +202,9 @@ class _ProductosScreenState extends State<ProductosScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(producto.nombre, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Colors.white)),
+                  Text(producto.nombre, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: isDark ? Colors.white : Colors.black)),
                   if (producto.descripcion != null)
-                    Text(producto.descripcion!, style: const TextStyle(fontSize: 11, color: Colors.white)),
+                    Text(producto.descripcion!, style: TextStyle(fontSize: 11, color: isDark ? Colors.white70 : Colors.black54)),
                   const SizedBox(height: 16),
                   GestureDetector(
                     onTap: () async {
@@ -555,6 +565,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
 
     return Scaffold(
       body: CustomScrollView(
+        controller: _scrollController,
         slivers: [
           SliverAppBar(
             expandedHeight: 90,
@@ -674,10 +685,24 @@ class _ProductosScreenState extends State<ProductosScreen> {
             ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showProductoDialog(),
-        backgroundColor: SubliriumColors.cyan,
-        child: const Icon(Icons.add, color: Colors.white),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_showScrollToTop) ...[
+            FloatingActionButton.small(
+              onPressed: () => _scrollController.animateTo(0, duration: const Duration(milliseconds: 500), curve: Curves.easeInOut),
+              backgroundColor: SubliriumColors.cyan.withValues(alpha: 0.8),
+              child: const Icon(Icons.arrow_upward, color: Colors.white),
+            ),
+            const SizedBox(height: 12),
+          ],
+          FloatingActionButton(
+            heroTag: 'add_product_btn',
+            onPressed: () => _showProductoDialog(),
+            backgroundColor: SubliriumColors.cyan,
+            child: const Icon(Icons.add, color: Colors.white),
+          ),
+        ],
       ),
     );
   }
@@ -811,7 +836,12 @@ class _ProductosScreenState extends State<ProductosScreen> {
               const SizedBox(width: 4),
               GestureDetector(
                 onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const TablaPreciosScreen()));
+                  Navigator.push(context, MaterialPageRoute(
+                    builder: (_) => TablaPreciosScreen(
+                      productoIdInicial: producto.id,
+                      categoriaIdInicial: producto.categoriaId,
+                    ),
+                  ));
                 },
                 child: Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: SubliriumColors.naranja.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(6)), child: const Icon(Icons.attach_money, size: 14, color: SubliriumColors.naranja)),
               ),
@@ -901,16 +931,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
                     child: pw.Text(categoria.nombre, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
                   ),
                   pw.SizedBox(height: 8),
-                  pw.TableHelper.fromTextArray(
-                    headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
-                    cellStyle: const pw.TextStyle(fontSize: 9),
-                    cellAlignments: {0: pw.Alignment.centerLeft, 1: pw.Alignment.centerLeft, 2: pw.Alignment.centerLeft, 3: pw.Alignment.centerRight, 4: pw.Alignment.centerRight},
-                    headers: ['Producto', 'Descripción', 'Proveedor', 'Cantidad', 'Precio Base'],
-                    data: productosAExportar.where((p) => p.categoriaId == categoria.id).map((p) {
-                      final precioBase = _getPrecioBaseProducto(p.id!);
-                      return [p.nombre, p.descripcion ?? '-', _getNombreProveedor(p.proveedorId), p.cantidad.toString(), '\$${precioBase.toStringAsFixed(2)}'];
-                    }).toList(),
-                  ),
+                  _buildProductosTable(productosAExportar.where((p) => p.categoriaId == categoria.id).toList()),
                   pw.SizedBox(height: 8),
                   pw.Container(
                     alignment: pw.Alignment.centerRight,
@@ -928,16 +949,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
               ]),
             ),
           ] else ...[
-            pw.TableHelper.fromTextArray(
-              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
-              cellStyle: const pw.TextStyle(fontSize: 9),
-              cellAlignments: {0: pw.Alignment.centerLeft, 1: pw.Alignment.centerLeft, 2: pw.Alignment.centerLeft, 3: pw.Alignment.centerRight, 4: pw.Alignment.centerRight},
-              headers: ['Producto', 'Descripción', 'Proveedor', 'Cantidad', 'Precio Base'],
-              data: productosAExportar.map((p) {
-                final precioBase = _getPrecioBaseProducto(p.id!);
-                return [p.nombre, p.descripcion ?? '-', _getNombreProveedor(p.proveedorId), p.cantidad.toString(), '\$${precioBase.toStringAsFixed(2)}'];
-              }).toList(),
-            ),
+            _buildProductosTable(productosAExportar),
             pw.SizedBox(height: 8),
             pw.Container(
               padding: const pw.EdgeInsets.all(12),
@@ -960,5 +972,105 @@ class _ProductosScreenState extends State<ProductosScreen> {
 
   double _calcularTotalCategoria(List<Producto> productos) {
     return productos.fold(0.0, (sum, p) => sum + _getPrecioBaseProducto(p.id!) * p.cantidad);
+  }
+
+  pw.Widget _buildProductosTable(List<Producto> productos) {
+    const flexPro = 3.0;
+    const flexCos = 2.0;
+    const flexPrv = 3.0;
+    const flexCant = 2.0; // Increased to avoid wrapping
+    const flexPre = 2.0;
+
+    pw.Widget buildCell(String text, double flex, {bool isHeader = false, bool isRight = false}) {
+      return pw.Expanded(
+        flex: (flex * 10).toInt(),
+        child: pw.Container(
+          padding: const pw.EdgeInsets.all(6),
+          child: pw.Text(
+            text,
+            textAlign: isRight ? pw.TextAlign.right : pw.TextAlign.left,
+            style: pw.TextStyle(
+              fontSize: isHeader ? 10 : 9,
+              fontWeight: isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return pw.Column(
+      children: [
+        // Header Row - Full Bordered
+        pw.Container(
+          decoration: const pw.BoxDecoration(
+            color: PdfColors.grey100,
+            border: pw.Border(
+              top: pw.BorderSide(color: PdfColors.grey300),
+              left: pw.BorderSide(color: PdfColors.grey300),
+              right: pw.BorderSide(color: PdfColors.grey300),
+              bottom: pw.BorderSide(color: PdfColors.grey300),
+            ),
+          ),
+          child: pw.Row(
+            children: [
+              buildCell('Producto', flexPro, isHeader: true),
+              buildCell('Costo', flexCos, isHeader: true, isRight: true),
+              buildCell('Proveedor', flexPrv, isHeader: true),
+              buildCell('Cantidad', flexCant, isHeader: true, isRight: true),
+              buildCell('Precio Base', flexPre, isHeader: true, isRight: true),
+            ],
+          ),
+        ),
+        // Data Rows
+        ...productos.map((p) {
+          final precioBase = _getPrecioBaseProducto(p.id!);
+          return pw.Column(
+            children: [
+              // Main Data Row - Side and Bottom Border
+              pw.Container(
+                decoration: const pw.BoxDecoration(
+                  border: pw.Border(
+                    left: pw.BorderSide(color: PdfColors.grey300),
+                    right: pw.BorderSide(color: PdfColors.grey300),
+                    bottom: pw.BorderSide(color: PdfColors.grey300),
+                  ),
+                ),
+                child: pw.Row(
+                  children: [
+                    buildCell(p.nombre, flexPro),
+                    buildCell('\$${p.costo?.toStringAsFixed(2) ?? "0.00"}', flexCos, isRight: true),
+                    buildCell(_getNombreProveedor(p.proveedorId), flexPrv),
+                    buildCell(p.cantidad.toString(), flexCant, isRight: true),
+                    buildCell('\$${precioBase.toStringAsFixed(2)}', flexPre, isRight: true),
+                  ],
+                ),
+              ),
+              // Description Row - Side and Bottom Border
+              if (p.descripcion != null && p.descripcion!.isNotEmpty)
+                pw.Container(
+                  width: double.infinity,
+                  padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: const pw.BoxDecoration(
+                    color: PdfColors.grey50,
+                    border: pw.Border(
+                      left: pw.BorderSide(color: PdfColors.grey300),
+                      right: pw.BorderSide(color: PdfColors.grey300),
+                      bottom: pw.BorderSide(color: PdfColors.grey300),
+                    ),
+                  ),
+                  child: pw.RichText(
+                    text: pw.TextSpan(
+                      children: [
+                        pw.TextSpan(text: 'Descripción: ', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700)),
+                        pw.TextSpan(text: p.descripcion!, style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          );
+        }),
+      ],
+    );
   }
 }

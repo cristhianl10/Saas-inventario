@@ -10,7 +10,10 @@ import '../config/app_theme.dart';
 import '../utils/pdf_helper.dart';
 
 class TablaPreciosScreen extends StatefulWidget {
-  const TablaPreciosScreen({super.key});
+  final int? productoIdInicial;
+  final int? categoriaIdInicial;
+
+  const TablaPreciosScreen({super.key, this.productoIdInicial, this.categoriaIdInicial});
 
   @override
   State<TablaPreciosScreen> createState() => _TablaPreciosScreenState();
@@ -26,17 +29,29 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
   bool _isLoading = true;
   String? _error;
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   String _searchQuery = '';
+  bool _showScrollToTop = false;
 
   @override
   void initState() {
     super.initState();
+    if (widget.productoIdInicial != null || widget.categoriaIdInicial != null) {
+      _categoriaSeleccionada = Categoria(id: widget.categoriaIdInicial, nombre: '');
+    }
     _loadData();
+    _scrollController.addListener(() {
+      final show = _scrollController.offset > 300;
+      if (show != _showScrollToTop) {
+        setState(() => _showScrollToTop = show);
+      }
+    });
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -188,6 +203,8 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
   }
 
   void _showAgregarTarifaDialog({PrecioTarifa? tarifaEditar}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     // Verificar si ya tiene precio ilimitado (solo al crear nuevo)
     final esIlimitado = _tarifasDelProducto.isEmpty 
         ? false 
@@ -221,7 +238,20 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
         builder: (context, setDialogState) {
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: Text(tarifaEditar != null ? 'Editar precio' : 'Agregar precio'),
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _productoSeleccionado?.nombre ?? 'Producto',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  tarifaEditar != null ? 'Editar precio' : 'Agregar precio',
+                  style: TextStyle(fontSize: 14, color: isDark ? Colors.grey[400] : Colors.grey[600], fontWeight: FontWeight.normal),
+                ),
+              ],
+            ),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -230,7 +260,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: SubliriumColors.cyan.withValues(alpha: 0.1),
+                      color: isDark ? SubliriumColors.cyan.withValues(alpha: 0.2) : SubliriumColors.cyan.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -253,19 +283,22 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                     controller: cantidadMinController,
                     decoration: InputDecoration(
                       labelText: 'Cantidad mínima',
+                      labelStyle: TextStyle(color: isDark ? Colors.white : Colors.black),
                       border: const OutlineInputBorder(),
                       filled: true,
-                      fillColor: Colors.grey[100],
+                      fillColor: isDark ? Colors.grey[800] : Colors.grey[100],
                       helperText: 'Cantidad predefinida por el sistema',
+                      helperStyle: TextStyle(color: isDark ? Colors.white : Colors.black),
                     ),
                     keyboardType: TextInputType.number,
                     enabled: false,
-                    style: TextStyle(color: Colors.grey[600]),
+                    style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Text('Último rango'),
+                      const Text('Último rango', style: TextStyle(fontSize: 13)),
+                      const Spacer(),
                       Switch(
                         value: esIlimitadoActual,
                         onChanged: (value) {
@@ -430,6 +463,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Tabla de Precios'),
@@ -459,9 +493,9 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.wifi_off, size: 48, color: Colors.black),
+                      Icon(Icons.wifi_off, size: 48, color: Colors.black),
                       const SizedBox(height: 8),
-                      const Text('Error de conexión', style: TextStyle(color: Colors.black)),
+                      Text('Error de conexión', style: TextStyle(color: Colors.black)),
                       const SizedBox(height: 8),
                       ElevatedButton(onPressed: _loadData, child: const Text('Reintentar')),
                     ],
@@ -487,7 +521,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                       TextField(
                         controller: _searchController,
                         onChanged: (value) => setState(() => _searchQuery = value),
-                        style: const TextStyle(color: Colors.black),
+                        style: TextStyle(color: Colors.black),
                         decoration: InputDecoration(
                           hintText: 'Buscar producto...',
                           hintStyle: TextStyle(color: Colors.grey[500]),
@@ -502,7 +536,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         'Filtros',
                         style: TextStyle(
                           fontWeight: FontWeight.w900,
@@ -517,20 +551,20 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                             child: DropdownButtonFormField<Categoria>(
                               value: _categoriaSeleccionada,
                               dropdownColor: SubliriumColors.cardBackground,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: 'Categoría',
                                 labelStyle: TextStyle(color: Colors.black),
                                 border: OutlineInputBorder(),
                                 contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               ),
                               items: [
-                                const DropdownMenuItem(
+                                DropdownMenuItem(
                                   value: null,
                                   child: Text('Todas', style: TextStyle(color: Colors.black)),
                                 ),
                                 ..._categorias.map((c) => DropdownMenuItem(
                                       value: c,
-                                      child: Text(c.nombre, style: const TextStyle(color: Colors.black)),
+                                      child: Text(c.nombre, style: TextStyle(color: Colors.black)),
                                     )),
                               ],
                               onChanged: (value) {
@@ -550,14 +584,14 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                             child: DropdownButtonFormField<Producto>(
                               value: _productoSeleccionado,
                               dropdownColor: SubliriumColors.cardBackground,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: 'Producto',
                                 labelStyle: TextStyle(color: Colors.black),
                                 border: OutlineInputBorder(),
                                 contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               ),
                               items: [
-                                const DropdownMenuItem(
+                                DropdownMenuItem(
                                   value: null,
                                   child: Text('Todos', style: TextStyle(color: Colors.black)),
                                 ),
@@ -566,7 +600,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                                       child: Text(
                                         p.nombre,
                                         overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(color: Colors.black),
+                                        style: TextStyle(color: Colors.black),
                                       ),
                                     )),
                               ],
@@ -607,7 +641,8 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                       : _productoSeleccionado == null
                           ? _buildTodosLosProductos()
                           : ListView(
-                              padding: const EdgeInsets.all(12),
+                              controller: _scrollController,
+                              padding: const EdgeInsets.fromLTRB(12, 12, 12, 100),
                               children: [
                                 _buildProductoCard(_productoSeleccionado!),
                                 const SizedBox(height: 12),
@@ -617,13 +652,27 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                 ),
               ],
             ),
-      floatingActionButton: _productoSeleccionado != null
-          ? FloatingActionButton(
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_showScrollToTop) ...[
+            FloatingActionButton.small(
+              heroTag: 'scroll_to_top_tabla_btn',
+              onPressed: () => _scrollController.animateTo(0, duration: const Duration(milliseconds: 500), curve: Curves.easeInOut),
+              backgroundColor: SubliriumColors.cyan.withValues(alpha: 0.8),
+              child: const Icon(Icons.arrow_upward, color: Colors.white),
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (_productoSeleccionado != null)
+            FloatingActionButton(
+              heroTag: 'add_tarifa_btn',
               onPressed: () => _showAgregarTarifaDialog(),
               backgroundColor: SubliriumColors.cyan,
               child: const Icon(Icons.add, color: Colors.white),
-            )
-          : null,
+            ),
+        ],
+      ),
     );
   }
 
@@ -704,6 +753,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
   }
 
   Widget _buildTablaPrecios() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final precioBase = _precioBase;
     final tarifasAdicionales = _tarifasDelProducto;
 
@@ -766,7 +816,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                     children: [
                         Text(
                           '1',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
                             color: Colors.black,
@@ -837,7 +887,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                       children: [
                         Text(
                           tarifa.rangoCantidad,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
                             color: Colors.black,
@@ -1089,7 +1139,8 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
         .toList();
     
     return ListView.builder(
-      padding: const EdgeInsets.all(12),
+      controller: _scrollController,
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 100),
       itemCount: categoriasOrdenadas.length,
       itemBuilder: (context, index) {
         final categoria = categoriasOrdenadas[index];
@@ -1116,7 +1167,6 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
             ),
             const SizedBox(height: 8),
             ...productos.map((producto) => _buildProductoItem(producto)),
-            const SizedBox(height: 16),
           ],
         );
       },
@@ -1124,6 +1174,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
   }
 
   Widget _buildProductoItem(Producto producto) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final precioBase = producto.precio ?? 0;
     final tarifas = _tarifasPorProducto[producto.id] ?? [];
     
@@ -1141,7 +1192,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
           childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
           title: Text(
             producto.nombre,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.w700,
               fontSize: 13,
               color: Colors.black,
@@ -1160,7 +1211,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text(
-                  'Sin tarifas configuradas',
+                  'No tiene tarifa configurada',
                   style: TextStyle(color: Colors.grey[500], fontSize: 12),
                 ),
               )
@@ -1181,7 +1232,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                       Expanded(
                         child: Text(
                           tarifa.rangoCantidad,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 12,
                             color: Colors.black,
@@ -1218,6 +1269,38 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                   ),
                 );
               }),
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: GestureDetector(
+                onTap: () {
+                  final productoMatch = _productosFiltrados.where((p) => p.id == producto.id).firstOrNull ?? producto;
+                  setState(() {
+                    _productoSeleccionado = productoMatch;
+                    _categoriaSeleccionada = _categorias.where((c) => c.id == producto.categoriaId).firstOrNull;
+                  });
+                  _showAgregarTarifaDialog();
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: SubliriumColors.naranja.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: SubliriumColors.naranja.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.add_circle_outline, size: 16, color: SubliriumColors.naranja),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Configurar tarifa',
+                        style: TextStyle(color: SubliriumColors.naranja, fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),

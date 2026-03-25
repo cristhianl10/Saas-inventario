@@ -231,7 +231,15 @@ class ApiService {
     return Proveedor.fromJson(response);
   }
 
+  Future<void> detachProductosFromProveedor(int proveedorId) async {
+    await _client
+        .from('productos')
+        .update({'proveedor_id': null})
+        .eq('proveedor_id', proveedorId);
+  }
+
   Future<void> deleteProveedor(int id) async {
+    await detachProductosFromProveedor(id);
     await _client
         .from('proveedores')
         .delete()

@@ -23,6 +23,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   String? _error;
   int _currentIndex = 0;
+  final ScrollController _scrollController = ScrollController();
+  bool _showScrollToTop = false;
 
   @override
   void initState() {
@@ -33,11 +35,18 @@ class _HomeScreenState extends State<HomeScreen> {
         _searchQuery = _searchController.text.toLowerCase();
       });
     });
+    _scrollController.addListener(() {
+      final show = _scrollController.offset > 300;
+      if (show != _showScrollToTop) {
+        setState(() => _showScrollToTop = show);
+      }
+    });
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -176,8 +185,20 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: _currentIndex == 0 ? _buildCategorias() : _buildOtros(),
       bottomNavigationBar: _buildBottomNav(),
-      floatingActionButton: _currentIndex == 0
-          ? Container(
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_showScrollToTop) ...[
+            FloatingActionButton.small(
+              heroTag: 'scroll_to_top_home_btn',
+              onPressed: () => _scrollController.animateTo(0, duration: const Duration(milliseconds: 500), curve: Curves.easeInOut),
+              backgroundColor: SubliriumColors.cyan.withValues(alpha: 0.8),
+              child: const Icon(Icons.arrow_upward, color: Colors.white),
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (_currentIndex == 0)
+            Container(
               decoration: BoxDecoration(
                 gradient: SubliriumColors.fabGradient,
                 borderRadius: BorderRadius.circular(16),
@@ -190,6 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               child: FloatingActionButton(
+                heroTag: 'add_cat_home_btn',
                 onPressed: () => _showCategoriaDialog(),
                 backgroundColor: Colors.transparent,
                 elevation: 0,
@@ -198,13 +220,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: SubliriumColors.cardBackground,
                 ),
               ),
-            )
-          : null,
+            ),
+        ],
+      ),
     );
   }
 
   Widget _buildCategorias() {
     return CustomScrollView(
+      controller: _scrollController,
       slivers: [
         SliverAppBar(
           expandedHeight: 100,
@@ -230,17 +254,12 @@ class _HomeScreenState extends State<HomeScreen> {
             ValueListenableBuilder<ThemeMode>(
               valueListenable: themeNotifier,
               builder: (_, mode, __) {
-                return Row(
-                  children: [
-                    const Text('Dark mode', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                    Switch(
-                      value: mode == ThemeMode.dark,
-                      activeColor: SubliriumColors.cyan,
-                      onChanged: (value) {
-                        themeNotifier.value = value ? ThemeMode.dark : ThemeMode.light;
-                      },
-                    ),
-                  ],
+                return Switch(
+                  value: mode == ThemeMode.dark,
+                  activeColor: SubliriumColors.cyan,
+                  onChanged: (value) {
+                    themeNotifier.value = value ? ThemeMode.dark : ThemeMode.light;
+                  },
                 );
               },
             ),

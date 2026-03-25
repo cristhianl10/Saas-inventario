@@ -16,11 +16,25 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
   Map<int, int> _productosCount = {};
   bool _isLoading = true;
   String? _error;
+  final ScrollController _scrollController = ScrollController();
+  bool _showScrollToTop = false;
 
   @override
   void initState() {
     super.initState();
     _loadCategorias();
+    _scrollController.addListener(() {
+      final show = _scrollController.offset > 300;
+      if (show != _showScrollToTop) {
+        setState(() => _showScrollToTop = show);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadCategorias() async {
@@ -158,9 +172,24 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Categorías'), centerTitle: true),
       body: _buildBody(),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showCategoriaDialog(),
-        child: const Icon(Icons.add),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_showScrollToTop) ...[
+            FloatingActionButton.small(
+              heroTag: 'scroll_to_top_cat_btn',
+              onPressed: () => _scrollController.animateTo(0, duration: const Duration(milliseconds: 500), curve: Curves.easeInOut),
+              backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+              child: const Icon(Icons.arrow_upward, color: Colors.white),
+            ),
+            const SizedBox(height: 12),
+          ],
+          FloatingActionButton(
+            heroTag: 'add_cat_btn',
+            onPressed: () => _showCategoriaDialog(),
+            child: const Icon(Icons.add),
+          ),
+        ],
       ),
     );
   }
@@ -227,6 +256,7 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
     return RefreshIndicator(
       onRefresh: _loadCategorias,
       child: ListView.builder(
+        controller: _scrollController,
         padding: const EdgeInsets.all(16),
         itemCount: _categorias.length,
         itemBuilder: (context, index) {

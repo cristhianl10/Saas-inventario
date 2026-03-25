@@ -32,11 +32,25 @@ class _ResumenScreenState extends State<ResumenScreen> {
   List<Categoria> _categorias = [];
   List<Venta> _ventas = [];
   bool _isLoading = true;
+  final ScrollController _scrollController = ScrollController();
+  bool _showScrollToTop = false;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    _scrollController.addListener(() {
+      final show = _scrollController.offset > 300;
+      if (show != _showScrollToTop) {
+        setState(() => _showScrollToTop = show);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -382,6 +396,7 @@ class _ResumenScreenState extends State<ResumenScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: CustomScrollView(
+        controller: _scrollController,
         slivers: [
           SliverAppBar(
             expandedHeight: 100,
@@ -549,6 +564,15 @@ class _ResumenScreenState extends State<ResumenScreen> {
           ],
         ],
       ),
+      floatingActionButton: _showScrollToTop
+          ? FloatingActionButton.small(
+              onPressed: () => _scrollController.animateTo(0,
+                  duration: const Duration(milliseconds: 500),
+                  curve: Curves.easeInOut),
+              backgroundColor: SubliriumColors.cyan.withValues(alpha: 0.8),
+              child: const Icon(Icons.arrow_upward, color: Colors.white),
+            )
+          : null,
     );
   }
 
