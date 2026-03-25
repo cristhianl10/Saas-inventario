@@ -230,12 +230,17 @@ class _HomeScreenState extends State<HomeScreen> {
             ValueListenableBuilder<ThemeMode>(
               valueListenable: themeNotifier,
               builder: (_, mode, __) {
-                return Switch(
-                  value: mode == ThemeMode.dark,
-                  activeColor: SubliriumColors.cyan,
-                  onChanged: (value) {
-                    themeNotifier.value = value ? ThemeMode.dark : ThemeMode.light;
-                  },
+                return Row(
+                  children: [
+                    const Text('Dark mode', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                    Switch(
+                      value: mode == ThemeMode.dark,
+                      activeColor: SubliriumColors.cyan,
+                      onChanged: (value) {
+                        themeNotifier.value = value ? ThemeMode.dark : ThemeMode.light;
+                      },
+                    ),
+                  ],
                 );
               },
             ),
@@ -338,8 +343,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 Text(
                   '${_categoriasFiltradas.length} categorías',
-                  style: const TextStyle(
-                    color: Colors.black,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onBackground,
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
@@ -564,6 +569,12 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: active
+              ? BoxDecoration(
+                  color: SubliriumColors.navActiveGreenLight,
+                  borderRadius: BorderRadius.circular(12),
+                )
+              : null,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -571,7 +582,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon,
                 style: TextStyle(
                   fontSize: 18,
-                  color: active ? SubliriumColors.cyan : Colors.black,
+                  color: active ? SubliriumColors.navActiveGreen : Colors.black,
                 ),
               ),
               const SizedBox(height: 2),
@@ -580,7 +591,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: TextStyle(
                   fontSize: 9,
                   fontWeight: FontWeight.w800,
-                  color: active ? SubliriumColors.cyan : Colors.black,
+                  color: active ? SubliriumColors.navActiveGreen : Colors.black,
                 ),
               ),
             ],

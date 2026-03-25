@@ -34,6 +34,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
   List<Producto> _productosFiltrados = [];
   List<Categoria> _categorias = [];
   List<Proveedor> _proveedores = [];
+  List<PrecioTarifa> _tarifas = [];
   bool _isLoading = true;
   String? _error;
   FiltroStock _filtroActual = FiltroStock.todos;
@@ -67,10 +68,12 @@ class _ProductosScreenState extends State<ProductosScreen> {
       }
       final categorias = await _apiService.getCategorias();
       final proveedores = await _apiService.getProveedores();
+      final tarifas = await _apiService.getTodasTarifas();
       setState(() {
         _productos = productos;
         _categorias = categorias;
         _proveedores = proveedores;
+        _tarifas = tarifas;
         _aplicarFiltro();
         _isLoading = false;
       });
@@ -398,6 +401,37 @@ class _ProductosScreenState extends State<ProductosScreen> {
                             onChanged: (value) => setDialogState(() => proveedorSeleccionado = value),
                           ),
                         ),
+                        if (proveedorSeleccionado != null)
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, color: SubliriumColors.deleteText),
+                            tooltip: 'Eliminar proveedor',
+                            onPressed: () async {
+                              final confirm = await showDialog<bool>(
+                                context: dialogContext,
+                                builder: (ctx) => AlertDialog(
+                                  title: const Text('¿Eliminar proveedor?'),
+                                  content: Text('Se eliminará "${proveedorSeleccionado!.nombre}".'),
+                                  actions: [
+                                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(ctx, true),
+                                      style: TextButton.styleFrom(foregroundColor: SubliriumColors.deleteText),
+                                      child: const Text('Eliminar'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (confirm == true) {
+                                try {
+                                  await _apiService.deleteProveedor(proveedorSeleccionado!.id!);
+                                  await _loadProductos();
+                                  setDialogState(() => proveedorSeleccionado = null);
+                                } catch (e) {
+                                  ScaffoldMessenger.of(dialogContext).showSnackBar(SnackBar(content: Text('Error: $e')));
+                                }
+                              }
+                            },
+                          ),
                         IconButton(
                           icon: const Icon(Icons.add_circle_outline, color: SubliriumColors.cyan),
                           tooltip: 'Agregar proveedor',
@@ -622,9 +656,9 @@ class _ProductosScreenState extends State<ProductosScreen> {
             )
           else if (_productosFiltrados.isEmpty)
             SliverFillRemaining(child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Icon(Icons.inventory_2_outlined, size: 48, color: Colors.white.withValues(alpha: 0.7)),
+              Icon(Icons.inventory_2_outlined, size: 48, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
               const SizedBox(height: 8),
-              Text('No hay productos', style: TextStyle(color: Colors.white.withValues(alpha: 0.7))),
+              Text('No hay productos', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7))),
             ])))
           else
             SliverPadding(
@@ -768,8 +802,8 @@ class _ProductosScreenState extends State<ProductosScreen> {
                 onTap: () => _showVendidoDialog(producto),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(color: SubliriumColors.stockOkBg, borderRadius: BorderRadius.circular(6)),
-                  child: const Text('Registrar venta', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: SubliriumColors.stockOkText)),
+                  decoration: BoxDecoration(color: SubliriumColors.cyan.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+                  child: const Text('Registrar venta', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: SubliriumColors.cyan)),
                 ),
               ),
               const SizedBox(width: 4),
@@ -793,8 +827,8 @@ class _ProductosScreenState extends State<ProductosScreen> {
     final bool hayStock = cantidad > 0;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: hayStock ? SubliriumColors.stockOkBg : SubliriumColors.stockZeroBg, borderRadius: BorderRadius.circular(6)),
-      child: Text(hayStock ? 'En stock' : 'Sin stock', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: hayStock ? SubliriumColors.stockOkText : SubliriumColors.stockZeroText)),
+      decoration: BoxDecoration(color: hayStock ? SubliriumColors.stockOkBg : SubliriumColors.stockLowBg, borderRadius: BorderRadius.circular(6)),
+      child: Text(hayStock ? 'En stock' : 'Sin stock', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: hayStock ? SubliriumColors.stockOkText : SubliriumColors.deleteText)),
     );
   }
 
@@ -828,16 +862,30 @@ class _ProductosScreenState extends State<ProductosScreen> {
     return prov?.nombre ?? 'Sin proveedor';
   }
 
+  double _getPrecioBaseProducto(int productoId) {
+    final tarifa = _tarifas
+        .where((t) => t.productoId == productoId && t.cantidadMin == 1)
+        .firstOrNull;
+    return tarifa?.precioUnitario ?? 0;
+  }
+
   Future<void> _generarPdfProductos() async {
     await PdfHelper.loadLogo();
     final pdf = pw.Document();
     final fecha = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
     final productosAExportar = widget.categoria != null ? _productos : _productosFiltrados;
 
+    final subtitleContext = <String>[];
+    if (widget.categoria != null) subtitleContext.add('Categoría: ${widget.categoria!.nombre}');
+    if (_filtroActual == FiltroStock.enStock) subtitleContext.add('Filtro: En stock');
+    if (_filtroActual == FiltroStock.sinStock) subtitleContext.add('Filtro: Sin stock');
+    if (_proveedorSeleccionadoFiltro != null) subtitleContext.add('Proveedor: ${_proveedorSeleccionadoFiltro!.nombre}');
+    final subtitleInfo = subtitleContext.isEmpty ? 'Todos los productos' : subtitleContext.join(' | ');
+
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        header: (context) => PdfHelper.buildHeader(title: 'Inventario de Productos', subtitle: widget.categoria != null ? 'Categoría: ${widget.categoria!.nombre}' : 'Todos los productos'),
+        header: (context) => PdfHelper.buildHeader(title: 'Inventario de Productos', subtitle: subtitleInfo),
         footer: (context) => PdfHelper.buildFooter(),
         build: (context) => [
           pw.SizedBox(height: 20),
@@ -856,9 +904,12 @@ class _ProductosScreenState extends State<ProductosScreen> {
                   pw.TableHelper.fromTextArray(
                     headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
                     cellStyle: const pw.TextStyle(fontSize: 9),
-                    cellAlignments: {0: pw.Alignment.centerLeft, 1: pw.Alignment.centerLeft, 2: pw.Alignment.centerRight, 3: pw.Alignment.centerRight},
-                    headers: ['Producto', 'Descripción', 'Cantidad', 'Precio c/u'],
-                    data: productosAExportar.where((p) => p.categoriaId == categoria.id).map((p) => [p.nombre, p.descripcion ?? '-', p.cantidad.toString(), '\${p.precio?.toStringAsFixed(2) ?? "0.00"}']).toList(),
+                    cellAlignments: {0: pw.Alignment.centerLeft, 1: pw.Alignment.centerLeft, 2: pw.Alignment.centerLeft, 3: pw.Alignment.centerRight, 4: pw.Alignment.centerRight},
+                    headers: ['Producto', 'Descripción', 'Proveedor', 'Cantidad', 'Precio Base'],
+                    data: productosAExportar.where((p) => p.categoriaId == categoria.id).map((p) {
+                      final precioBase = _getPrecioBaseProducto(p.id!);
+                      return [p.nombre, p.descripcion ?? '-', _getNombreProveedor(p.proveedorId), p.cantidad.toString(), '\$${precioBase.toStringAsFixed(2)}'];
+                    }).toList(),
                   ),
                   pw.SizedBox(height: 8),
                   pw.Container(
@@ -880,9 +931,12 @@ class _ProductosScreenState extends State<ProductosScreen> {
             pw.TableHelper.fromTextArray(
               headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
               cellStyle: const pw.TextStyle(fontSize: 9),
-              cellAlignments: {0: pw.Alignment.centerLeft, 1: pw.Alignment.centerLeft, 2: pw.Alignment.centerRight, 3: pw.Alignment.centerRight},
-              headers: ['Producto', 'Descripción', 'Cantidad', 'Precio c/u'],
-              data: productosAExportar.map((p) => [p.nombre, p.descripcion ?? '-', p.cantidad.toString(), '\${p.precio?.toStringAsFixed(2) ?? "0.00"}']).toList(),
+              cellAlignments: {0: pw.Alignment.centerLeft, 1: pw.Alignment.centerLeft, 2: pw.Alignment.centerLeft, 3: pw.Alignment.centerRight, 4: pw.Alignment.centerRight},
+              headers: ['Producto', 'Descripción', 'Proveedor', 'Cantidad', 'Precio Base'],
+              data: productosAExportar.map((p) {
+                final precioBase = _getPrecioBaseProducto(p.id!);
+                return [p.nombre, p.descripcion ?? '-', _getNombreProveedor(p.proveedorId), p.cantidad.toString(), '\$${precioBase.toStringAsFixed(2)}'];
+              }).toList(),
             ),
             pw.SizedBox(height: 8),
             pw.Container(
@@ -898,10 +952,13 @@ class _ProductosScreenState extends State<ProductosScreen> {
       ),
     );
 
-    await Printing.layoutPdf(onLayout: (format) async => pdf.save(), name: 'inventario_sublirium_${DateTime.now().millisecondsSinceEpoch}.pdf');
+    final nombreArchivo = widget.categoria != null
+        ? 'productos_${widget.categoria!.nombre.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}'
+        : 'inventario_productos_${DateTime.now().millisecondsSinceEpoch}';
+    await Printing.layoutPdf(onLayout: (format) async => pdf.save(), name: '$nombreArchivo.pdf');
   }
 
   double _calcularTotalCategoria(List<Producto> productos) {
-    return productos.fold(0.0, (sum, p) => sum + (p.precio ?? 0) * p.cantidad);
+    return productos.fold(0.0, (sum, p) => sum + _getPrecioBaseProducto(p.id!) * p.cantidad);
   }
 }

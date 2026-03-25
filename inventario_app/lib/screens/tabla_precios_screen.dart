@@ -24,6 +24,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
   Categoria? _categoriaSeleccionada;
   Producto? _productoSeleccionado;
   bool _isLoading = true;
+  String? _error;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
@@ -40,7 +41,10 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
   }
 
   Future<void> _loadData() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     try {
       final categorias = await _apiService.getCategorias();
       final productos = await _apiService.getProductos();
@@ -73,7 +77,10 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      setState(() => _isLoading = false);
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e')),
@@ -447,7 +454,20 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Column(
+          : _error != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.wifi_off, size: 48, color: Colors.black),
+                      const SizedBox(height: 8),
+                      const Text('Error de conexión', style: TextStyle(color: Colors.black)),
+                      const SizedBox(height: 8),
+                      ElevatedButton(onPressed: _loadData, child: const Text('Reintentar')),
+                    ],
+                  ),
+                )
+              : Column(
               children: [
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -910,7 +930,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
         footer: (context) => PdfHelper.buildFooter(),
         build: (context) => [
           pw.SizedBox(height: 20),
-          for (final categoria in _categorias.where((c) => _productos.any((p) => p.categoriaId == c.id)))
+          for (final categoria in _categorias.where((c) => _productosAgrupados.any((p) => p.categoriaId == c.id)))
             pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
@@ -926,7 +946,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                   ),
                 ),
                 pw.SizedBox(height: 8),
-                for (final producto in _productos.where((p) => p.categoriaId == categoria.id))
+                for (final producto in _productosAgrupados.where((p) => p.categoriaId == categoria.id))
                   pw.Container(
                     margin: const pw.EdgeInsets.only(bottom: 12),
                     child: pw.Column(
@@ -1016,9 +1036,12 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
       ),
     );
 
+    final nombreArchivo = _productoSeleccionado != null
+        ? 'tarifa_${_productoSeleccionado!.nombre.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}'
+        : 'tarifas_precios_${DateTime.now().millisecondsSinceEpoch}';
     await Printing.layoutPdf(
       onLayout: (format) async => pdf.save(),
-      name: 'tabla_precios_sublirium_${DateTime.now().millisecondsSinceEpoch}.pdf',
+      name: '$nombreArchivo.pdf',
     );
   }
 

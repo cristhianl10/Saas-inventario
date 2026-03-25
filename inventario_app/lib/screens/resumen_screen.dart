@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'package:intl/intl.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
 import '../config/app_theme.dart';
+import '../utils/pdf_helper.dart';
 
 String _parsePrice(String value) {
   if (value.isEmpty) return value;
@@ -382,6 +387,9 @@ class _ResumenScreenState extends State<ResumenScreen> {
             expandedHeight: 100,
             floating: false,
             pinned: true,
+            actions: [
+              IconButton(icon: const Icon(Icons.picture_as_pdf, color: Colors.white), onPressed: _generarPdfVentas, tooltip: 'Descargar reporte'),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               title: const Text(
                 'Resumen de Ventas',
@@ -814,5 +822,49 @@ class _ResumenScreenState extends State<ResumenScreen> {
 
   String _formatFecha(DateTime fecha) {
     return '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')}/${fecha.year}';
+  }
+
+  Future<void> _generarPdfVentas() async {
+    await PdfHelper.loadLogo();
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        header: (context) => PdfHelper.buildHeader(title: 'Reporte de Ventas', subtitle: 'Historial de ventas registradas'),
+        footer: (context) => PdfHelper.buildFooter(),
+        build: (context) => [
+          pw.SizedBox(height: 20),
+          pw.TableHelper.fromTextArray(
+            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+            cellStyle: const pw.TextStyle(fontSize: 9),
+            cellAlignments: {0: pw.Alignment.centerLeft, 1: pw.Alignment.centerLeft, 2: pw.Alignment.centerLeft, 3: pw.Alignment.centerRight, 4: pw.Alignment.centerRight},
+            headers: ['Fecha', 'Producto', 'Cliente/Obs', 'Cant', 'Total'],
+            data: _ventas.map((v) {
+              final prodNombre = _getNombreProducto(v.productoId);
+              final extras = [v.vendidoA, v.observaciones].where((s) => s != null && s.isNotEmpty).join(' - ');
+              return [
+                _formatFecha(v.fechaVenta),
+                prodNombre,
+                extras.isEmpty ? '-' : extras,
+                v.cantidad.toString(),
+                '\$${v.total.toStringAsFixed(2)}'
+              ];
+            }).toList(),
+          ),
+          pw.SizedBox(height: 8),
+          pw.Container(
+            padding: const pw.EdgeInsets.all(12),
+            color: PdfColors.cyan200,
+            child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+              pw.Text('TOTAL EN VENTAS', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+              pw.Text('\$${_totalVentas.toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+            ]),
+          ),
+        ],
+      ),
+    );
+
+    await Printing.layoutPdf(onLayout: (format) async => pdf.save(), name: 'reporte_ventas_${DateTime.now().millisecondsSinceEpoch}.pdf');
   }
 }

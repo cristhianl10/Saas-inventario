@@ -84,6 +84,10 @@ class SubliriumColors {
   static const logoYellow = amarillo;
   static const cream = crema;
 
+  // WhatsApp-like green for active navigation
+  static const navActiveGreen = Color(0xFF25D366);
+  static const navActiveGreenLight = Color(0xFFE8F5E9);
+
   // Gradiente principal (alias)
   static const primaryGradient = headerGradient;
 }
