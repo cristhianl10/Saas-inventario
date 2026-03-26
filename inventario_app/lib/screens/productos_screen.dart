@@ -32,6 +32,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
   final ApiService _apiService = ApiService();
   List<Producto> _productos = [];
   List<Producto> _productosFiltrados = [];
+  List<Producto> _allProductos = []; // Para validación de duplicados global
   List<Categoria> _categorias = [];
   List<Proveedor> _proveedores = [];
   List<PrecioTarifa> _tarifas = [];
@@ -69,17 +70,19 @@ class _ProductosScreenState extends State<ProductosScreen> {
       _error = null;
     });
     try {
+      final allProductos = await _apiService.getProductos();
       List<Producto> productos;
       if (widget.categoria != null) {
-        productos = await _apiService.getProductosPorCategoria(widget.categoria!.id!);
+        productos = allProductos.where((p) => p.categoriaId == widget.categoria!.id).toList();
       } else {
-        productos = await _apiService.getProductos();
+        productos = allProductos;
       }
       final categorias = await _apiService.getCategorias();
       final proveedores = await _apiService.getProveedores();
       final tarifas = await _apiService.getTodasTarifas();
       setState(() {
         _productos = productos;
+        _allProductos = allProductos;
         _categorias = categorias;
         _proveedores = proveedores;
         _tarifas = tarifas;
@@ -479,6 +482,22 @@ class _ProductosScreenState extends State<ProductosScreen> {
                       ScaffoldMessenger.of(dialogContext).showSnackBar(const SnackBar(content: Text('El nombre es obligatorio')));
                       return;
                     }
+
+                    // Verificar si ya existe un producto con ese nombre (globalmente)
+                    final existe = _allProductos.any((p) => 
+                      p.nombre.toLowerCase() == nombre.toLowerCase() && 
+                      p.id != producto?.id
+                    );
+
+                    if (existe) {
+                      ScaffoldMessenger.of(dialogContext).showSnackBar(
+                        SnackBar(
+                          content: Text('El producto "$nombre" ya existe'),
+                          backgroundColor: Colors.orange,
+                        ),
+                      );
+                      return;
+                    }
                     final cantidad = int.tryParse(cantidadController.text.trim()) ?? 0;
                     final precio = double.tryParse(_parsePrice(precioController.text.trim())) ?? 0.0;
                     final costo = double.tryParse(_parsePrice(costoController.text.trim())) ?? 0.0;
@@ -545,6 +564,21 @@ class _ProductosScreenState extends State<ProductosScreen> {
             onPressed: () {
               final nombre = nombreController.text.trim();
               if (nombre.isEmpty) return;
+
+              // Verificar si ya existe un proveedor con ese nombre
+              final existe = _proveedores.any((p) => 
+                p.nombre.toLowerCase() == nombre.toLowerCase()
+              );
+
+              if (existe) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('El proveedor "$nombre" ya existe'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+                return;
+              }
               Navigator.pop(context, Proveedor(
                 nombre: nombre,
                 telefono: telefonoController.text.trim().isEmpty ? null : telefonoController.text.trim(),

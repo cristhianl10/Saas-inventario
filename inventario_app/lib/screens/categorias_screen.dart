@@ -139,6 +139,22 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
                 return;
               }
 
+              // Verificar si ya existe una categoría con ese nombre
+              final existe = _categorias.any((c) => 
+                c.nombre.toLowerCase() == nombre.toLowerCase() && 
+                c.id != categoria?.id
+              );
+
+              if (existe) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('La categoría "$nombre" ya existe'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+                return;
+              }
+
               final nuevaCategoria = Categoria(
                 id: categoria?.id,
                 nombre: nombre,

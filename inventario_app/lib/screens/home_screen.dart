@@ -151,7 +151,29 @@ class _HomeScreenState extends State<HomeScreen> {
           ElevatedButton(
             onPressed: () async {
               final nombre = nombreController.text.trim();
-              if (nombre.isEmpty) return;
+              if (nombre.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('El nombre es obligatorio')),
+                );
+                return;
+              }
+
+              // Verificar si ya existe una categoría con ese nombre
+              final existe = _categorias.any((c) => 
+                c.nombre.toLowerCase() == nombre.toLowerCase() && 
+                c.id != categoria?.id
+              );
+
+              if (existe) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('La categoría "$nombre" ya existe'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+                return;
+              }
+
               final nuevaCategoria = Categoria(
                 id: categoria?.id,
                 nombre: nombre,
