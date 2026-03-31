@@ -4,7 +4,7 @@ import '../config/app_config.dart';
 
 class AuthScreen extends StatefulWidget {
   final VoidCallback onAuthSuccess;
-  
+
   const AuthScreen({super.key, required this.onAuthSuccess});
 
   @override
@@ -17,7 +17,7 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _obscurePassword = true;
   String? _errorMessage;
   String? _successMessage;
-  
+
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -33,7 +33,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -57,14 +57,15 @@ class _AuthScreenState extends State<AuthScreen> {
                 : _businessNameController.text.trim(),
           },
         );
-        
+
         final user = Supabase.instance.client.auth.currentUser;
         if (user != null) {
           await _createTenantConfig(user.id);
           widget.onAuthSuccess();
         } else {
           setState(() {
-            _errorMessage = 'Revisa tu correo y confirma tu cuenta para continuar.';
+            _successMessage =
+                '✓ Cuenta creada. Revisa tu correo y confirma tu cuenta para iniciar sesión.';
           });
         }
       }
@@ -109,7 +110,7 @@ class _AuthScreenState extends State<AuthScreen> {
     final brandName = _businessNameController.text.trim().isEmpty
         ? 'Mi Negocio'
         : _businessNameController.text.trim();
-    
+
     final config = {
       'app_name': 'StockFlow',
       'brand_name': brandName,
@@ -119,14 +120,12 @@ class _AuthScreenState extends State<AuthScreen> {
       'accent_color': '#E57836',
       'background_color': '#FBF8F1',
     };
-    
+
     try {
-      await Supabase.instance.client
-          .from('tenant_config')
-          .insert({
-            'user_id': userId,
-            'config': config,
-          });
+      await Supabase.instance.client.from('tenant_config').insert({
+        'user_id': userId,
+        'config': config,
+      });
     } catch (e) {
       debugPrint('Error creando tenant_config: $e');
     }
@@ -142,7 +141,9 @@ class _AuthScreenState extends State<AuthScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: const Row(
             children: [
               Icon(Icons.lock_reset, color: Colors.grey),
@@ -213,24 +214,29 @@ class _AuthScreenState extends State<AuthScreen> {
                   ? null
                   : () async {
                       if (!resetFormKey.currentState!.validate()) return;
-                      
+
                       setDialogState(() {
                         isResetLoading = true;
                         resetMessage = null;
                       });
 
                       try {
-                        await Supabase.instance.client.auth.resetPasswordForEmail(
-                          resetEmailController.text.trim(),
-                        );
-                        
+                        await Supabase.instance.client.auth
+                            .resetPasswordForEmail(
+                              resetEmailController.text.trim(),
+                            );
+
                         setDialogState(() {
-                          resetMessage = '✓ Revisa tu correo para restablecer la contraseña.';
+                          resetMessage =
+                              '✓ Revisa tu correo para restablecer la contraseña.';
                         });
                       } on AuthException catch (e) {
                         setDialogState(() {
-                          if (e.message.toLowerCase().contains('user not found')) {
-                            resetMessage = 'No existe una cuenta con ese correo.';
+                          if (e.message.toLowerCase().contains(
+                            'user not found',
+                          )) {
+                            resetMessage =
+                                'No existe una cuenta con ese correo.';
                           } else {
                             resetMessage = e.message;
                           }
@@ -296,15 +302,14 @@ class _AuthScreenState extends State<AuthScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    _isLogin ? 'Inicia sesión para continuar' : 'Crea tu cuenta gratis',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
+                    _isLogin
+                        ? 'Inicia sesión para continuar'
+                        : 'Crea tu cuenta gratis',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
-                  
+
                   if (!_isLogin) ...[
                     TextFormField(
                       controller: _businessNameController,
@@ -316,7 +321,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     ),
                     const SizedBox(height: 16),
                   ],
-                  
+
                   TextFormField(
                     controller: _emailController,
                     decoration: const InputDecoration(
@@ -335,7 +340,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  
+
                   TextFormField(
                     controller: _passwordController,
                     decoration: InputDecoration(
@@ -343,7 +348,9 @@ class _AuthScreenState extends State<AuthScreen> {
                       prefixIcon: const Icon(Icons.lock_outlined),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                          _obscurePassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
                         ),
                         onPressed: () {
                           setState(() {
@@ -363,7 +370,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       return null;
                     },
                   ),
-                  
+
                   if (_isLogin) ...[
                     const SizedBox(height: 8),
                     Align(
@@ -374,7 +381,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                     ),
                   ],
-                  
+
                   if (_errorMessage != null) ...[
                     const SizedBox(height: 8),
                     Container(
@@ -391,7 +398,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                     ),
                   ],
-                  
+
                   if (_successMessage != null) ...[
                     const SizedBox(height: 8),
                     Container(
@@ -408,9 +415,9 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                     ),
                   ],
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   ElevatedButton(
                     onPressed: _isLoading ? null : _submit,
                     style: ElevatedButton.styleFrom(
@@ -435,9 +442,9 @@ class _AuthScreenState extends State<AuthScreen> {
                             ),
                           ),
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   TextButton(
                     onPressed: () {
                       setState(() {
@@ -448,7 +455,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       });
                     },
                     child: Text(
-                      _isLogin 
+                      _isLogin
                           ? '¿No tienes cuenta? Regístrate gratis'
                           : '¿Ya tienes cuenta? Inicia sesión',
                     ),

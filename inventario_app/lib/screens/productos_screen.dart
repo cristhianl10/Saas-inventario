@@ -74,7 +74,9 @@ class _ProductosScreenState extends State<ProductosScreen> {
       final allProductos = await _apiService.getProductos();
       List<Producto> productos;
       if (widget.categoria != null) {
-        productos = allProductos.where((p) => p.categoriaId == widget.categoria!.id).toList();
+        productos = allProductos
+            .where((p) => p.categoriaId == widget.categoria!.id)
+            .toList();
       } else {
         productos = allProductos;
       }
@@ -100,7 +102,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
 
   void _aplicarFiltro() {
     var productosFiltrados = List<Producto>.from(_productos);
-    
+
     switch (_filtroActual) {
       case FiltroStock.todos:
         break;
@@ -111,27 +113,37 @@ class _ProductosScreenState extends State<ProductosScreen> {
         productosFiltrados = _productos.where((p) => p.cantidad == 0).toList();
         break;
     }
-    
+
     if (_searchQuery.isNotEmpty) {
-      productosFiltrados = productosFiltrados.where((p) =>
-        p.nombre.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-        (p.descripcion?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false)
-      ).toList();
+      productosFiltrados = productosFiltrados
+          .where(
+            (p) =>
+                p.nombre.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                (p.descripcion?.toLowerCase().contains(
+                      _searchQuery.toLowerCase(),
+                    ) ??
+                    false),
+          )
+          .toList();
     }
-    
+
     if (_proveedorSeleccionadoFiltro != null) {
-      productosFiltrados = productosFiltrados.where((p) =>
-        p.proveedorId == _proveedorSeleccionadoFiltro!.id
-      ).toList();
+      productosFiltrados = productosFiltrados
+          .where((p) => p.proveedorId == _proveedorSeleccionadoFiltro!.id)
+          .toList();
     }
 
     // Ordenar por nombre de categoría
     productosFiltrados.sort((a, b) {
-      final catA = _categorias.where((c) => c.id == a.categoriaId).firstOrNull?.nombre ?? '';
-      final catB = _categorias.where((c) => c.id == b.categoriaId).firstOrNull?.nombre ?? '';
+      final catA =
+          _categorias.where((c) => c.id == a.categoriaId).firstOrNull?.nombre ??
+          '';
+      final catB =
+          _categorias.where((c) => c.id == b.categoriaId).firstOrNull?.nombre ??
+          '';
       return catA.compareTo(catB);
     });
-    
+
     _productosFiltrados = productosFiltrados;
   }
 
@@ -161,11 +173,18 @@ class _ProductosScreenState extends State<ProductosScreen> {
         await _apiService.deleteProducto(producto.id!);
         await _apiService.deleteTarifasPorProducto(producto.id!);
         _loadProductos();
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Producto eliminado'), backgroundColor: SubliriumColors.stockOkText),
-        );
+        if (mounted)
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Producto eliminado'),
+              backgroundColor: SubliriumColors.stockOkText,
+            ),
+          );
       } catch (e) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        if (mounted)
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -174,15 +193,22 @@ class _ProductosScreenState extends State<ProductosScreen> {
     final nuevaCantidad = producto.cantidad + cambio;
     if (nuevaCantidad < 0) return;
     try {
-      await _apiService.updateProducto(producto.copyWith(cantidad: nuevaCantidad));
+      await _apiService.updateProducto(
+        producto.copyWith(cantidad: nuevaCantidad),
+      );
       _loadProductos();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
   void _showVendidoDialog(Producto producto) {
-    final precioController = TextEditingController(text: producto.precio?.toStringAsFixed(2) ?? '');
+    final precioController = TextEditingController(
+      text: producto.precio?.toStringAsFixed(2) ?? '',
+    );
     final cantidadController = TextEditingController(text: '1');
     final vendedorController = TextEditingController();
     final observacionesController = TextEditingController();
@@ -199,16 +225,31 @@ class _ProductosScreenState extends State<ProductosScreen> {
           final total = precioPorUnidad ? (cantidad * precio) : precio;
 
           return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             title: const Text('Registrar Venta'),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(producto.nombre, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: isDark ? Colors.white : Colors.black)),
+                  Text(
+                    producto.nombre,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 14,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
                   if (producto.descripcion != null)
-                    Text(producto.descripcion!, style: TextStyle(fontSize: 11, color: isDark ? Colors.white70 : Colors.black54)),
+                    Text(
+                      producto.descripcion!,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDark ? Colors.white70 : Colors.black54,
+                      ),
+                    ),
                   const SizedBox(height: 16),
                   GestureDetector(
                     onTap: () async {
@@ -224,12 +265,17 @@ class _ProductosScreenState extends State<ProductosScreen> {
                     },
                     child: Container(
                       padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(border: Border.all(color: SubliriumColors.border), borderRadius: BorderRadius.circular(8)),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: SubliriumColors.border),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       child: Row(
                         children: [
                           const Icon(Icons.calendar_today, size: 18),
                           const SizedBox(width: 8),
-                          Text('${fechaSeleccionada.day}/${fechaSeleccionada.month}/${fechaSeleccionada.year}'),
+                          Text(
+                            '${fechaSeleccionada.day}/${fechaSeleccionada.month}/${fechaSeleccionada.year}',
+                          ),
                           const Spacer(),
                           const Icon(Icons.arrow_drop_down),
                         ],
@@ -239,7 +285,10 @@ class _ProductosScreenState extends State<ProductosScreen> {
                   const SizedBox(height: 12),
                   TextField(
                     controller: cantidadController,
-                    decoration: const InputDecoration(labelText: 'Cantidad', border: OutlineInputBorder()),
+                    decoration: const InputDecoration(
+                      labelText: 'Cantidad',
+                      border: OutlineInputBorder(),
+                    ),
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     onChanged: (_) => setDialogState(() {}),
@@ -247,30 +296,48 @@ class _ProductosScreenState extends State<ProductosScreen> {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Text('Precio por unidad', style: TextStyle(fontSize: 12)),
+                      const Text(
+                        'Precio por unidad',
+                        style: TextStyle(fontSize: 12),
+                      ),
                       const Spacer(),
                       Switch(
                         value: precioPorUnidad,
-                        onChanged: (v) => setDialogState(() => precioPorUnidad = v),
+                        onChanged: (v) =>
+                            setDialogState(() => precioPorUnidad = v),
                         activeColor: SubliriumColors.cyan,
                       ),
-                      Text(precioPorUnidad ? 'x1' : 'Total', style: const TextStyle(fontSize: 12)),
+                      Text(
+                        precioPorUnidad ? 'x1' : 'Total',
+                        style: const TextStyle(fontSize: 12),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: precioController,
                     decoration: InputDecoration(
-                      labelText: precioPorUnidad ? 'Precio unitario' : 'Precio total',
+                      labelText: precioPorUnidad
+                          ? 'Precio unitario'
+                          : 'Precio total',
                       prefixText: '\$ ',
                       border: const OutlineInputBorder(),
                     ),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d,.]'))],
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[\d,.]')),
+                    ],
                     onChanged: (value) {
                       final parsed = _parsePrice(value);
                       if (parsed != value) {
-                        precioController.value = TextEditingValue(text: parsed, selection: TextSelection.collapsed(offset: parsed.length));
+                        precioController.value = TextEditingValue(
+                          text: parsed,
+                          selection: TextSelection.collapsed(
+                            offset: parsed.length,
+                          ),
+                        );
                       }
                       setDialogState(() {});
                     },
@@ -278,46 +345,121 @@ class _ProductosScreenState extends State<ProductosScreen> {
                   Container(
                     margin: const EdgeInsets.only(top: 12),
                     padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: SubliriumColors.stockOkBg, borderRadius: BorderRadius.circular(8)),
+                    decoration: BoxDecoration(
+                      color: SubliriumColors.stockOkBg,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Total:', style: TextStyle(fontWeight: FontWeight.w900, color: Colors.black)),
-                        Text('\$${total.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: SubliriumColors.stockOkText)),
+                        const Text(
+                          'Total:',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            color: Colors.black,
+                          ),
+                        ),
+                        Text(
+                          '\$${total.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 18,
+                            color: SubliriumColors.stockOkText,
+                          ),
+                        ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: vendedorController,
-                    decoration: const InputDecoration(labelText: 'Vendido a (cliente)', border: OutlineInputBorder()),
+                    decoration: const InputDecoration(
+                      labelText: 'Vendido a (cliente)',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: observacionesController,
-                    decoration: const InputDecoration(labelText: 'Observaciones (opcional)', border: OutlineInputBorder()),
+                    decoration: const InputDecoration(
+                      labelText: 'Observaciones (opcional)',
+                      border: OutlineInputBorder(),
+                    ),
                     maxLines: 2,
                   ),
                 ],
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancelar')),
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Cancelar'),
+              ),
               Container(
-                decoration: BoxDecoration(color: SubliriumColors.stockOkText, borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(
+                  color: SubliriumColors.stockOkText,
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 child: ElevatedButton(
                   onPressed: () async {
-                    final cantidadVenta = int.tryParse(cantidadController.text) ?? 1;
+                    final cantidadVenta =
+                        int.tryParse(cantidadController.text) ?? 1;
                     final precioText = _parsePrice(precioController.text);
                     final precioUnit = double.tryParse(precioText) ?? 0;
 
-                    if (cantidadVenta <= 0 || cantidadVenta > producto.cantidad) {
-                      ScaffoldMessenger.of(dialogContext).showSnackBar(SnackBar(content: Text('Cantidad inválida. Máximo disponible: ${producto.cantidad}')));
+                    // Validar stock para productos normales
+                    if (!producto.esCombo &&
+                        (cantidadVenta <= 0 ||
+                            cantidadVenta > producto.cantidad)) {
+                      ScaffoldMessenger.of(dialogContext).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Cantidad inválida. Máximo disponible: ${producto.cantidad}',
+                          ),
+                        ),
+                      );
                       return;
                     }
                     if (precioUnit <= 0) {
-                      ScaffoldMessenger.of(dialogContext).showSnackBar(const SnackBar(content: Text('Ingrese un precio válido')));
+                      ScaffoldMessenger.of(dialogContext).showSnackBar(
+                        const SnackBar(
+                          content: Text('Ingrese un precio válido'),
+                        ),
+                      );
                       return;
+                    }
+
+                    // Validar stock de productos del combo
+                    if (producto.esCombo) {
+                      final comboItems = await _apiService.getComboItems(
+                        producto.id!,
+                      );
+                      for (final item in comboItems) {
+                        final prod = _productos
+                            .where((p) => p.id == item.productoId)
+                            .firstOrNull;
+                        if (prod == null) {
+                          ScaffoldMessenger.of(dialogContext).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Error: Producto "${item.productoId}" no encontrado',
+                              ),
+                            ),
+                          );
+                          return;
+                        }
+                        final requerido = item.cantidad * cantidadVenta;
+                        if (prod.cantidad < requerido) {
+                          ScaffoldMessenger.of(dialogContext).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Stock insuficiente de "${prod.nombre}". Necesitas $requerido, tienes ${prod.cantidad}',
+                              ),
+                            ),
+                          );
+                          return;
+                        }
+                      }
                     }
 
                     final venta = Venta(
@@ -326,23 +468,58 @@ class _ProductosScreenState extends State<ProductosScreen> {
                       precioUnitario: precioUnit,
                       total: total,
                       fechaVenta: fechaSeleccionada,
-                      vendidoA: vendedorController.text.trim().isEmpty ? null : vendedorController.text.trim(),
-                      observaciones: observacionesController.text.trim().isEmpty ? null : observacionesController.text.trim(),
+                      vendidoA: vendedorController.text.trim().isEmpty
+                          ? null
+                          : vendedorController.text.trim(),
+                      observaciones: observacionesController.text.trim().isEmpty
+                          ? null
+                          : observacionesController.text.trim(),
                     );
 
                     try {
                       await _apiService.createVenta(venta);
-                      final productoActualizado = producto.copyWith(cantidad: producto.cantidad - cantidadVenta, fechaActualizacion: DateTime.now());
-                      await _apiService.updateProducto(productoActualizado);
+
+                      // Descontar stock
+                      if (producto.esCombo) {
+                        await _apiService.descontarStockCombo(
+                          producto.id!,
+                          cantidadVenta,
+                        );
+                      } else {
+                        final productoActualizado = producto.copyWith(
+                          cantidad: producto.cantidad - cantidadVenta,
+                          fechaActualizacion: DateTime.now(),
+                        );
+                        await _apiService.updateProducto(productoActualizado);
+                      }
+
                       _loadProductos();
                       if (mounted) Navigator.pop(dialogContext);
-                      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Vendido: $cantidadVenta unidad(es) por \$${total.toStringAsFixed(2)}')));
+                      if (mounted)
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              producto.esCombo
+                                  ? 'Combo vendido: $cantidadVenta por \$${total.toStringAsFixed(2)}'
+                                  : 'Vendido: $cantidadVenta unidad(es) por \$${total.toStringAsFixed(2)}',
+                            ),
+                          ),
+                        );
                     } catch (e) {
-                      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                      if (mounted)
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(SnackBar(content: Text('Error: $e')));
                     }
                   },
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent),
-                  child: const Text('Registrar Venta', style: TextStyle(color: Colors.white)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                  ),
+                  child: const Text(
+                    'Registrar Venta',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ),
             ],
@@ -353,16 +530,28 @@ class _ProductosScreenState extends State<ProductosScreen> {
   }
 
   void _showProductoDialog([Producto? producto]) {
-    final nombreController = TextEditingController(text: producto?.nombre ?? '');
-    final descripcionController = TextEditingController(text: producto?.descripcion ?? '');
-    final cantidadController = TextEditingController(text: (producto?.cantidad ?? 0).toString());
-    final precioController = TextEditingController(text: producto?.precio?.toStringAsFixed(2) ?? '');
-    final costoController = TextEditingController(text: producto?.costo?.toStringAsFixed(2) ?? '');
+    final nombreController = TextEditingController(
+      text: producto?.nombre ?? '',
+    );
+    final descripcionController = TextEditingController(
+      text: producto?.descripcion ?? '',
+    );
+    final cantidadController = TextEditingController(
+      text: (producto?.cantidad ?? 0).toString(),
+    );
+    final precioController = TextEditingController(
+      text: producto?.precio?.toStringAsFixed(2) ?? '',
+    );
+    final costoController = TextEditingController(
+      text: producto?.costo?.toStringAsFixed(2) ?? '',
+    );
     final isEditing = producto != null;
     Proveedor? proveedorSeleccionado;
 
     if (producto?.proveedorId != null) {
-      proveedorSeleccionado = _proveedores.where((p) => p.id == producto!.proveedorId).firstOrNull;
+      proveedorSeleccionado = _proveedores
+          .where((p) => p.id == producto!.proveedorId)
+          .firstOrNull;
     }
 
     showDialog(
@@ -371,7 +560,9 @@ class _ProductosScreenState extends State<ProductosScreen> {
         return StatefulBuilder(
           builder: (ctx, setDialogState) {
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               title: Text(isEditing ? 'Editar Producto' : 'Nuevo Producto'),
               content: SingleChildScrollView(
                 child: Column(
@@ -379,27 +570,44 @@ class _ProductosScreenState extends State<ProductosScreen> {
                   children: [
                     TextField(
                       controller: nombreController,
-                      decoration: const InputDecoration(labelText: 'Nombre', border: OutlineInputBorder()),
+                      decoration: const InputDecoration(
+                        labelText: 'Nombre',
+                        border: OutlineInputBorder(),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: descripcionController,
-                      decoration: const InputDecoration(labelText: 'Descripción', border: OutlineInputBorder()),
+                      decoration: const InputDecoration(
+                        labelText: 'Descripción',
+                        border: OutlineInputBorder(),
+                      ),
                       maxLines: 2,
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: cantidadController,
-                      decoration: const InputDecoration(labelText: 'Cantidad', border: OutlineInputBorder()),
+                      decoration: const InputDecoration(
+                        labelText: 'Cantidad',
+                        border: OutlineInputBorder(),
+                      ),
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: precioController,
-                      decoration: const InputDecoration(labelText: 'Precio', prefixText: '\$ ', border: OutlineInputBorder()),
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d,.]'))],
+                      decoration: const InputDecoration(
+                        labelText: 'Precio',
+                        prefixText: '\$ ',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[\d,.]')),
+                      ],
                     ),
                     const SizedBox(height: 12),
                     Row(
@@ -407,29 +615,54 @@ class _ProductosScreenState extends State<ProductosScreen> {
                         Expanded(
                           child: DropdownButtonFormField<Proveedor?>(
                             value: proveedorSeleccionado,
-                            decoration: const InputDecoration(labelText: 'Proveedor', border: OutlineInputBorder()),
+                            decoration: const InputDecoration(
+                              labelText: 'Proveedor',
+                              border: OutlineInputBorder(),
+                            ),
                             items: [
-                              const DropdownMenuItem<Proveedor?>(value: null, child: Text('Sin proveedor')),
-                              ..._proveedores.map((p) => DropdownMenuItem(value: p, child: Text(p.nombre))),
+                              const DropdownMenuItem<Proveedor?>(
+                                value: null,
+                                child: Text('Sin proveedor'),
+                              ),
+                              ..._proveedores.map(
+                                (p) => DropdownMenuItem(
+                                  value: p,
+                                  child: Text(p.nombre),
+                                ),
+                              ),
                             ],
-                            onChanged: (value) => setDialogState(() => proveedorSeleccionado = value),
+                            onChanged: (value) => setDialogState(
+                              () => proveedorSeleccionado = value,
+                            ),
                           ),
                         ),
                         if (proveedorSeleccionado != null)
                           IconButton(
-                            icon: const Icon(Icons.delete_outline, color: SubliriumColors.deleteText),
+                            icon: const Icon(
+                              Icons.delete_outline,
+                              color: SubliriumColors.deleteText,
+                            ),
                             tooltip: 'Eliminar proveedor',
                             onPressed: () async {
                               final confirm = await showDialog<bool>(
                                 context: dialogContext,
                                 builder: (ctx) => AlertDialog(
                                   title: const Text('¿Eliminar proveedor?'),
-                                  content: Text('Se eliminará "${proveedorSeleccionado!.nombre}".'),
+                                  content: Text(
+                                    'Se eliminará "${proveedorSeleccionado!.nombre}".',
+                                  ),
                                   actions: [
-                                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(ctx, false),
+                                      child: const Text('Cancelar'),
+                                    ),
                                     TextButton(
                                       onPressed: () => Navigator.pop(ctx, true),
-                                      style: TextButton.styleFrom(foregroundColor: SubliriumColors.deleteText),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor:
+                                            SubliriumColors.deleteText,
+                                      ),
                                       child: const Text('Eliminar'),
                                     ),
                                   ],
@@ -437,27 +670,49 @@ class _ProductosScreenState extends State<ProductosScreen> {
                               );
                               if (confirm == true) {
                                 try {
-                                  await _apiService.deleteProveedor(proveedorSeleccionado!.id!);
+                                  await _apiService.deleteProveedor(
+                                    proveedorSeleccionado!.id!,
+                                  );
                                   await _loadProductos();
-                                  setDialogState(() => proveedorSeleccionado = null);
+                                  setDialogState(
+                                    () => proveedorSeleccionado = null,
+                                  );
                                 } catch (e) {
-                                  ScaffoldMessenger.of(dialogContext).showSnackBar(SnackBar(content: Text('Error: $e')));
+                                  ScaffoldMessenger.of(
+                                    dialogContext,
+                                  ).showSnackBar(
+                                    SnackBar(content: Text('Error: $e')),
+                                  );
                                 }
                               }
                             },
                           ),
                         IconButton(
-                          icon: const Icon(Icons.add_circle_outline, color: SubliriumColors.cyan),
+                          icon: const Icon(
+                            Icons.add_circle_outline,
+                            color: SubliriumColors.cyan,
+                          ),
                           tooltip: 'Agregar proveedor',
                           onPressed: () async {
-                            final nuevoProv = await _mostrarDialogoAgregarProveedor(dialogContext);
+                            final nuevoProv =
+                                await _mostrarDialogoAgregarProveedor(
+                                  dialogContext,
+                                );
                             if (nuevoProv != null) {
                               try {
-                                final np = await _apiService.createProveedor(nuevoProv);
+                                final np = await _apiService.createProveedor(
+                                  nuevoProv,
+                                );
                                 await _loadProductos();
-                                setDialogState(() => proveedorSeleccionado = np);
+                                setDialogState(
+                                  () => proveedorSeleccionado = np,
+                                );
                               } catch (e) {
-                                ScaffoldMessenger.of(dialogContext).showSnackBar(SnackBar(content: Text('Error: $e')));
+                                ScaffoldMessenger.of(
+                                  dialogContext,
+                                ).showSnackBar(
+                                  SnackBar(content: Text('Error: $e')),
+                                );
                               }
                             }
                           },
@@ -467,27 +722,43 @@ class _ProductosScreenState extends State<ProductosScreen> {
                     const SizedBox(height: 12),
                     TextField(
                       controller: costoController,
-                      decoration: const InputDecoration(labelText: 'Costo', prefixText: '\$ ', border: OutlineInputBorder()),
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d,.]'))],
+                      decoration: const InputDecoration(
+                        labelText: 'Costo',
+                        prefixText: '\$ ',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[\d,.]')),
+                      ],
                     ),
                   ],
                 ),
               ),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancelar')),
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Cancelar'),
+                ),
                 ElevatedButton(
                   onPressed: () async {
                     final nombre = nombreController.text.trim();
                     if (nombre.isEmpty) {
-                      ScaffoldMessenger.of(dialogContext).showSnackBar(const SnackBar(content: Text('El nombre es obligatorio')));
+                      ScaffoldMessenger.of(dialogContext).showSnackBar(
+                        const SnackBar(
+                          content: Text('El nombre es obligatorio'),
+                        ),
+                      );
                       return;
                     }
 
                     // Verificar si ya existe un producto con ese nombre (globalmente)
-                    final existe = _allProductos.any((p) => 
-                      p.nombre.toLowerCase() == nombre.toLowerCase() && 
-                      p.id != producto?.id
+                    final existe = _allProductos.any(
+                      (p) =>
+                          p.nombre.toLowerCase() == nombre.toLowerCase() &&
+                          p.id != producto?.id,
                     );
 
                     if (existe) {
@@ -499,14 +770,26 @@ class _ProductosScreenState extends State<ProductosScreen> {
                       );
                       return;
                     }
-                    final cantidad = int.tryParse(cantidadController.text.trim()) ?? 0;
-                    final precio = double.tryParse(_parsePrice(precioController.text.trim())) ?? 0.0;
-                    final costo = double.tryParse(_parsePrice(costoController.text.trim())) ?? 0.0;
+                    final cantidad =
+                        int.tryParse(cantidadController.text.trim()) ?? 0;
+                    final precio =
+                        double.tryParse(
+                          _parsePrice(precioController.text.trim()),
+                        ) ??
+                        0.0;
+                    final costo =
+                        double.tryParse(
+                          _parsePrice(costoController.text.trim()),
+                        ) ??
+                        0.0;
                     final nuevoProducto = Producto(
                       id: producto?.id,
-                      categoriaId: widget.categoria?.id ?? producto?.categoriaId ?? 1,
+                      categoriaId:
+                          widget.categoria?.id ?? producto?.categoriaId ?? 1,
                       nombre: nombre,
-                      descripcion: descripcionController.text.trim().isEmpty ? null : descripcionController.text.trim(),
+                      descripcion: descripcionController.text.trim().isEmpty
+                          ? null
+                          : descripcionController.text.trim(),
                       cantidad: cantidad,
                       precio: precio,
                       proveedorId: proveedorSeleccionado?.id,
@@ -522,7 +805,9 @@ class _ProductosScreenState extends State<ProductosScreen> {
                       _loadProductos();
                       Navigator.pop(dialogContext);
                     } catch (e) {
-                      ScaffoldMessenger.of(dialogContext).showSnackBar(SnackBar(content: Text('Error: $e')));
+                      ScaffoldMessenger.of(
+                        dialogContext,
+                      ).showSnackBar(SnackBar(content: Text('Error: $e')));
                     }
                   },
                   child: Text(isEditing ? 'Actualizar' : 'Guardar'),
@@ -535,10 +820,12 @@ class _ProductosScreenState extends State<ProductosScreen> {
     );
   }
 
-  Future<Proveedor?> _mostrarDialogoAgregarProveedor(BuildContext context) async {
+  Future<Proveedor?> _mostrarDialogoAgregarProveedor(
+    BuildContext context,
+  ) async {
     final nombreController = TextEditingController();
     final telefonoController = TextEditingController();
-    
+
     return showDialog<Proveedor>(
       context: context,
       builder: (context) => AlertDialog(
@@ -548,27 +835,36 @@ class _ProductosScreenState extends State<ProductosScreen> {
           children: [
             TextField(
               controller: nombreController,
-              decoration: const InputDecoration(labelText: 'Nombre', border: OutlineInputBorder()),
+              decoration: const InputDecoration(
+                labelText: 'Nombre',
+                border: OutlineInputBorder(),
+              ),
               autofocus: true,
             ),
             const SizedBox(height: 12),
             TextField(
               controller: telefonoController,
-              decoration: const InputDecoration(labelText: 'Teléfono (opcional)', border: OutlineInputBorder()),
+              decoration: const InputDecoration(
+                labelText: 'Teléfono (opcional)',
+                border: OutlineInputBorder(),
+              ),
               keyboardType: TextInputType.phone,
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
           ElevatedButton(
             onPressed: () {
               final nombre = nombreController.text.trim();
               if (nombre.isEmpty) return;
 
               // Verificar si ya existe un proveedor con ese nombre
-              final existe = _proveedores.any((p) => 
-                p.nombre.toLowerCase() == nombre.toLowerCase()
+              final existe = _proveedores.any(
+                (p) => p.nombre.toLowerCase() == nombre.toLowerCase(),
               );
 
               if (existe) {
@@ -580,10 +876,15 @@ class _ProductosScreenState extends State<ProductosScreen> {
                 );
                 return;
               }
-              Navigator.pop(context, Proveedor(
-                nombre: nombre,
-                telefono: telefonoController.text.trim().isEmpty ? null : telefonoController.text.trim(),
-              ));
+              Navigator.pop(
+                context,
+                Proveedor(
+                  nombre: nombre,
+                  telefono: telefonoController.text.trim().isEmpty
+                      ? null
+                      : telefonoController.text.trim(),
+                ),
+              );
             },
             child: const Text('Agregar'),
           ),
@@ -606,19 +907,33 @@ class _ProductosScreenState extends State<ProductosScreen> {
             expandedHeight: 90,
             floating: false,
             pinned: true,
-            leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.pop(context)),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => Navigator.pop(context),
+            ),
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
-                esVistaGlobal ? 'Todos los Productos' : (widget.categoria?.nombre ?? 'Productos'),
-                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
-              ),
-              background: Container(decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppConfig.secondaryColor, AppConfig.primaryColor, AppConfig.accentColor],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                esVistaGlobal
+                    ? 'Todos los Productos'
+                    : (widget.categoria?.nombre ?? 'Productos'),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 14,
                 ),
-              )),
+              ),
+              background: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppConfig.secondaryColor,
+                      AppConfig.primaryColor,
+                      AppConfig.accentColor,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+              ),
             ),
             actions: [
               IconButton(
@@ -626,10 +941,27 @@ class _ProductosScreenState extends State<ProductosScreen> {
                 onPressed: _loadProductos,
                 tooltip: 'Actualizar',
               ),
-              IconButton(icon: const Icon(Icons.picture_as_pdf, color: Colors.white), onPressed: _generarPdfProductos, tooltip: 'Descargar PDF'),
+              IconButton(
+                icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
+                onPressed: _generarPdfProductos,
+                tooltip: 'Descargar PDF',
+              ),
               if (!esVistaGlobal) ...[
-                Container(width: 36, height: 36, decoration: BoxDecoration(color: SubliriumColors.cyan.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(9)),
-                  child: const Center(child: Icon(Icons.folder, size: 18, color: SubliriumColors.cyan))),
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: SubliriumColors.cyan.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.folder,
+                      size: 18,
+                      color: SubliriumColors.cyan,
+                    ),
+                  ),
+                ),
                 const SizedBox(width: 16),
               ],
             ],
@@ -643,8 +975,24 @@ class _ProductosScreenState extends State<ProductosScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(esVistaGlobal ? 'Total productos:' : 'Total en inventario:', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: Colors.black)),
-                      Text('$_totalInventario unidades', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Colors.black)),
+                      Text(
+                        esVistaGlobal
+                            ? 'Total productos:'
+                            : 'Total en inventario:',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                          color: Colors.black,
+                        ),
+                      ),
+                      Text(
+                        '$_totalInventario unidades',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14,
+                          color: Colors.black,
+                        ),
+                      ),
                     ],
                   ),
                   if (esVistaGlobal) ...[
@@ -659,11 +1007,22 @@ class _ProductosScreenState extends State<ProductosScreen> {
                       decoration: InputDecoration(
                         hintText: 'Buscar producto...',
                         hintStyle: TextStyle(color: Colors.grey[500]),
-                        prefixIcon: const Icon(Icons.search, color: SubliriumColors.cyan),
+                        prefixIcon: const Icon(
+                          Icons.search,
+                          color: SubliriumColors.cyan,
+                        ),
                         filled: true,
                         fillColor: SubliriumColors.crema,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: SubliriumColors.border)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(
+                            color: SubliriumColors.border,
+                          ),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -684,12 +1043,31 @@ class _ProductosScreenState extends State<ProductosScreen> {
                       decoration: InputDecoration(
                         labelText: 'Filtrar por proveedor',
                         labelStyle: const TextStyle(color: Colors.black),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                       ),
                       items: [
-                        const DropdownMenuItem<Proveedor?>(value: null, child: Text('Todos los proveedores', style: TextStyle(color: Colors.black))),
-                        ..._proveedores.map((p) => DropdownMenuItem(value: p, child: Text(p.nombre, style: const TextStyle(color: Colors.black)))),
+                        const DropdownMenuItem<Proveedor?>(
+                          value: null,
+                          child: Text(
+                            'Todos los proveedores',
+                            style: TextStyle(color: Colors.black),
+                          ),
+                        ),
+                        ..._proveedores.map(
+                          (p) => DropdownMenuItem(
+                            value: p,
+                            child: Text(
+                              p.nombre,
+                              style: const TextStyle(color: Colors.black),
+                            ),
+                          ),
+                        ),
                       ],
                       onChanged: (value) => setState(() {
                         _proveedorSeleccionadoFiltro = value;
@@ -702,31 +1080,58 @@ class _ProductosScreenState extends State<ProductosScreen> {
             ),
           ),
           if (_isLoading)
-            const SliverFillRemaining(child: Center(child: CircularProgressIndicator()))
+            const SliverFillRemaining(
+              child: Center(child: CircularProgressIndicator()),
+            )
           else if (_error != null)
             SliverFillRemaining(
-              child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                const Icon(Icons.wifi_off, size: 48, color: Colors.black),
-                const SizedBox(height: 8),
-                ElevatedButton(onPressed: _loadProductos, child: const Text('Reintentar')),
-              ])),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.wifi_off, size: 48, color: Colors.black),
+                    const SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: _loadProductos,
+                      child: const Text('Reintentar'),
+                    ),
+                  ],
+                ),
+              ),
             )
           else if (_productosFiltrados.isEmpty)
-            SliverFillRemaining(child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Icon(Icons.inventory_2_outlined, size: 48, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
-              const SizedBox(height: 8),
-              Text('No hay productos', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7))),
-            ])))
+            SliverFillRemaining(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.inventory_2_outlined,
+                      size: 48,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.5),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'No hay productos',
+                      style: TextStyle(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
           else
             SliverPadding(
               padding: const EdgeInsets.all(12),
               sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    return _buildProductosAgrupados();
-                  },
-                  childCount: 1,
-                ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  return _buildProductosAgrupados();
+                }, childCount: 1),
               ),
             ),
         ],
@@ -736,7 +1141,11 @@ class _ProductosScreenState extends State<ProductosScreen> {
         children: [
           if (_showScrollToTop) ...[
             FloatingActionButton.small(
-              onPressed: () => _scrollController.animateTo(0, duration: const Duration(milliseconds: 500), curve: Curves.easeInOut),
+              onPressed: () => _scrollController.animateTo(
+                0,
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeInOut,
+              ),
               backgroundColor: SubliriumColors.cyan.withValues(alpha: 0.8),
               child: const Icon(Icons.arrow_upward, color: Colors.white),
             ),
@@ -756,7 +1165,9 @@ class _ProductosScreenState extends State<ProductosScreen> {
   Widget _buildProductosAgrupados() {
     final Map<int, List<Producto>> productosPorCategoria = {};
     for (final producto in _productosFiltrados) {
-      productosPorCategoria.putIfAbsent(producto.categoriaId, () => []).add(producto);
+      productosPorCategoria
+          .putIfAbsent(producto.categoriaId, () => [])
+          .add(producto);
     }
 
     final categoriasOrdenadas = _categorias
@@ -765,7 +1176,9 @@ class _ProductosScreenState extends State<ProductosScreen> {
 
     // Include products with unknown categories
     final categoriaIdsConocidos = categoriasOrdenadas.map((c) => c.id).toSet();
-    final sinCategoria = _productosFiltrados.where((p) => !categoriaIdsConocidos.contains(p.categoriaId)).toList();
+    final sinCategoria = _productosFiltrados
+        .where((p) => !categoriaIdsConocidos.contains(p.categoriaId))
+        .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -777,14 +1190,21 @@ class _ProductosScreenState extends State<ProductosScreen> {
             children: [
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   gradient: SubliriumColors.headerGradient,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   categoria.nombre,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -793,7 +1213,8 @@ class _ProductosScreenState extends State<ProductosScreen> {
             ],
           );
         }),
-        if (sinCategoria.isNotEmpty) ...sinCategoria.map((p) => _buildProductoCard(p)),
+        if (sinCategoria.isNotEmpty)
+          ...sinCategoria.map((p) => _buildProductoCard(p)),
       ],
     );
   }
@@ -805,7 +1226,13 @@ class _ProductosScreenState extends State<ProductosScreen> {
       decoration: BoxDecoration(
         color: SubliriumColors.cardBackground,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -816,9 +1243,21 @@ class _ProductosScreenState extends State<ProductosScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(producto.nombre, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Colors.black)),
+                    Text(
+                      producto.nombre,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 14,
+                        color: Colors.black,
+                      ),
+                    ),
                     if (producto.descripcion != null)
-                      Text(producto.descripcion!, style: TextStyle(fontSize: 11, color: Colors.grey[600]), maxLines: 2, overflow: TextOverflow.ellipsis),
+                      Text(
+                        producto.descripcion!,
+                        style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                   ],
                 ),
               ),
@@ -826,16 +1265,42 @@ class _ProductosScreenState extends State<ProductosScreen> {
                 children: [
                   if (producto.precio != null)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(color: SubliriumColors.inputFocusedBg, borderRadius: BorderRadius.circular(6)),
-                      child: Text('\$${producto.precio!.toStringAsFixed(2)}', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppConfig.secondaryColor)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: SubliriumColors.inputFocusedBg,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '\$${producto.precio!.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppConfig.secondaryColor,
+                        ),
+                      ),
                     ),
                   if (producto.costo != null)
                     Container(
                       margin: const EdgeInsets.only(top: 4),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(color: SubliriumColors.naranja.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(6)),
-                      child: Text('Costo: \$${producto.costo!.toStringAsFixed(2)}', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppConfig.accentColor)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: SubliriumColors.naranja.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'Costo: \$${producto.costo!.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: AppConfig.accentColor,
+                        ),
+                      ),
                     ),
                 ],
               ),
@@ -843,7 +1308,16 @@ class _ProductosScreenState extends State<ProductosScreen> {
           ),
           if (producto.proveedorId != null) ...[
             const SizedBox(height: 4),
-            Row(children: [Icon(Icons.business, size: 12, color: Colors.grey[500]), const SizedBox(width: 4), Text(_getNombreProveedor(producto.proveedorId), style: TextStyle(fontSize: 10, color: Colors.grey[600]))]),
+            Row(
+              children: [
+                Icon(Icons.business, size: 12, color: Colors.grey[500]),
+                const SizedBox(width: 4),
+                Text(
+                  _getNombreProveedor(producto.proveedorId),
+                  style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                ),
+              ],
+            ),
           ],
           const SizedBox(height: 8),
           Row(
@@ -852,46 +1326,127 @@ class _ProductosScreenState extends State<ProductosScreen> {
               const SizedBox(width: 8),
               Container(
                 decoration: BoxDecoration(
-                  color: producto.cantidad > 0 ? SubliriumColors.stockOkBg : SubliriumColors.stockZeroBg,
+                  color: producto.cantidad > 0
+                      ? SubliriumColors.stockOkBg
+                      : SubliriumColors.stockZeroBg,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: Row(children: [
-                  GestureDetector(
-                    onTap: producto.cantidad > 0 ? () => _updateCantidad(producto, -1) : null,
-                    child: Icon(Icons.remove, size: 16, color: SubliriumColors.stockOkText),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Text('${producto.cantidad}', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: producto.cantidad > 0 ? SubliriumColors.stockOkText : SubliriumColors.stockZeroText)),
-                  ),
-                  GestureDetector(onTap: () => _updateCantidad(producto, 1), child: Icon(Icons.add, size: 16, color: SubliriumColors.stockOkText)),
-                ]),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: producto.cantidad > 0
+                          ? () => _updateCantidad(producto, -1)
+                          : null,
+                      child: Icon(
+                        Icons.remove,
+                        size: 16,
+                        color: SubliriumColors.stockOkText,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(
+                        '${producto.cantidad}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: producto.cantidad > 0
+                              ? SubliriumColors.stockOkText
+                              : SubliriumColors.stockZeroText,
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => _updateCantidad(producto, 1),
+                      child: Icon(
+                        Icons.add,
+                        size: 16,
+                        color: SubliriumColors.stockOkText,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const Spacer(),
               GestureDetector(
                 onTap: () => _showVendidoDialog(producto),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(color: AppConfig.secondaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-                  child: Text('Registrar venta', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: AppConfig.secondaryColor)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppConfig.secondaryColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    'Registrar venta',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      color: AppConfig.secondaryColor,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 4),
-              GestureDetector(onTap: () => _showProductoDialog(producto), child: Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: SubliriumColors.inputFocusedBg, borderRadius: BorderRadius.circular(6)), child: Icon(Icons.edit, size: 14, color: AppConfig.secondaryColor))),
+              GestureDetector(
+                onTap: () => _showProductoDialog(producto),
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: SubliriumColors.inputFocusedBg,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Icon(
+                    Icons.edit,
+                    size: 14,
+                    color: AppConfig.secondaryColor,
+                  ),
+                ),
+              ),
               const SizedBox(width: 4),
               GestureDetector(
                 onTap: () {
-                  Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => TablaPreciosScreen(
-                      productoIdInicial: producto.id,
-                      categoriaIdInicial: producto.categoriaId,
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => TablaPreciosScreen(
+                        productoIdInicial: producto.id,
+                        categoriaIdInicial: producto.categoriaId,
+                      ),
                     ),
-                  ));
+                  );
                 },
-                child: Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: SubliriumColors.naranja.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(6)), child: Icon(Icons.attach_money, size: 14, color: AppConfig.accentColor)),
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: SubliriumColors.naranja.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Icon(
+                    Icons.attach_money,
+                    size: 14,
+                    color: AppConfig.accentColor,
+                  ),
+                ),
               ),
-              GestureDetector(onTap: () => _deleteProducto(producto), child: Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: SubliriumColors.stockLowBg, borderRadius: BorderRadius.circular(6)), child: Icon(Icons.delete, size: 14, color: SubliriumColors.stockLowText))),
+              GestureDetector(
+                onTap: () => _deleteProducto(producto),
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: SubliriumColors.stockLowBg,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Icon(
+                    Icons.delete,
+                    size: 14,
+                    color: SubliriumColors.stockLowText,
+                  ),
+                ),
+              ),
             ],
           ),
         ],
@@ -903,8 +1458,22 @@ class _ProductosScreenState extends State<ProductosScreen> {
     final bool hayStock = cantidad > 0;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: hayStock ? SubliriumColors.stockOkBg : SubliriumColors.stockLowBg, borderRadius: BorderRadius.circular(6)),
-      child: Text(hayStock ? 'En stock' : 'Sin stock', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: hayStock ? SubliriumColors.stockOkText : SubliriumColors.deleteText)),
+      decoration: BoxDecoration(
+        color: hayStock
+            ? SubliriumColors.stockOkBg
+            : SubliriumColors.stockLowBg,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        hayStock ? 'En stock' : 'Sin stock',
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: hayStock
+              ? SubliriumColors.stockOkText
+              : SubliriumColors.deleteText,
+        ),
+      ),
     );
   }
 
@@ -920,9 +1489,18 @@ class _ProductosScreenState extends State<ProductosScreen> {
         decoration: BoxDecoration(
           color: activo ? SubliriumColors.cyan : SubliriumColors.cardBackground,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: activo ? SubliriumColors.cyan : SubliriumColors.border),
+          border: Border.all(
+            color: activo ? SubliriumColors.cyan : SubliriumColors.border,
+          ),
         ),
-        child: Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: activo ? Colors.white : Colors.black)),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: activo ? Colors.white : Colors.black,
+          ),
+        ),
       ),
     );
   }
@@ -949,39 +1527,70 @@ class _ProductosScreenState extends State<ProductosScreen> {
     await PdfHelper.loadLogo();
     final pdf = pw.Document();
     final fecha = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
-    final productosAExportar = widget.categoria != null ? _productos : _productosFiltrados;
+    final productosAExportar = widget.categoria != null
+        ? _productos
+        : _productosFiltrados;
 
     final subtitleContext = <String>[];
-    if (widget.categoria != null) subtitleContext.add('Categoría: ${widget.categoria!.nombre}');
-    if (_filtroActual == FiltroStock.enStock) subtitleContext.add('Filtro: En stock');
-    if (_filtroActual == FiltroStock.sinStock) subtitleContext.add('Filtro: Sin stock');
-    if (_proveedorSeleccionadoFiltro != null) subtitleContext.add('Proveedor: ${_proveedorSeleccionadoFiltro!.nombre}');
-    final subtitleInfo = subtitleContext.isEmpty ? 'Todos los productos' : subtitleContext.join(' | ');
+    if (widget.categoria != null)
+      subtitleContext.add('Categoría: ${widget.categoria!.nombre}');
+    if (_filtroActual == FiltroStock.enStock)
+      subtitleContext.add('Filtro: En stock');
+    if (_filtroActual == FiltroStock.sinStock)
+      subtitleContext.add('Filtro: Sin stock');
+    if (_proveedorSeleccionadoFiltro != null)
+      subtitleContext.add('Proveedor: ${_proveedorSeleccionadoFiltro!.nombre}');
+    final subtitleInfo = subtitleContext.isEmpty
+        ? 'Todos los productos'
+        : subtitleContext.join(' | ');
 
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        header: (context) => PdfHelper.buildHeader(title: 'Inventario de Productos', subtitle: subtitleInfo),
+        header: (context) => PdfHelper.buildHeader(
+          title: 'Inventario de Productos',
+          subtitle: subtitleInfo,
+        ),
         footer: (context) => PdfHelper.buildFooter(),
         build: (context) => [
           pw.SizedBox(height: 20),
           if (widget.categoria == null) ...[
-            for (final categoria in _categorias.where((c) => productosAExportar.any((p) => p.categoriaId == c.id)))
+            for (final categoria in _categorias.where(
+              (c) => productosAExportar.any((p) => p.categoriaId == c.id),
+            ))
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
                   pw.Container(
                     width: double.infinity,
                     padding: const pw.EdgeInsets.all(8),
-                    decoration: const pw.BoxDecoration(color: PdfColors.cyan100),
-                    child: pw.Text(categoria.nombre, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+                    decoration: const pw.BoxDecoration(
+                      color: PdfColors.cyan100,
+                    ),
+                    child: pw.Text(
+                      categoria.nombre,
+                      style: pw.TextStyle(
+                        fontSize: 14,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
                   ),
                   pw.SizedBox(height: 8),
-                  _buildProductosTable(productosAExportar.where((p) => p.categoriaId == categoria.id).toList()),
+                  _buildProductosTable(
+                    productosAExportar
+                        .where((p) => p.categoriaId == categoria.id)
+                        .toList(),
+                  ),
                   pw.SizedBox(height: 8),
                   pw.Container(
                     alignment: pw.Alignment.centerRight,
-                    child: pw.Text('Total ${categoria.nombre}: \$${_calcularTotalCategoria(productosAExportar.where((p) => p.categoriaId == categoria.id).toList()).toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                    child: pw.Text(
+                      'Total ${categoria.nombre}: \$${_calcularTotalCategoria(productosAExportar.where((p) => p.categoriaId == categoria.id).toList()).toStringAsFixed(2)}',
+                      style: pw.TextStyle(
+                        fontSize: 12,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
                   ),
                   pw.SizedBox(height: 16),
                 ],
@@ -989,10 +1598,25 @@ class _ProductosScreenState extends State<ProductosScreen> {
             pw.Container(
               padding: const pw.EdgeInsets.all(12),
               color: PdfColors.cyan200,
-              child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
-                pw.Text('VALOR TOTAL DEL INVENTARIO', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
-                pw.Text('\$${_calcularTotalCategoria(productosAExportar).toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
-              ]),
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text(
+                    'VALOR TOTAL DEL INVENTARIO',
+                    style: pw.TextStyle(
+                      fontSize: 16,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                  pw.Text(
+                    '\$${_calcularTotalCategoria(productosAExportar).toStringAsFixed(2)}',
+                    style: pw.TextStyle(
+                      fontSize: 18,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ] else ...[
             _buildProductosTable(productosAExportar),
@@ -1000,10 +1624,25 @@ class _ProductosScreenState extends State<ProductosScreen> {
             pw.Container(
               padding: const pw.EdgeInsets.all(12),
               color: PdfColors.cyan200,
-              child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
-                pw.Text('VALOR TOTAL', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
-                pw.Text('\$${_calcularTotalCategoria(productosAExportar).toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
-              ]),
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text(
+                    'VALOR TOTAL',
+                    style: pw.TextStyle(
+                      fontSize: 16,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                  pw.Text(
+                    '\$${_calcularTotalCategoria(productosAExportar).toStringAsFixed(2)}',
+                    style: pw.TextStyle(
+                      fontSize: 18,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ],
@@ -1011,21 +1650,32 @@ class _ProductosScreenState extends State<ProductosScreen> {
     );
 
     final filtros = <String>[];
-    if (widget.categoria != null) filtros.add(widget.categoria!.nombre.replaceAll(' ', '_'));
+    if (widget.categoria != null)
+      filtros.add(widget.categoria!.nombre.replaceAll(' ', '_'));
     if (_filtroActual == FiltroStock.enStock) filtros.add('en_stock');
     if (_filtroActual == FiltroStock.sinStock) filtros.add('sin_stock');
-    if (_proveedorSeleccionadoFiltro != null) filtros.add('prov_${_proveedorSeleccionadoFiltro!.nombre.replaceAll(' ', '_')}');
-    if (_searchQuery.isNotEmpty) filtros.add('busq_${_searchQuery.replaceAll(' ', '_')}');
-    
+    if (_proveedorSeleccionadoFiltro != null)
+      filtros.add(
+        'prov_${_proveedorSeleccionadoFiltro!.nombre.replaceAll(' ', '_')}',
+      );
+    if (_searchQuery.isNotEmpty)
+      filtros.add('busq_${_searchQuery.replaceAll(' ', '_')}');
+
     final fechaArchivo = DateFormat('yyyy-MM-dd').format(DateTime.now());
     final sufijo = filtros.isEmpty ? '' : '_${filtros.join('_')}';
     final nombreArchivo = 'inventario$sufijo\_$fechaArchivo';
-    
-    await Printing.layoutPdf(onLayout: (format) async => pdf.save(), name: '$nombreArchivo.pdf');
+
+    await Printing.layoutPdf(
+      onLayout: (format) async => pdf.save(),
+      name: '$nombreArchivo.pdf',
+    );
   }
 
   double _calcularTotalCategoria(List<Producto> productos) {
-    return productos.fold(0.0, (sum, p) => sum + _getPrecioBaseProducto(p.id!) * p.cantidad);
+    return productos.fold(
+      0.0,
+      (sum, p) => sum + _getPrecioBaseProducto(p.id!) * p.cantidad,
+    );
   }
 
   pw.Widget _buildProductosTable(List<Producto> productos) {
@@ -1035,7 +1685,12 @@ class _ProductosScreenState extends State<ProductosScreen> {
     const flexCant = 2.0; // Increased to avoid wrapping
     const flexPre = 2.0;
 
-    pw.Widget buildCell(String text, double flex, {bool isHeader = false, bool isRight = false}) {
+    pw.Widget buildCell(
+      String text,
+      double flex, {
+      bool isHeader = false,
+      bool isRight = false,
+    }) {
       return pw.Expanded(
         flex: (flex * 10).toInt(),
         child: pw.Container(
@@ -1092,10 +1747,18 @@ class _ProductosScreenState extends State<ProductosScreen> {
                 child: pw.Row(
                   children: [
                     buildCell(p.nombre, flexPro),
-                    buildCell('\$${p.costo?.toStringAsFixed(2) ?? "0.00"}', flexCos, isRight: true),
+                    buildCell(
+                      '\$${p.costo?.toStringAsFixed(2) ?? "0.00"}',
+                      flexCos,
+                      isRight: true,
+                    ),
                     buildCell(_getNombreProveedor(p.proveedorId), flexPrv),
                     buildCell(p.cantidad.toString(), flexCant, isRight: true),
-                    buildCell('\$${precioBase.toStringAsFixed(2)}', flexPre, isRight: true),
+                    buildCell(
+                      '\$${precioBase.toStringAsFixed(2)}',
+                      flexPre,
+                      isRight: true,
+                    ),
                   ],
                 ),
               ),
@@ -1103,7 +1766,10 @@ class _ProductosScreenState extends State<ProductosScreen> {
               if (p.descripcion != null && p.descripcion!.isNotEmpty)
                 pw.Container(
                   width: double.infinity,
-                  padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const pw.EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: const pw.BoxDecoration(
                     color: PdfColors.grey50,
                     border: pw.Border(
@@ -1115,8 +1781,21 @@ class _ProductosScreenState extends State<ProductosScreen> {
                   child: pw.RichText(
                     text: pw.TextSpan(
                       children: [
-                        pw.TextSpan(text: 'Descripción: ', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700)),
-                        pw.TextSpan(text: p.descripcion!, style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
+                        pw.TextSpan(
+                          text: 'Descripción: ',
+                          style: pw.TextStyle(
+                            fontSize: 8,
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColors.grey700,
+                          ),
+                        ),
+                        pw.TextSpan(
+                          text: p.descripcion!,
+                          style: const pw.TextStyle(
+                            fontSize: 8,
+                            color: PdfColors.grey700,
+                          ),
+                        ),
                       ],
                     ),
                   ),

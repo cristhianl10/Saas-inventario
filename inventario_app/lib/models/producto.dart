@@ -7,6 +7,7 @@ class Producto {
   final double? precio;
   final int? proveedorId;
   final double? costo;
+  final bool esCombo;
   final DateTime? fechaActualizacion;
 
   Producto({
@@ -18,6 +19,7 @@ class Producto {
     this.precio,
     this.proveedorId,
     this.costo,
+    this.esCombo = false,
     this.fechaActualizacion,
   });
 
@@ -28,9 +30,12 @@ class Producto {
       nombre: json['nombre'] as String,
       descripcion: json['descripcion'] as String?,
       cantidad: json['cantidad'] as int? ?? 0,
-      precio: json['precio'] != null ? (json['precio'] as num).toDouble() : null,
+      precio: json['precio'] != null
+          ? (json['precio'] as num).toDouble()
+          : null,
       proveedorId: json['proveedor_id'] as int?,
       costo: json['costo'] != null ? (json['costo'] as num).toDouble() : null,
+      esCombo: json['es_combo'] as bool? ?? false,
       fechaActualizacion: json['fecha_actualizacion'] != null
           ? DateTime.parse(json['fecha_actualizacion'] as String)
           : null,
@@ -47,6 +52,7 @@ class Producto {
       'precio': precio,
       'proveedor_id': proveedorId,
       'costo': costo,
+      'es_combo': esCombo,
       'fecha_actualizacion': fechaActualizacion?.toIso8601String(),
     };
   }
@@ -60,6 +66,7 @@ class Producto {
     double? precio,
     int? proveedorId,
     double? costo,
+    bool? esCombo,
     DateTime? fechaActualizacion,
   }) {
     return Producto(
@@ -71,6 +78,7 @@ class Producto {
       precio: precio ?? this.precio,
       proveedorId: proveedorId ?? this.proveedorId,
       costo: costo ?? this.costo,
+      esCombo: esCombo ?? this.esCombo,
       fechaActualizacion: fechaActualizacion ?? this.fechaActualizacion,
     );
   }

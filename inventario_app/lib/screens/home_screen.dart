@@ -65,7 +65,9 @@ class _HomeScreenState extends State<HomeScreen> {
             backgroundColor: SubliriumColors.stockOkText,
             duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
       }
@@ -110,12 +112,24 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _deleteCategoria(Categoria categoria) async {
+    // Proteger categoría Combo
+    if (categoria.nombre.toLowerCase() == 'combo') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('La categoría "Combo" no puede eliminarse'),
+        ),
+      );
+      return;
+    }
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('¿Eliminar categoría?'),
-        content: Text('Se eliminarán todos los productos en "${categoria.nombre}".'),
+        content: Text(
+          'Se eliminarán todos los productos en "${categoria.nombre}".',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -134,22 +148,24 @@ class _HomeScreenState extends State<HomeScreen> {
         await _apiService.deleteCategoria(categoria.id!);
         _loadCategorias();
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Categoría eliminada')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Categoría eliminada')));
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error: $e')));
         }
       }
     }
   }
 
   void _showCategoriaDialog([Categoria? categoria]) {
-    final nombreController = TextEditingController(text: categoria?.nombre ?? '');
+    final nombreController = TextEditingController(
+      text: categoria?.nombre ?? '',
+    );
     final isEditing = categoria != null;
 
     showDialog(
@@ -184,9 +200,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
                 return;
               }
-              final existe = _categorias.any((c) =>
-                c.nombre.toLowerCase() == nombre.toLowerCase() &&
-                c.id != categoria?.id
+              final existe = _categorias.any(
+                (c) =>
+                    c.nombre.toLowerCase() == nombre.toLowerCase() &&
+                    c.id != categoria?.id,
               );
               if (existe) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -197,7 +214,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
                 return;
               }
-              final nuevaCategoria = Categoria(id: categoria?.id, nombre: nombre);
+              final nuevaCategoria = Categoria(
+                id: categoria?.id,
+                nombre: nombre,
+              );
               try {
                 if (isEditing) {
                   await _apiService.updateCategoria(nuevaCategoria);
@@ -208,9 +228,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (mounted) Navigator.pop(context);
               } catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e')),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Error: $e')));
                 }
               }
             },
@@ -268,7 +288,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final textColor = isDark ? Colors.white : Colors.black;
     final bgColor = isDark ? Colors.grey[900] : SubliriumColors.cardBackground;
     final borderColor = isDark ? Colors.grey[700]! : SubliriumColors.border;
-    
+
     return CustomScrollView(
       controller: _scrollController,
       slivers: [
@@ -289,7 +309,11 @@ class _HomeScreenState extends State<HomeScreen> {
             background: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [AppConfig.secondaryColor, AppConfig.primaryColor, AppConfig.accentColor],
+                  colors: [
+                    AppConfig.secondaryColor,
+                    AppConfig.primaryColor,
+                    AppConfig.accentColor,
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -309,7 +333,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   value: mode == ThemeMode.dark,
                   activeColor: SubliriumColors.cyan,
                   onChanged: (value) {
-                    themeNotifier.value = value ? ThemeMode.dark : ThemeMode.light;
+                    themeNotifier.value = value
+                        ? ThemeMode.dark
+                        : ThemeMode.light;
                   },
                 );
               },
@@ -318,7 +344,12 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: const Icon(Icons.more_vert, color: Colors.white),
               onSelected: (value) async {
                 if (value == 'config') {
-                  await Navigator.push(context, MaterialPageRoute(builder: (_) => const ConfiguracionScreen()));
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ConfiguracionScreen(),
+                    ),
+                  );
                   AppConfig.configNotifier.value++;
                 } else if (value == 'logout') {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -340,7 +371,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       backgroundColor: Colors.orange,
                       duration: const Duration(seconds: 1),
                       behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                   );
                   await Future.delayed(const Duration(milliseconds: 500));
@@ -395,7 +428,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     width: 36,
                     height: 36,
                     errorBuilder: (context, error, stackTrace) {
-                      return const Icon(Icons.store, color: SubliriumColors.cyan, size: 20);
+                      return const Icon(
+                        Icons.store,
+                        color: SubliriumColors.cyan,
+                        size: 20,
+                      );
                     },
                   ),
                 ),
@@ -410,7 +447,10 @@ class _HomeScreenState extends State<HomeScreen> {
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'Buscar categoría...',
-                hintStyle: TextStyle(fontSize: 12, color: isDark ? Colors.grey[400] : Colors.grey),
+                hintStyle: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? Colors.grey[400] : Colors.grey,
+                ),
                 prefixIcon: Icon(Icons.search, size: 16, color: textColor),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
@@ -431,7 +471,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(9),
-                  borderSide: BorderSide(color: AppConfig.primaryColor, width: 2),
+                  borderSide: BorderSide(
+                    color: AppConfig.primaryColor,
+                    width: 2,
+                  ),
                 ),
               ),
               style: TextStyle(fontSize: 12, color: textColor),
@@ -446,18 +489,28 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Text(
                   'Categorías',
-                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: textColor),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12,
+                    color: textColor,
+                  ),
                 ),
                 Text(
                   '${_categoriasFiltradas.length} categorías',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textColor),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: textColor,
+                  ),
                 ),
               ],
             ),
           ),
         ),
         if (_isLoading)
-          const SliverFillRemaining(child: Center(child: CircularProgressIndicator()))
+          const SliverFillRemaining(
+            child: Center(child: CircularProgressIndicator()),
+          )
         else if (_error != null)
           SliverFillRemaining(
             child: Center(
@@ -468,7 +521,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 8),
                   Text('Error de conexión', style: TextStyle(color: textColor)),
                   const SizedBox(height: 8),
-                  ElevatedButton(onPressed: _loadCategorias, child: const Text('Reintentar')),
+                  ElevatedButton(
+                    onPressed: _loadCategorias,
+                    child: const Text('Reintentar'),
+                  ),
                 ],
               ),
             ),
@@ -479,15 +535,24 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(_searchQuery.isEmpty ? Icons.folder_open : Icons.search_off, size: 48, color: textColor),
+                  Icon(
+                    _searchQuery.isEmpty ? Icons.folder_open : Icons.search_off,
+                    size: 48,
+                    color: textColor,
+                  ),
                   const SizedBox(height: 8),
                   Text(
-                    _searchQuery.isEmpty ? 'No hay categorías' : 'No se encontraron categorías',
+                    _searchQuery.isEmpty
+                        ? 'No hay categorías'
+                        : 'No se encontraron categorías',
                     style: TextStyle(color: textColor),
                   ),
                   if (_searchQuery.isEmpty) ...[
                     const SizedBox(height: 4),
-                    Text('Toca + para crear una', style: TextStyle(fontSize: 12, color: textColor)),
+                    Text(
+                      'Toca + para crear una',
+                      style: TextStyle(fontSize: 12, color: textColor),
+                    ),
                   ],
                 ],
               ),
@@ -495,14 +560,11 @@ class _HomeScreenState extends State<HomeScreen> {
           )
         else
           SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final categoria = _categoriasFiltradas[index];
-                final count = _productosCount[categoria.id] ?? 0;
-                return _buildCategoriaItem(categoria, count);
-              },
-              childCount: _categoriasFiltradas.length,
-            ),
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final categoria = _categoriasFiltradas[index];
+              final count = _productosCount[categoria.id] ?? 0;
+              return _buildCategoriaItem(categoria, count);
+            }, childCount: _categoriasFiltradas.length),
           ),
         const SliverToBoxAdapter(child: SizedBox(height: 100)),
       ],
@@ -512,17 +574,22 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildCategoriaItem(Categoria categoria, int count) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : Colors.black;
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: Container(
         decoration: BoxDecoration(
           color: isDark ? Colors.grey[900] : SubliriumColors.cardBackground,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isDark ? Colors.grey[700]! : SubliriumColors.border),
+          border: Border.all(
+            color: isDark ? Colors.grey[700]! : SubliriumColors.border,
+          ),
         ),
         child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 4,
+          ),
           leading: Container(
             width: 36,
             height: 36,
@@ -530,20 +597,47 @@ class _HomeScreenState extends State<HomeScreen> {
               color: SubliriumColors.cyan.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(9),
             ),
-            child: const Center(child: Icon(Icons.folder, size: 18, color: SubliriumColors.cyan)),
+            child: const Center(
+              child: Icon(Icons.folder, size: 18, color: SubliriumColors.cyan),
+            ),
           ),
-          title: Text(categoria.nombre, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: textColor)),
-          subtitle: Text('$count productos', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: textColor.withValues(alpha: 0.7))),
+          title: Text(
+            categoria.nombre,
+            style: TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: 12,
+              color: textColor,
+            ),
+          ),
+          subtitle: Text(
+            '$count productos',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: textColor.withValues(alpha: 0.7),
+            ),
+          ),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton(icon: Icon(Icons.edit, size: 16, color: textColor), onPressed: () => _showCategoriaDialog(categoria)),
-              IconButton(icon: Icon(Icons.delete, size: 16, color: Colors.red[300]), onPressed: () => _deleteCategoria(categoria)),
+              IconButton(
+                icon: Icon(Icons.edit, size: 16, color: textColor),
+                onPressed: () => _showCategoriaDialog(categoria),
+              ),
+              IconButton(
+                icon: Icon(Icons.delete, size: 16, color: Colors.red[300]),
+                onPressed: () => _deleteCategoria(categoria),
+              ),
               Icon(Icons.chevron_right, color: textColor),
             ],
           ),
           onTap: () {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => ProductosScreen(categoria: categoria)));
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ProductosScreen(categoria: categoria),
+              ),
+            );
           },
         ),
       ),
@@ -555,7 +649,10 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(_currentIndex == 1 ? Icons.inventory_2 : Icons.analytics, size: 64),
+          Icon(
+            _currentIndex == 1 ? Icons.inventory_2 : Icons.analytics,
+            size: 64,
+          ),
           const SizedBox(height: 16),
           Text(_currentIndex == 1 ? 'Productos' : 'Resumen'),
         ],
@@ -567,38 +664,92 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       decoration: BoxDecoration(
         color: SubliriumColors.cardBackground,
-        border: Border(top: BorderSide(color: SubliriumColors.border, width: 1.5)),
+        border: Border(
+          top: BorderSide(color: SubliriumColors.border, width: 1.5),
+        ),
       ),
       child: SafeArea(
         child: Row(
           children: [
-            _buildNavItem(0, '🏠', 'Inicio', _currentIndex == 0, () => setState(() => _currentIndex = 0)),
-            _buildNavItem(1, '📦', 'Productos', false, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductosScreen()))),
-            _buildNavItem(2, '📊', 'Resumen', false, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ResumenScreen()))),
-            _buildNavItem(3, '💰', 'Precios', false, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TablaPreciosScreen()))),
+            _buildNavItem(
+              0,
+              '🏠',
+              'Inicio',
+              _currentIndex == 0,
+              () => setState(() => _currentIndex = 0),
+            ),
+            _buildNavItem(
+              1,
+              '📦',
+              'Productos',
+              false,
+              () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProductosScreen()),
+              ),
+            ),
+            _buildNavItem(
+              2,
+              '📊',
+              'Resumen',
+              false,
+              () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ResumenScreen()),
+              ),
+            ),
+            _buildNavItem(
+              3,
+              '💰',
+              'Precios',
+              false,
+              () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TablaPreciosScreen()),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildNavItem(int index, String icon, String label, bool active, VoidCallback onTap) {
+  Widget _buildNavItem(
+    int index,
+    String icon,
+    String label,
+    bool active,
+    VoidCallback onTap,
+  ) {
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: active
-              ? BoxDecoration(color: SubliriumColors.navActiveGreenLight, borderRadius: BorderRadius.circular(12))
+              ? BoxDecoration(
+                  color: SubliriumColors.navActiveGreenLight,
+                  borderRadius: BorderRadius.circular(12),
+                )
               : null,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(icon, style: TextStyle(fontSize: 18, color: active ? SubliriumColors.navActiveGreen : Colors.black)),
+              Text(
+                icon,
+                style: TextStyle(
+                  fontSize: 18,
+                  color: active ? SubliriumColors.navActiveGreen : Colors.black,
+                ),
+              ),
               const SizedBox(height: 2),
               Text(
                 label,
-                style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: active ? SubliriumColors.navActiveGreen : Colors.black),
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  color: active ? SubliriumColors.navActiveGreen : Colors.black,
+                ),
               ),
             ],
           ),
