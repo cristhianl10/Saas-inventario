@@ -1,4 +1,4 @@
-name: inventario_app
+name: stockflow
 description: "Sistema de control de inventario para emprendimiento"
 publish_to: 'none'
 
