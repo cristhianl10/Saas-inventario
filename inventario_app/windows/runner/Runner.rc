@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.inventario" "\0"
-            VALUE "FileDescription", "inventario_app" "\0"
+            VALUE "CompanyName", "StockFlow" "\0"
+            VALUE "FileDescription", "StockFlow - Sistema de Inventario" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "inventario_app" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.inventario. All rights reserved." "\0"
-            VALUE "OriginalFilename", "inventario_app.exe" "\0"
-            VALUE "ProductName", "inventario_app" "\0"
+            VALUE "InternalName", "StockFlow" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 StockFlow. All rights reserved." "\0"
+            VALUE "OriginalFilename", "StockFlow.exe" "\0"
+            VALUE "ProductName", "StockFlow" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
