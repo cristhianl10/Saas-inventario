@@ -15,6 +15,8 @@ class AppConfig {
   static Color get accentColor => _hexToColor(accentColorHex);
   static Color get backgroundColor => _hexToColor(backgroundColorHex);
   
+  static final ValueNotifier<int> configNotifier = ValueNotifier(0);
+  
   static Color _hexToColor(String hex) {
     hex = hex.replaceFirst('#', '');
     if (hex.length == 6) {
@@ -31,6 +33,7 @@ class AppConfig {
     secondaryColorHex = config['secondary_color'] ?? '#597FA9';
     accentColorHex = config['accent_color'] ?? '#E57836';
     backgroundColorHex = config['background_color'] ?? '#FBF8F1';
+    configNotifier.value++;
   }
   
   static Map<String, dynamic> toMap() {

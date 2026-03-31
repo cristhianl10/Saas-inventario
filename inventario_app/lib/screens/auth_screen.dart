@@ -106,11 +106,13 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Future<void> _createTenantConfig(String userId) async {
+    final brandName = _businessNameController.text.trim().isEmpty
+        ? 'Mi Negocio'
+        : _businessNameController.text.trim();
+    
     final config = {
-      'app_name': AppConfig.appName,
-      'brand_name': _businessNameController.text.isNotEmpty 
-          ? _businessNameController.text 
-          : 'Mi Negocio',
+      'app_name': 'StockFlow',
+      'brand_name': brandName,
       'logo_path': 'assets/logos/logo_default.png',
       'primary_color': '#C1356F',
       'secondary_color': '#597FA9',
@@ -118,12 +120,16 @@ class _AuthScreenState extends State<AuthScreen> {
       'background_color': '#FBF8F1',
     };
     
-    await Supabase.instance.client
-        .from('tenant_config')
-        .insert({
-          'user_id': userId,
-          'config': config,
-        });
+    try {
+      await Supabase.instance.client
+          .from('tenant_config')
+          .insert({
+            'user_id': userId,
+            'config': config,
+          });
+    } catch (e) {
+      debugPrint('Error creando tenant_config: $e');
+    }
   }
 
   void _showForgotPasswordDialog() {

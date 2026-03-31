@@ -7,7 +7,7 @@ import 'config/app_theme.dart';
 import 'config/app_config.dart';
 import 'config/tenant_service.dart';
 
-final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.system);
+final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.dark);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

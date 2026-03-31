@@ -25,23 +25,35 @@ class TenantService {
       
       if (response != null) {
         _currentTenantId = response['id']?.toString();
-        final config = response['config'] as Map<String, dynamic>?;
-        if (config != null) {
-          _tenantConfig = config;
-          AppConfig.loadFromMap(config);
+        
+        // Extraer el config del response
+        final configData = response['config'];
+        if (configData != null) {
+          if (configData is Map) {
+            _tenantConfig = Map<String, dynamic>.from(configData);
+          } else if (configData is String) {
+            // Si viene como string JSON, parsear
+            try {
+              _tenantConfig = Map<String, dynamic>.from(
+                (configData as dynamic)
+              );
+            } catch (_) {}
+          }
+          
+          if (_tenantConfig != null) {
+            AppConfig.loadFromMap(_tenantConfig!);
+          }
         }
       } else {
         _loadDefaultConfig();
-        _applyBusinessNameFromUserMetadata();
       }
     } catch (e) {
       _loadDefaultConfig();
-      _applyBusinessNameFromUserMetadata();
     }
   }
   
   static void _loadDefaultConfig() {
-    AppConfig.appName = 'Inventario';
+    AppConfig.appName = 'StockFlow';
     AppConfig.brandName = 'Mi Negocio';
     AppConfig.logoPath = 'assets/logos/logo_default.png';
     AppConfig.primaryColorHex = '#C1356F';
@@ -49,42 +61,38 @@ class TenantService {
     AppConfig.accentColorHex = '#E57836';
     AppConfig.backgroundColorHex = '#FBF8F1';
   }
-
-  static void _applyBusinessNameFromUserMetadata() {
-    final user = Supabase.instance.client.auth.currentUser;
-    final metadata = user?.userMetadata;
-    final brandName = metadata?['brand_name']?.toString().trim();
-    if (brandName != null && brandName.isNotEmpty) {
-      AppConfig.brandName = brandName;
-    }
-  }
   
   static Future<void> saveTenantConfig(Map<String, dynamic> config) async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
     
-    final existing = await Supabase.instance.client
-        .from('tenant_config')
-        .select()
-        .eq('user_id', user.id)
-        .maybeSingle();
-    
-    if (existing != null) {
-      await Supabase.instance.client
+    try {
+      final existing = await Supabase.instance.client
           .from('tenant_config')
-          .update({'config': config})
-          .eq('user_id', user.id);
-    } else {
-      await Supabase.instance.client
-          .from('tenant_config')
-          .insert({
-            'user_id': user.id,
-            'config': config,
-          });
+          .select()
+          .eq('user_id', user.id)
+          .maybeSingle();
+      
+      if (existing != null) {
+        await Supabase.instance.client
+            .from('tenant_config')
+            .update({'config': config})
+            .eq('user_id', user.id);
+      } else {
+        await Supabase.instance.client
+            .from('tenant_config')
+            .insert({
+              'user_id': user.id,
+              'config': config,
+            });
+      }
+      
+      _tenantConfig = config;
+      AppConfig.loadFromMap(config);
+    } catch (e) {
+      _tenantConfig = config;
+      AppConfig.loadFromMap(config);
     }
-    
-    _tenantConfig = config;
-    AppConfig.loadFromMap(config);
   }
   
   static void clearTenant() {

@@ -20,7 +20,7 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
   String _accentColor = '#E57836';
   String _backgroundColor = '#FBF8F1';
   
-  bool _isLoading = false;
+  bool _isLoading = true;
   bool _isSaving = false;
 
   final List<Map<String, String>> _colorPresets = [
@@ -40,19 +40,30 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
 
   Future<void> _loadConfig() async {
     setState(() => _isLoading = true);
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user != null) {
-      await TenantService.loadTenantConfig(user.id);
+    
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null) {
+        await TenantService.loadTenantConfig(user.id);
+      }
+      
+      setState(() {
+        _appNameController.text = AppConfig.appName;
+        _brandNameController.text = AppConfig.brandName;
+        _primaryColor = AppConfig.primaryColorHex;
+        _secondaryColor = AppConfig.secondaryColorHex;
+        _accentColor = AppConfig.accentColorHex;
+        _backgroundColor = AppConfig.backgroundColorHex;
+      });
+    } catch (e) {
+      // Si hay error, usar valores por defecto
+      setState(() {
+        _appNameController.text = 'StockFlow';
+        _brandNameController.text = 'Mi Negocio';
+      });
+    } finally {
+      setState(() => _isLoading = false);
     }
-    setState(() {
-      _appNameController.text = AppConfig.appName;
-      _brandNameController.text = AppConfig.brandName;
-      _primaryColor = AppConfig.primaryColorHex;
-      _secondaryColor = AppConfig.secondaryColorHex;
-      _accentColor = AppConfig.accentColorHex;
-      _backgroundColor = AppConfig.backgroundColorHex;
-      _isLoading = false;
-    });
   }
 
   Color _hexToColor(String hex) {
@@ -199,6 +210,17 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Configuración'),
+          backgroundColor: _hexToColor(_primaryColor),
+          foregroundColor: Colors.white,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Configuración'),
@@ -226,139 +248,137 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
             ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSectionTitle('Información del Negocio'),
-                    const SizedBox(height: 16),
-                    
-                    TextFormField(
-                      controller: _appNameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Nombre de la App',
-                        hintText: 'Ej: Inventario',
-                        prefixIcon: Icon(Icons.apps),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSectionTitle('Información del Negocio'),
+              const SizedBox(height: 16),
+              
+              TextFormField(
+                controller: _appNameController,
+                decoration: const InputDecoration(
+                  labelText: 'Nombre de la App',
+                  hintText: 'Ej: Inventario',
+                  prefixIcon: Icon(Icons.apps),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'El nombre es obligatorio';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              
+              TextFormField(
+                controller: _brandNameController,
+                decoration: const InputDecoration(
+                  labelText: 'Nombre de tu Negocio',
+                  hintText: 'Ej: Mi Tienda',
+                  prefixIcon: Icon(Icons.store),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'El nombre del negocio es obligatorio';
+                  }
+                  return null;
+                },
+              ),
+              
+              const SizedBox(height: 32),
+              _buildSectionTitle('Colores de Marca'),
+              const SizedBox(height: 16),
+              
+              const Text(
+                'Preajustes',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _colorPresets.map((preset) {
+                  return GestureDetector(
+                    onTap: () => _applyPreset(preset),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'El nombre es obligatorio';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    TextFormField(
-                      controller: _brandNameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Nombre de tu Negocio',
-                        hintText: 'Ej: Mi Tienda',
-                        prefixIcon: Icon(Icons.store),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey[300]!),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'El nombre del negocio es obligatorio';
-                        }
-                        return null;
-                      },
-                    ),
-                    
-                    const SizedBox(height: 32),
-                    _buildSectionTitle('Colores de Marca'),
-                    const SizedBox(height: 16),
-                    
-                    const Text(
-                      'Preajustes',
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: _colorPresets.map((preset) {
-                        return GestureDetector(
-                          onTap: () => _applyPreset(preset),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 20,
+                            height: 20,
                             decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey[300]!),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 20,
-                                  height: 20,
-                                  decoration: BoxDecoration(
-                                    color: _hexToColor(preset['primary']!),
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(preset['name']!),
-                              ],
+                              color: _hexToColor(preset['primary']!),
+                              shape: BoxShape.circle,
                             ),
                           ),
-                        );
-                      }).toList(),
-                    ),
-                    
-                    const SizedBox(height: 24),
-                    _colorPicker('Color Primario', _primaryColor, (color) {
-                      setState(() => _primaryColor = color);
-                    }),
-                    const SizedBox(height: 16),
-                    
-                    _colorPicker('Color Secundario', _secondaryColor, (color) {
-                      setState(() => _secondaryColor = color);
-                    }),
-                    const SizedBox(height: 16),
-                    
-                    _colorPicker('Color Acento', _accentColor, (color) {
-                      setState(() => _accentColor = color);
-                    }),
-                    const SizedBox(height: 16),
-                    
-                    _colorPicker('Color de Fondo', _backgroundColor, (color) {
-                      setState(() => _backgroundColor = color);
-                    }),
-                    
-                    const SizedBox(height: 32),
-                    _buildSectionTitle('Vista Previa'),
-                    const SizedBox(height: 16),
-                    _buildPreview(),
-                    
-                    const SizedBox(height: 32),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _saveConfig,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _hexToColor(_primaryColor),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        child: const Text(
-                          'Guardar Configuración',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
+                          const SizedBox(width: 8),
+                          Text(preset['name']!),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 16),
-                  ],
+                  );
+                }).toList(),
+              ),
+              
+              const SizedBox(height: 24),
+              _colorPicker('Color Primario', _primaryColor, (color) {
+                setState(() => _primaryColor = color);
+              }),
+              const SizedBox(height: 16),
+              
+              _colorPicker('Color Secundario', _secondaryColor, (color) {
+                setState(() => _secondaryColor = color);
+              }),
+              const SizedBox(height: 16),
+              
+              _colorPicker('Color Acento', _accentColor, (color) {
+                setState(() => _accentColor = color);
+              }),
+              const SizedBox(height: 16),
+              
+              _colorPicker('Color de Fondo', _backgroundColor, (color) {
+                setState(() => _backgroundColor = color);
+              }),
+              
+              const SizedBox(height: 32),
+              _buildSectionTitle('Vista Previa'),
+              const SizedBox(height: 16),
+              _buildPreview(),
+              
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _saveConfig,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _hexToColor(_primaryColor),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: const Text(
+                    'Guardar Configuración',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
-            ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -396,7 +416,7 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              _appNameController.text.isEmpty ? 'Inventario' : _appNameController.text,
+              _appNameController.text.isEmpty ? 'StockFlow' : _appNameController.text,
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,

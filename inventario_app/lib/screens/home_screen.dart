@@ -33,6 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadCategorias();
+    _showWelcomeMessage();
     _searchController.addListener(() {
       setState(() {
         _searchQuery = _searchController.text.toLowerCase();
@@ -42,6 +43,31 @@ class _HomeScreenState extends State<HomeScreen> {
       final show = _scrollController.offset > 300;
       if (show != _showScrollToTop) {
         setState(() => _showScrollToTop = show);
+      }
+    });
+  }
+
+  void _showWelcomeMessage() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                Text(
+                  'Bienvenido ${AppConfig.brandName}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            backgroundColor: SubliriumColors.stockOkText,
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
       }
     });
   }
@@ -197,10 +223,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _currentIndex == 0 ? _buildCategorias() : _buildOtros(),
-      bottomNavigationBar: _buildBottomNav(),
-      floatingActionButton: _buildFab(),
+    return ValueListenableBuilder<int>(
+      valueListenable: AppConfig.configNotifier,
+      builder: (context, _, __) {
+        return Scaffold(
+          body: _currentIndex == 0 ? _buildCategorias() : _buildOtros(),
+          bottomNavigationBar: _buildBottomNav(),
+          floatingActionButton: _buildFab(),
+        );
+      },
     );
   }
 
@@ -287,8 +318,32 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: const Icon(Icons.more_vert, color: Colors.white),
               onSelected: (value) async {
                 if (value == 'config') {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ConfiguracionScreen()));
+                  await Navigator.push(context, MaterialPageRoute(builder: (_) => const ConfiguracionScreen()));
+                  AppConfig.configNotifier.value++;
                 } else if (value == 'logout') {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Text('Cerrando sesión...'),
+                        ],
+                      ),
+                      backgroundColor: Colors.orange,
+                      duration: const Duration(seconds: 1),
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  );
+                  await Future.delayed(const Duration(milliseconds: 500));
                   await Supabase.instance.client.auth.signOut();
                 }
               },
