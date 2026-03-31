@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import '../config/app_config.dart';
 
 class PdfHelper {
   static pw.MemoryImage? _logoImage;
@@ -9,7 +10,7 @@ class PdfHelper {
   static Future<void> loadLogo() async {
     if (_logoImage != null) return;
     try {
-      final bytes = await rootBundle.load('assets/logos/logo sublirium.jpeg');
+      final bytes = await rootBundle.load(AppConfig.logoPath);
       _logoImage = pw.MemoryImage(bytes.buffer.asUint8List());
     } catch (e) {
       _logoImage = null;
@@ -42,7 +43,7 @@ class PdfHelper {
                 shape: pw.BoxShape.circle,
               ),
               child: pw.Center(
-                child: pw.Text('S', style: pw.TextStyle(
+                child: pw.Text(AppConfig.brandName.substring(0, 1).toUpperCase(), style: pw.TextStyle(
                   fontSize: 24,
                   fontWeight: pw.FontWeight.bold,
                   color: PdfColors.pink800,
@@ -55,7 +56,7 @@ class PdfHelper {
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
                 pw.Text(
-                  title ?? 'Sublirium',
+                  title ?? AppConfig.brandName,
                   style: pw.TextStyle(
                     fontSize: 20,
                     fontWeight: pw.FontWeight.bold,
@@ -90,7 +91,7 @@ class PdfHelper {
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
           pw.Text(
-            'Generado por Sublirium - Inventario',
+            'Generado por ${AppConfig.appName}',
             style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
           ),
           pw.Text(

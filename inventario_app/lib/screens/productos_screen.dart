@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
 import '../config/app_theme.dart';
+import '../config/app_config.dart';
 import '../utils/pdf_helper.dart';
 import 'tabla_precios_screen.dart';
 
@@ -611,9 +612,20 @@ class _ProductosScreenState extends State<ProductosScreen> {
                 esVistaGlobal ? 'Todos los Productos' : (widget.categoria?.nombre ?? 'Productos'),
                 style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
               ),
-              background: Container(decoration: const BoxDecoration(gradient: SubliriumColors.headerGradient)),
+              background: Container(decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppConfig.secondaryColor, AppConfig.primaryColor, AppConfig.accentColor],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              )),
             ),
             actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh, color: Colors.white),
+                onPressed: _loadProductos,
+                tooltip: 'Actualizar',
+              ),
               IconButton(icon: const Icon(Icons.picture_as_pdf, color: Colors.white), onPressed: _generarPdfProductos, tooltip: 'Descargar PDF'),
               if (!esVistaGlobal) ...[
                 Container(width: 36, height: 36, decoration: BoxDecoration(color: SubliriumColors.cyan.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(9)),
@@ -816,14 +828,14 @@ class _ProductosScreenState extends State<ProductosScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(color: SubliriumColors.inputFocusedBg, borderRadius: BorderRadius.circular(6)),
-                      child: Text('\$${producto.precio!.toStringAsFixed(2)}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: SubliriumColors.cyan)),
+                      child: Text('\$${producto.precio!.toStringAsFixed(2)}', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppConfig.secondaryColor)),
                     ),
                   if (producto.costo != null)
                     Container(
                       margin: const EdgeInsets.only(top: 4),
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(color: SubliriumColors.naranja.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(6)),
-                      child: Text('Costo: \$${producto.costo!.toStringAsFixed(2)}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: SubliriumColors.naranja)),
+                      child: Text('Costo: \$${producto.costo!.toStringAsFixed(2)}', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppConfig.accentColor)),
                     ),
                 ],
               ),
@@ -847,13 +859,13 @@ class _ProductosScreenState extends State<ProductosScreen> {
                 child: Row(children: [
                   GestureDetector(
                     onTap: producto.cantidad > 0 ? () => _updateCantidad(producto, -1) : null,
-                    child: const Icon(Icons.remove, size: 16, color: SubliriumColors.stockOkText),
+                    child: Icon(Icons.remove, size: 16, color: SubliriumColors.stockOkText),
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Text('${producto.cantidad}', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: producto.cantidad > 0 ? SubliriumColors.stockOkText : SubliriumColors.stockZeroText)),
                   ),
-                  GestureDetector(onTap: () => _updateCantidad(producto, 1), child: const Icon(Icons.add, size: 16, color: SubliriumColors.stockOkText)),
+                  GestureDetector(onTap: () => _updateCantidad(producto, 1), child: Icon(Icons.add, size: 16, color: SubliriumColors.stockOkText)),
                 ]),
               ),
               const Spacer(),
@@ -861,12 +873,12 @@ class _ProductosScreenState extends State<ProductosScreen> {
                 onTap: () => _showVendidoDialog(producto),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(color: SubliriumColors.cyan.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-                  child: const Text('Registrar venta', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: SubliriumColors.cyan)),
+                  decoration: BoxDecoration(color: AppConfig.secondaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+                  child: Text('Registrar venta', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: AppConfig.secondaryColor)),
                 ),
               ),
               const SizedBox(width: 4),
-              GestureDetector(onTap: () => _showProductoDialog(producto), child: Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: SubliriumColors.inputFocusedBg, borderRadius: BorderRadius.circular(6)), child: const Icon(Icons.edit, size: 14, color: SubliriumColors.cyan))),
+              GestureDetector(onTap: () => _showProductoDialog(producto), child: Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: SubliriumColors.inputFocusedBg, borderRadius: BorderRadius.circular(6)), child: Icon(Icons.edit, size: 14, color: AppConfig.secondaryColor))),
               const SizedBox(width: 4),
               GestureDetector(
                 onTap: () {
@@ -877,9 +889,9 @@ class _ProductosScreenState extends State<ProductosScreen> {
                     ),
                   ));
                 },
-                child: Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: SubliriumColors.naranja.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(6)), child: const Icon(Icons.attach_money, size: 14, color: SubliriumColors.naranja)),
+                child: Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: SubliriumColors.naranja.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(6)), child: Icon(Icons.attach_money, size: 14, color: AppConfig.accentColor)),
               ),
-              GestureDetector(onTap: () => _deleteProducto(producto), child: Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: SubliriumColors.stockLowBg, borderRadius: BorderRadius.circular(6)), child: const Icon(Icons.delete, size: 14, color: SubliriumColors.stockLowText))),
+              GestureDetector(onTap: () => _deleteProducto(producto), child: Container(padding: const EdgeInsets.all(6), decoration: BoxDecoration(color: SubliriumColors.stockLowBg, borderRadius: BorderRadius.circular(6)), child: Icon(Icons.delete, size: 14, color: SubliriumColors.stockLowText))),
             ],
           ),
         ],
@@ -998,9 +1010,17 @@ class _ProductosScreenState extends State<ProductosScreen> {
       ),
     );
 
-    final nombreArchivo = widget.categoria != null
-        ? 'productos_${widget.categoria!.nombre.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}'
-        : 'inventario_productos_${DateTime.now().millisecondsSinceEpoch}';
+    final filtros = <String>[];
+    if (widget.categoria != null) filtros.add(widget.categoria!.nombre.replaceAll(' ', '_'));
+    if (_filtroActual == FiltroStock.enStock) filtros.add('en_stock');
+    if (_filtroActual == FiltroStock.sinStock) filtros.add('sin_stock');
+    if (_proveedorSeleccionadoFiltro != null) filtros.add('prov_${_proveedorSeleccionadoFiltro!.nombre.replaceAll(' ', '_')}');
+    if (_searchQuery.isNotEmpty) filtros.add('busq_${_searchQuery.replaceAll(' ', '_')}');
+    
+    final fechaArchivo = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final sufijo = filtros.isEmpty ? '' : '_${filtros.join('_')}';
+    final nombreArchivo = 'inventario$sufijo\_$fechaArchivo';
+    
     await Printing.layoutPdf(onLayout: (format) async => pdf.save(), name: '$nombreArchivo.pdf');
   }
 

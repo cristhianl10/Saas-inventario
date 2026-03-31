@@ -186,7 +186,17 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Categorías'), centerTitle: true),
+      appBar: AppBar(
+        title: const Text('Categorías'),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadCategorias,
+            tooltip: 'Actualizar',
+          ),
+        ],
+      ),
       body: _buildBody(),
       floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,
@@ -297,11 +307,17 @@ class _CategoriasScreenState extends State<CategoriasScreen> {
               ),
               title: Text(
                 categoria.nombre,
-                style: const TextStyle(fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black,
+                ),
               ),
               subtitle: Text(
                 '$count productos',
-                style: const TextStyle(fontSize: 12),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.black,
+                ),
               ),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,

@@ -3,6 +3,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
 import '../models/models.dart';
 import '../config/app_theme.dart';
+import '../config/app_config.dart';
 import 'pdf_helper.dart';
 
 class PdfTablaPreciosBuilder {
@@ -30,7 +31,7 @@ class PdfTablaPreciosBuilder {
     );
 
     final bytes = await pdf.save();
-    final fileName = 'tabla_precios_sublirium_${DateTime.now().millisecondsSinceEpoch}.pdf';
+    final fileName = 'tabla_precios_${AppConfig.brandName.toLowerCase().replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.pdf';
 
     if (onSave != null) {
       onSave(fileName);

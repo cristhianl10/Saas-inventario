@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
 import '../config/app_theme.dart';
+import '../config/app_config.dart';
 import '../utils/pdf_helper.dart';
 
 String _parsePrice(String value) {
@@ -102,7 +103,7 @@ class _ResumenScreenState extends State<ResumenScreen> {
   }
 
   Future<void> _deleteVenta(Venta venta) async {
-    final confirm = await showDialog<bool>(
+    final confirm = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -112,45 +113,104 @@ class _ResumenScreenState extends State<ResumenScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(context, 'cancelar'),
             child: const Text('Cancelar'),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(
-              foregroundColor: SubliriumColors.deleteText,
-            ),
-            child: const Text('Eliminar'),
+            onPressed: () => Navigator.pop(context, 'solo'),
+            child: const Text('Solo eliminar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, 'regresar'),
+            child: const Text('Regresar stock'),
           ),
         ],
       ),
     );
 
-    if (confirm == true && venta.id != null) {
-      try {
-        // Devolver stock al producto
+    if (confirm == null || venta.id == null) return;
+
+    if (confirm == 'cancelar') return;
+
+    try {
+      if (confirm == 'regresar') {
+        final cantidadController = TextEditingController(text: venta.cantidad.toString());
+        
+        final cantidadConfirm = await showDialog<int>(
+          context: context,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Text('Regresar al inventario'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('¿Cuántas unidades desea regresar al inventario?'),
+                const SizedBox(height: 8),
+                Text(
+                  '(Máximo: ${venta.cantidad} unidades)',
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: cantidadController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Cantidad',
+                    border: OutlineInputBorder(),
+                  ),
+                  autofocus: true,
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  final cantidad = int.tryParse(cantidadController.text) ?? 0;
+                  if (cantidad > 0 && cantidad <= venta.cantidad) {
+                    Navigator.pop(context, cantidad);
+                  }
+                },
+                child: const Text('Aceptar'),
+              ),
+            ],
+          ),
+        );
+
+        if (cantidadConfirm == null || cantidadConfirm <= 0) return;
+
         final producto = _productos
             .where((p) => p.id == venta.productoId)
             .firstOrNull;
         if (producto != null) {
           final productoActualizado = producto.copyWith(
-            cantidad: producto.cantidad + venta.cantidad,
+            cantidad: producto.cantidad + cantidadConfirm,
             fechaActualizacion: DateTime.now(),
           );
           await _apiService.updateProducto(productoActualizado);
         }
+      }
 
-        await _apiService.deleteVenta(venta.id!);
-        _loadData();
-        if (mounted)
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Venta eliminada')));
-      } catch (e) {
-        if (mounted)
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      await _apiService.deleteVenta(venta.id!);
+      _loadData();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(confirm == 'regresar' 
+                ? 'Venta eliminada y stock actualizado' 
+                : 'Venta eliminada'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
       }
     }
   }
@@ -403,6 +463,11 @@ class _ResumenScreenState extends State<ResumenScreen> {
             floating: false,
             pinned: true,
             actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh, color: Colors.white),
+                onPressed: _loadData,
+                tooltip: 'Actualizar',
+              ),
               IconButton(icon: const Icon(Icons.picture_as_pdf, color: Colors.white), onPressed: _generarPdfVentas, tooltip: 'Descargar reporte'),
             ],
             flexibleSpace: FlexibleSpaceBar(
@@ -411,8 +476,12 @@ class _ResumenScreenState extends State<ResumenScreen> {
                 style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
               ),
               background: Container(
-                decoration: const BoxDecoration(
-                  gradient: SubliriumColors.headerGradient,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppConfig.secondaryColor, AppConfig.primaryColor, AppConfig.accentColor],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                 ),
               ),
             ),
@@ -889,6 +958,9 @@ class _ResumenScreenState extends State<ResumenScreen> {
       ),
     );
 
-    await Printing.layoutPdf(onLayout: (format) async => pdf.save(), name: 'reporte_ventas_${DateTime.now().millisecondsSinceEpoch}.pdf');
+    final fechaArchivo = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final nombreArchivo = 'ventas_$fechaArchivo';
+    
+    await Printing.layoutPdf(onLayout: (format) async => pdf.save(), name: '$nombreArchivo.pdf');
   }
 }

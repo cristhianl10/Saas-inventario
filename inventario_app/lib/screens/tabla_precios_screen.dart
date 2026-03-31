@@ -6,6 +6,7 @@ import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
+import '../config/app_config.dart';
 import '../config/app_theme.dart';
 import '../utils/pdf_helper.dart';
 
@@ -467,11 +468,15 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Tabla de Precios'),
-        backgroundColor: SubliriumColors.cyan,
+        backgroundColor: AppConfig.secondaryColor,
         foregroundColor: Colors.white,
         flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: SubliriumColors.headerGradient,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppConfig.secondaryColor, AppConfig.primaryColor, AppConfig.accentColor],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
           ),
         ),
         actions: [
@@ -1086,9 +1091,15 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
       ),
     );
 
-    final nombreArchivo = _productoSeleccionado != null
-        ? 'tarifa_${_productoSeleccionado!.nombre.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}'
-        : 'tarifas_precios_${DateTime.now().millisecondsSinceEpoch}';
+    final filtros = <String>[];
+    if (_productoSeleccionado != null) filtros.add(_productoSeleccionado!.nombre.replaceAll(' ', '_'));
+    if (_categoriaSeleccionada != null) filtros.add(_categoriaSeleccionada!.nombre.replaceAll(' ', '_'));
+    if (_searchQuery.isNotEmpty) filtros.add('busq_${_searchQuery.replaceAll(' ', '_')}');
+    
+    final fechaArchivo = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final sufijo = filtros.isEmpty ? '' : '_${filtros.join('_')}';
+    final nombreArchivo = 'tarifas$sufijo\_$fechaArchivo';
+    
     await Printing.layoutPdf(
       onLayout: (format) async => pdf.save(),
       name: '$nombreArchivo.pdf',
