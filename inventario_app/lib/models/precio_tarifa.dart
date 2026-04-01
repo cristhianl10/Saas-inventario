@@ -18,10 +18,10 @@ class PrecioTarifa {
   factory PrecioTarifa.fromJson(Map<String, dynamic> json) {
     return PrecioTarifa(
       id: json['id'] as int?,
-      productoId: json['producto_id'] as int,
-      cantidadMin: json['cantidad_min'] as int,
+      productoId: (json['producto_id'] as num?)?.toInt() ?? 0,
+      cantidadMin: (json['cantidad_min'] as num?)?.toInt() ?? 0,
       cantidadMax: json['cantidad_max'] as int?,
-      precioUnitario: (json['precio_unitario'] as num).toDouble(),
+      precioUnitario: (json['precio_unitario'] as num?)?.toDouble() ?? 0.0,
       fechaCreacion: json['fecha_creacion'] != null
           ? DateTime.parse(json['fecha_creacion'] as String)
           : null,

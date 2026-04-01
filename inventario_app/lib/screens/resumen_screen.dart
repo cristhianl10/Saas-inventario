@@ -77,8 +77,10 @@ class _ResumenScreenState extends State<ResumenScreen> {
       _productos.where((p) => p.cantidad == 0).toList();
   int get _totalUnidadesStock =>
       _productosEnStock.fold(0, (sum, p) => sum + p.cantidad);
-  double get _totalAssetsValue =>
-      _productosEnStock.fold(0, (sum, p) => sum + (p.cantidad * (p.precio ?? 0)));
+  double get _totalAssetsValue => _productosEnStock.fold(
+    0,
+    (sum, p) => sum + (p.cantidad * (p.precio ?? 0)),
+  );
 
   double get _totalVentas => _ventas.fold(0, (sum, v) => sum + v.total);
   int get _totalUnidadesVendidas =>
@@ -108,7 +110,9 @@ class _ResumenScreenState extends State<ResumenScreen> {
     if (venta.id == null) return;
 
     // Step 1: Ask how many units to return (or just delete)
-    final cantidadController = TextEditingController(text: venta.cantidad.toString());
+    final cantidadController = TextEditingController(
+      text: venta.cantidad.toString(),
+    );
     bool devolverStock = false;
 
     final resultado = await showDialog<String>(
@@ -117,10 +121,16 @@ class _ResumenScreenState extends State<ResumenScreen> {
         builder: (context, setDialogState) {
           final isDark = Theme.of(context).brightness == Brightness.dark;
           return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
             title: Row(
               children: [
-                Icon(Icons.delete_outline, color: SubliriumColors.deleteText, size: 22),
+                Icon(
+                  Icons.delete_outline,
+                  color: SubliriumColors.deleteText,
+                  size: 22,
+                ),
                 const SizedBox(width: 8),
                 const Text('Eliminar venta'),
               ],
@@ -137,7 +147,11 @@ class _ResumenScreenState extends State<ResumenScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.receipt_long, size: 18, color: SubliriumColors.textSecondary),
+                      const Icon(
+                        Icons.receipt_long,
+                        size: 18,
+                        color: SubliriumColors.textSecondary,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Column(
@@ -147,14 +161,18 @@ class _ResumenScreenState extends State<ResumenScreen> {
                               _getNombreProducto(venta.productoId),
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                color: isDark ? Colors.white : SubliriumColors.textPrimary,
+                                color: isDark
+                                    ? Colors.white
+                                    : SubliriumColors.textPrimary,
                               ),
                             ),
                             Text(
                               '${venta.cantidad} ud(s) · \$${venta.total.toStringAsFixed(2)}',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: isDark ? Colors.white60 : SubliriumColors.textSecondary,
+                                color: isDark
+                                    ? Colors.white60
+                                    : SubliriumColors.textSecondary,
                               ),
                             ),
                           ],
@@ -172,7 +190,9 @@ class _ResumenScreenState extends State<ResumenScreen> {
                         '¿Devolver productos al stock?',
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.white : SubliriumColors.textPrimary,
+                          color: isDark
+                              ? Colors.white
+                              : SubliriumColors.textPrimary,
                         ),
                       ),
                     ),
@@ -189,7 +209,9 @@ class _ResumenScreenState extends State<ResumenScreen> {
                     'Cantidad a devolver (máx. ${venta.cantidad}):',
                     style: TextStyle(
                       fontSize: 12,
-                      color: isDark ? Colors.white60 : SubliriumColors.textSecondary,
+                      color: isDark
+                          ? Colors.white60
+                          : SubliriumColors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -217,8 +239,11 @@ class _ResumenScreenState extends State<ResumenScreen> {
                   backgroundColor: SubliriumColors.deleteText,
                   foregroundColor: Colors.white,
                 ),
-                onPressed: () => Navigator.pop(ctx, devolverStock ? 'regresar' : 'solo'),
-                child: Text(devolverStock ? 'Eliminar y devolver' : 'Solo eliminar'),
+                onPressed: () =>
+                    Navigator.pop(ctx, devolverStock ? 'regresar' : 'solo'),
+                child: Text(
+                  devolverStock ? 'Eliminar y devolver' : 'Solo eliminar',
+                ),
               ),
             ],
           );
@@ -233,13 +258,15 @@ class _ResumenScreenState extends State<ResumenScreen> {
         final cantidadDevolver = int.tryParse(cantidadController.text) ?? 0;
         if (cantidadDevolver <= 0 || cantidadDevolver > venta.cantidad) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Cantidad inválida')),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('Cantidad inválida')));
           }
           return;
         }
-        final producto = _productos.where((p) => p.id == venta.productoId).firstOrNull;
+        final producto = _productos
+            .where((p) => p.id == venta.productoId)
+            .firstOrNull;
         if (producto != null) {
           final productoActualizado = producto.copyWith(
             cantidad: producto.cantidad + cantidadDevolver,
@@ -254,18 +281,22 @@ class _ResumenScreenState extends State<ResumenScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(resultado == 'regresar'
-                ? 'Venta eliminada y stock actualizado'
-                : 'Venta eliminada'),
-            backgroundColor: resultado == 'regresar' ? SubliriumColors.stockOkText : null,
+            content: Text(
+              resultado == 'regresar'
+                  ? 'Venta eliminada y stock actualizado'
+                  : 'Venta eliminada',
+            ),
+            backgroundColor: resultado == 'regresar'
+                ? SubliriumColors.stockOkText
+                : null,
           ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -385,7 +416,9 @@ class _ResumenScreenState extends State<ResumenScreen> {
                       if (parsed != value) {
                         precioController.value = TextEditingValue(
                           text: parsed,
-                          selection: TextSelection.collapsed(offset: parsed.length),
+                          selection: TextSelection.collapsed(
+                            offset: parsed.length,
+                          ),
                         );
                       }
                       setDialogState(() {});
@@ -404,7 +437,10 @@ class _ResumenScreenState extends State<ResumenScreen> {
                       children: [
                         Text(
                           'Total:',
-                          style: TextStyle(fontWeight: FontWeight.w900, color: isDark ? Colors.white : Colors.black),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
                         ),
                         Text(
                           '\$${total.toStringAsFixed(2)}',
@@ -512,7 +548,7 @@ class _ResumenScreenState extends State<ResumenScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
@@ -528,19 +564,29 @@ class _ResumenScreenState extends State<ResumenScreen> {
             elevation: 0,
             actions: [
               IconButton(
-                icon: Icon(Icons.refresh, color: isDark ? Colors.white : SubliriumColors.textPrimary),
+                icon: Icon(
+                  Icons.refresh,
+                  color: isDark ? Colors.white : SubliriumColors.textPrimary,
+                ),
                 onPressed: _loadData,
                 tooltip: 'Actualizar',
               ),
               IconButton(
-                icon: Icon(Icons.picture_as_pdf, color: isDark ? Colors.white : SubliriumColors.textPrimary),
+                icon: Icon(
+                  Icons.picture_as_pdf,
+                  color: isDark ? Colors.white : SubliriumColors.textPrimary,
+                ),
                 onPressed: _generarPdfVentas,
                 tooltip: 'Descargar reporte',
               ),
               const SizedBox(width: 8),
             ],
             flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.only(left: 24, bottom: 16, right: 24),
+              titlePadding: const EdgeInsets.only(
+                left: 24,
+                bottom: 16,
+                right: 24,
+              ),
               title: Text(
                 'Dashboard',
                 style: theme.textTheme.titleLarge?.copyWith(
@@ -561,7 +607,10 @@ class _ResumenScreenState extends State<ResumenScreen> {
             // Main Assets Value Board
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 8,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -570,7 +619,9 @@ class _ResumenScreenState extends State<ResumenScreen> {
                       style: theme.textTheme.labelMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.5,
-                        color: isDark ? Colors.white : SubliriumColors.textSecondary,
+                        color: isDark
+                            ? Colors.white
+                            : SubliriumColors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -590,7 +641,10 @@ class _ResumenScreenState extends State<ResumenScreen> {
             // Secondary Stats Cards
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 8,
+                ),
                 child: Row(
                   children: [
                     _buildStatCardGlass(
@@ -610,7 +664,8 @@ class _ResumenScreenState extends State<ResumenScreen> {
             ),
 
             // Inventario Alerts (Low stock feature from Prompt)
-            if (_productosSinStock.isNotEmpty || _productosEnStock.any((p) => p.cantidad <= 5))
+            if (_productosSinStock.isNotEmpty ||
+                _productosEnStock.any((p) => p.cantidad <= 5))
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
@@ -622,7 +677,9 @@ class _ResumenScreenState extends State<ResumenScreen> {
                         style: theme.textTheme.labelMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.5,
-                          color: isDark ? Colors.white : SubliriumColors.textSecondary,
+                          color: isDark
+                              ? Colors.white
+                              : SubliriumColors.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -631,8 +688,12 @@ class _ResumenScreenState extends State<ResumenScreen> {
                         child: ListView(
                           scrollDirection: Axis.horizontal,
                           children: [
-                            ..._productosSinStock.map((p) => _buildAlertCard(p, true)),
-                            ..._productosEnStock.where((p) => p.cantidad <= 5).map((p) => _buildAlertCard(p, false)),
+                            ..._productosSinStock.map(
+                              (p) => _buildAlertCard(p, true),
+                            ),
+                            ..._productosEnStock
+                                .where((p) => p.cantidad <= 5)
+                                .map((p) => _buildAlertCard(p, false)),
                           ],
                         ),
                       ),
@@ -650,12 +711,14 @@ class _ResumenScreenState extends State<ResumenScreen> {
                   style: theme.textTheme.labelMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.5,
-                    color: SubliriumColors.textSecondary,
+                    color: isDark
+                        ? Colors.white70
+                        : SubliriumColors.textSecondary,
                   ),
                 ),
               ),
             ),
-            
+
             if (_ventas.isEmpty)
               SliverToBoxAdapter(
                 child: Padding(
@@ -664,13 +727,19 @@ class _ResumenScreenState extends State<ResumenScreen> {
                     padding: const EdgeInsets.all(32),
                     margin: const EdgeInsets.only(bottom: 100),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.grey[900] : const Color(0xFFF6F3EC),
+                      color: isDark
+                          ? Colors.grey[900]
+                          : const Color(0xFFF6F3EC),
                       borderRadius: BorderRadius.circular(24),
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Text(
                         'No hay ventas registradas recientes.',
-                        style: TextStyle(color: SubliriumColors.textSecondary),
+                        style: TextStyle(
+                          color: isDark
+                              ? Colors.white70
+                              : SubliriumColors.textSecondary,
+                        ),
                       ),
                     ),
                   ),
@@ -678,36 +747,36 @@ class _ResumenScreenState extends State<ResumenScreen> {
               )
             else
               SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final isLast = index == _ventas.length - 1;
-                    return Padding(
-                      padding: EdgeInsets.only(
-                        left: 24,
-                        right: 24,
-                        bottom: isLast ? 100 : 12, // Ensure no cutoff by bottom nav bar
-                      ),
-                      child: _buildVentaCardGlass(_ventas[index]),
-                    );
-                  },
-                  childCount: _ventas.length,
-                ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final isLast = index == _ventas.length - 1;
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      left: 24,
+                      right: 24,
+                      bottom: isLast
+                          ? 100
+                          : 12, // Ensure no cutoff by bottom nav bar
+                    ),
+                    child: _buildVentaCardGlass(_ventas[index]),
+                  );
+                }, childCount: _ventas.length),
               ),
           ],
         ],
       ),
       floatingActionButton: _showScrollToTop
           ? FloatingActionButton.small(
-              onPressed: () => _scrollController.animateTo(0,
-                  duration: const Duration(milliseconds: 500),
-                  curve: Curves.easeInOut),
+              onPressed: () => _scrollController.animateTo(
+                0,
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeInOut,
+              ),
               backgroundColor: AppConfig.primaryColor,
               child: const Icon(Icons.arrow_upward, color: Colors.white),
             )
           : null,
     );
   }
-
 
   Widget _buildStatCardGlass(String titulo, String valor, IconData icono) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -734,17 +803,29 @@ class _ResumenScreenState extends State<ResumenScreen> {
                 color: isDark ? Colors.grey[800] : const Color(0xFFF6F3EC),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icono, color: isDark ? Colors.white70 : SubliriumColors.textSecondary, size: 20),
+              child: Icon(
+                icono,
+                color: isDark ? Colors.white70 : SubliriumColors.textSecondary,
+                size: 20,
+              ),
             ),
             const SizedBox(height: 16),
             Text(
               titulo,
-              style: TextStyle(color: isDark ? Colors.white70 : SubliriumColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                color: isDark ? Colors.white70 : SubliriumColors.textSecondary,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
               valor,
-              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: isDark ? Colors.white : SubliriumColors.textPrimary),
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 20,
+                color: isDark ? Colors.white : SubliriumColors.textPrimary,
+              ),
             ),
           ],
         ),
@@ -759,8 +840,10 @@ class _ResumenScreenState extends State<ResumenScreen> {
       margin: const EdgeInsets.only(right: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: outOfStock 
-            ? (isDark ? Colors.red[900]!.withValues(alpha: 0.2) : const Color(0xFFFFF0F2)) 
+        color: outOfStock
+            ? (isDark
+                  ? Colors.red[900]!.withValues(alpha: 0.2)
+                  : const Color(0xFFFFF0F2))
             : (isDark ? Colors.grey[850] : const Color(0xFFE0E0E0)),
         borderRadius: BorderRadius.circular(24),
       ),
@@ -770,12 +853,18 @@ class _ResumenScreenState extends State<ResumenScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: outOfStock ? const Color(0xFFD31842) : AppConfig.accentColor,
+              color: outOfStock
+                  ? const Color(0xFFD31842)
+                  : AppConfig.accentColor,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               outOfStock ? 'CRÍTICO' : 'BAJO STOCK',
-              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           const Spacer(),
@@ -783,12 +872,21 @@ class _ResumenScreenState extends State<ResumenScreen> {
             p.nombre,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: isDark ? Colors.white : Colors.black),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              color: isDark ? Colors.white : Colors.black,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             'Stock: ${p.cantidad}',
-            style: TextStyle(color: isDark ? Colors.white70 : SubliriumColors.textSecondary.withValues(alpha: 0.8), fontSize: 12),
+            style: TextStyle(
+              color: isDark
+                  ? Colors.white70
+                  : SubliriumColors.textSecondary.withValues(alpha: 0.8),
+              fontSize: 12,
+            ),
           ),
         ],
       ),
@@ -834,7 +932,12 @@ class _ResumenScreenState extends State<ResumenScreen> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Center(
-                    child: Icon(Icons.receipt_long, color: isDark ? Colors.white70 : SubliriumColors.textSecondary),
+                    child: Icon(
+                      Icons.receipt_long,
+                      color: isDark
+                          ? Colors.white70
+                          : SubliriumColors.textSecondary,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -844,12 +947,21 @@ class _ResumenScreenState extends State<ResumenScreen> {
                     children: [
                       Text(
                         _getNombreProducto(venta.productoId),
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: isDark ? Colors.white : Colors.black),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         DateFormat('dd MMM, HH:mm').format(venta.fechaVenta),
-                        style: TextStyle(color: isDark ? Colors.white70 : SubliriumColors.textSecondary, fontSize: 12),
+                        style: TextStyle(
+                          color: isDark
+                              ? Colors.white70
+                              : SubliriumColors.textSecondary,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
@@ -859,12 +971,23 @@ class _ResumenScreenState extends State<ResumenScreen> {
                   children: [
                     Text(
                       '\$${venta.total.toStringAsFixed(2)}',
-                      style: TextStyle(fontWeight: FontWeight.w900, color: isDark ? AppConfig.primaryColor : AppConfig.primaryColor, fontSize: 16),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        color: isDark
+                            ? AppConfig.primaryColor
+                            : AppConfig.primaryColor,
+                        fontSize: 16,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '${venta.cantidad} uds',
-                      style: TextStyle(color: isDark ? Colors.white70 : SubliriumColors.textSecondary, fontSize: 12),
+                      style: TextStyle(
+                        color: isDark
+                            ? Colors.white70
+                            : SubliriumColors.textSecondary,
+                        fontSize: 12,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     IconButton(
@@ -874,7 +997,9 @@ class _ResumenScreenState extends State<ResumenScreen> {
                       tooltip: 'Eliminar venta',
                       style: IconButton.styleFrom(
                         backgroundColor: SubliriumColors.stockLowBg,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                         padding: const EdgeInsets.all(6),
                       ),
                     ),
@@ -899,24 +1024,39 @@ class _ResumenScreenState extends State<ResumenScreen> {
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        header: (context) => PdfHelper.buildHeader(title: 'Reporte de Ventas', subtitle: 'Historial de ventas registradas'),
+        header: (context) => PdfHelper.buildHeader(
+          title: 'Reporte de Ventas',
+          subtitle: 'Historial de ventas registradas',
+        ),
         footer: (context) => PdfHelper.buildFooter(),
         build: (context) => [
           pw.SizedBox(height: 20),
           pw.TableHelper.fromTextArray(
-            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+            headerStyle: pw.TextStyle(
+              fontWeight: pw.FontWeight.bold,
+              fontSize: 10,
+            ),
             cellStyle: const pw.TextStyle(fontSize: 9),
-            cellAlignments: {0: pw.Alignment.centerLeft, 1: pw.Alignment.centerLeft, 2: pw.Alignment.centerLeft, 3: pw.Alignment.centerRight, 4: pw.Alignment.centerRight},
+            cellAlignments: {
+              0: pw.Alignment.centerLeft,
+              1: pw.Alignment.centerLeft,
+              2: pw.Alignment.centerLeft,
+              3: pw.Alignment.centerRight,
+              4: pw.Alignment.centerRight,
+            },
             headers: ['Fecha', 'Producto', 'Cliente/Obs', 'Cant', 'Total'],
             data: _ventas.map((v) {
               final prodNombre = _getNombreProducto(v.productoId);
-              final extras = [v.vendidoA, v.observaciones].where((s) => s != null && s.isNotEmpty).join(' - ');
+              final extras = [
+                v.vendidoA,
+                v.observaciones,
+              ].where((s) => s != null && s.isNotEmpty).join(' - ');
               return [
                 _formatFecha(v.fechaVenta),
                 prodNombre,
                 extras.isEmpty ? '-' : extras,
                 v.cantidad.toString(),
-                '\$${v.total.toStringAsFixed(2)}'
+                '\$${v.total.toStringAsFixed(2)}',
               ];
             }).toList(),
           ),
@@ -924,10 +1064,25 @@ class _ResumenScreenState extends State<ResumenScreen> {
           pw.Container(
             padding: const pw.EdgeInsets.all(12),
             color: PdfColors.cyan200,
-            child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
-              pw.Text('TOTAL EN VENTAS', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
-              pw.Text('\$${_totalVentas.toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
-            ]),
+            child: pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text(
+                  'TOTAL EN VENTAS',
+                  style: pw.TextStyle(
+                    fontSize: 16,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+                pw.Text(
+                  '\$${_totalVentas.toStringAsFixed(2)}',
+                  style: pw.TextStyle(
+                    fontSize: 18,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -935,7 +1090,10 @@ class _ResumenScreenState extends State<ResumenScreen> {
 
     final fechaArchivo = DateFormat('yyyy-MM-dd').format(DateTime.now());
     final nombreArchivo = 'ventas_$fechaArchivo';
-    
-    await Printing.layoutPdf(onLayout: (format) async => pdf.save(), name: '$nombreArchivo.pdf');
+
+    await Printing.layoutPdf(
+      onLayout: (format) async => pdf.save(),
+      name: '$nombreArchivo.pdf',
+    );
   }
 }

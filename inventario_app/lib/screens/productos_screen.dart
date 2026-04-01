@@ -37,6 +37,8 @@ class _ProductosScreenState extends State<ProductosScreen> {
   List<Categoria> _categorias = [];
   List<Proveedor> _proveedores = [];
   List<PrecioTarifa> _tarifas = [];
+  List<ComboItem> _comboItems = []; // Agregar carga de combo items
+  Map<int, List<ComboItem>> _comboItemsMap = {}; // Mapa para almacenar los items de cada combo (comboId -> items)
   bool _isLoading = true;
   String? _error;
   FiltroStock _filtroActual = FiltroStock.todos;
@@ -83,12 +85,24 @@ class _ProductosScreenState extends State<ProductosScreen> {
       final categorias = await _apiService.getCategorias();
       final proveedores = await _apiService.getProveedores();
       final tarifas = await _apiService.getTodasTarifas();
+      
+      // Cargar items de los combos para calcular stock dinámico
+      final combos = productos.where((p) => p.esCombo).toList();
+      final itemsMap = <int, List<ComboItem>>{};
+      for (final combo in combos) {
+        if (combo.id != null) {
+          final items = await _apiService.getComboItems(combo.id!);
+          itemsMap[combo.id!] = items;
+        }
+      }
+      
       setState(() {
         _productos = productos;
         _allProductos = allProductos;
         _categorias = categorias;
         _proveedores = proveedores;
         _tarifas = tarifas;
+        _comboItemsMap = itemsMap;
         _aplicarFiltro();
         _isLoading = false;
       });
@@ -107,10 +121,10 @@ class _ProductosScreenState extends State<ProductosScreen> {
       case FiltroStock.todos:
         break;
       case FiltroStock.enStock:
-        productosFiltrados = _productos.where((p) => p.cantidad > 0).toList();
+        productosFiltrados = _productos.where((p) => _getStockProducto(p) > 0).toList();
         break;
       case FiltroStock.sinStock:
-        productosFiltrados = _productos.where((p) => p.cantidad == 0).toList();
+        productosFiltrados = _productos.where((p) => _getStockProducto(p) == 0).toList();
         break;
     }
 
@@ -145,6 +159,42 @@ class _ProductosScreenState extends State<ProductosScreen> {
     });
 
     _productosFiltrados = productosFiltrados;
+  }
+
+  /// Obtiene el stock de un producto. Para combos, calcula el stock dinámico.
+  int _getStockProducto(Producto producto) {
+    if (!producto.esCombo) {
+      return producto.cantidad;
+    }
+    return _calcularStockCombo(producto);
+  }
+
+  /// Calcula el stock disponible de un combo basado en sus productos
+  int _calcularStockCombo(Producto combo) {
+    final items = _comboItemsMap[combo.id] ?? [];
+    if (items.isEmpty) return 0;
+
+    int stockMinimo = double.maxFinite.toInt();
+    bool sinStock = false;
+
+    for (final item in items) {
+      final producto = _allProductos
+          .where((p) => p.id == item.productoId)
+          .firstOrNull;
+      if (producto != null) {
+        if (producto.cantidad == 0) {
+          sinStock = true;
+          break;
+        }
+        final combosPosibles = (producto.cantidad / item.cantidad).floor();
+        if (combosPosibles < stockMinimo) {
+          stockMinimo = combosPosibles;
+        }
+      }
+    }
+
+    if (sinStock) return 0;
+    return stockMinimo == double.maxFinite.toInt() ? 0 : stockMinimo;
   }
 
   Future<void> _deleteProducto(Producto producto) async {
@@ -296,9 +346,12 @@ class _ProductosScreenState extends State<ProductosScreen> {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Text(
+                      Text(
                         'Precio por unidad',
-                        style: TextStyle(fontSize: 12),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
                       ),
                       const Spacer(),
                       Switch(
@@ -309,7 +362,10 @@ class _ProductosScreenState extends State<ProductosScreen> {
                       ),
                       Text(
                         precioPorUnidad ? 'x1' : 'Total',
-                        style: const TextStyle(fontSize: 12),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
                       ),
                     ],
                   ),
@@ -352,11 +408,11 @@ class _ProductosScreenState extends State<ProductosScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'Total:',
                           style: TextStyle(
                             fontWeight: FontWeight.w900,
-                            color: Colors.black,
+                            color: isDark ? Colors.black : Colors.black,
                           ),
                         ),
                         Text(
@@ -420,6 +476,21 @@ class _ProductosScreenState extends State<ProductosScreen> {
                       );
                       return;
                     }
+                    
+                    // Validar stock para combos usando stock calculado
+                    if (producto.esCombo) {
+                      final stockCalculado = _getStockProducto(producto);
+                      if (cantidadVenta <= 0 || cantidadVenta > stockCalculado) {
+                        ScaffoldMessenger.of(dialogContext).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Cantidad inválida. Máximo disponible: $stockCalculado',
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+                    }
                     if (precioUnit <= 0) {
                       ScaffoldMessenger.of(dialogContext).showSnackBar(
                         const SnackBar(
@@ -442,8 +513,9 @@ class _ProductosScreenState extends State<ProductosScreen> {
                           ScaffoldMessenger.of(dialogContext).showSnackBar(
                             SnackBar(
                               content: Text(
-                                'Error: Producto "${item.productoId}" no encontrado',
+                                'El producto #${item.productoId} del combo no está disponible en inventario',
                               ),
+                              backgroundColor: Colors.orange,
                             ),
                           );
                           return;
@@ -910,10 +982,19 @@ class _ProductosScreenState extends State<ProductosScreen> {
             pinned: true,
             centerTitle: true,
             automaticallyImplyLeading: !esVistaGlobal,
-            leading: !esVistaGlobal ? IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () => Navigator.pop(context),
-            ) : null,
+            leading: !esVistaGlobal
+                ? Container(
+                    margin: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.black),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  )
+                : null,
             flexibleSpace: FlexibleSpaceBar(
               centerTitle: true,
               title: Text(
@@ -1056,25 +1137,49 @@ class _ProductosScreenState extends State<ProductosScreen> {
                     const SizedBox(height: 8),
                     DropdownButtonFormField<Proveedor?>(
                       value: _proveedorSeleccionadoFiltro,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                      dropdownColor: Theme.of(context).cardColor,
+                      style: TextStyle(
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
+                      dropdownColor: isDark ? const Color(0xFF1A1A1A) : Theme.of(context).cardColor,
+                      iconEnabledColor: isDark ? Colors.white : Colors.black54,
                       decoration: InputDecoration(
                         labelText: 'Filtrar por proveedor',
-                        labelStyle: Theme.of(context).textTheme.bodyMedium,
+                        labelStyle: TextStyle(
+                          color: isDark ? Colors.white70 : Colors.black54,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(
+                            color: isDark ? Colors.grey[600]! : Colors.grey[400]!,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(
+                            color: isDark ? Colors.grey[600]! : Colors.grey[400]!,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(
+                            color: isDark ? Colors.white : SubliriumColors.cyan,
+                          ),
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 8,
                         ),
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
                       ),
                       items: [
                         DropdownMenuItem<Proveedor?>(
                           value: null,
                           child: Text(
                             'Todos los proveedores',
-                            style: Theme.of(context).textTheme.bodyMedium,
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black,
+                            ),
                           ),
                         ),
                         ..._proveedores.map(
@@ -1082,7 +1187,9 @@ class _ProductosScreenState extends State<ProductosScreen> {
                             value: p,
                             child: Text(
                               p.nombre,
-                              style: Theme.of(context).textTheme.bodyMedium,
+                              style: TextStyle(
+                                color: isDark ? Colors.white : Colors.black,
+                              ),
                             ),
                           ),
                         ),
@@ -1240,6 +1347,9 @@ class _ProductosScreenState extends State<ProductosScreen> {
   Widget _buildProductoCard(Producto producto) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    // Usar stock calculado para combos (dinámico) o cantidad directa para productos normales
+    final stockReal = _getStockProducto(producto);
+    final bool esCombo = producto.esCombo;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -1341,59 +1451,82 @@ class _ProductosScreenState extends State<ProductosScreen> {
             const SizedBox(height: 16),
             Row(
               children: [
-                _buildStockBadge(producto.cantidad),
+                _buildStockBadge(stockReal),
                 const SizedBox(width: 8),
-                Container(
-                  decoration: BoxDecoration(
-                    color: producto.cantidad > 0
-                        ? SubliriumColors.stockOkBg
-                        : SubliriumColors.stockZeroBg,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        onPressed: producto.cantidad > 0
-                            ? () => _updateCantidad(producto, -1)
-                            : null,
-                        icon: Icon(
-                          Icons.remove,
-                          size: 14,
-                          color: SubliriumColors.stockOkText,
-                        ),
-                        visualDensity: VisualDensity.compact,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                // Para combos: mostrar solo el número de stock calculado (sin botones +/-)
+                // Para productos normales: mostrar controles de cantidad
+                if (esCombo)
+                  Container(
+                    decoration: BoxDecoration(
+                      color: stockReal > 0
+                          ? SubliriumColors.stockOkBg
+                          : SubliriumColors.stockZeroBg,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: Text(
+                      stockReal > 0 ? 'Stock: $stockReal' : 'Sin stock',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                        color: stockReal > 0
+                            ? SubliriumColors.stockOkText
+                            : SubliriumColors.stockZeroText,
                       ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: Text(
-                          '${producto.cantidad}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 13,
-                            color: producto.cantidad > 0
-                                ? SubliriumColors.stockOkText
-                                : SubliriumColors.stockZeroText,
+                    ),
+                  )
+                else
+                  Container(
+                    decoration: BoxDecoration(
+                      color: producto.cantidad > 0
+                          ? SubliriumColors.stockOkBg
+                          : SubliriumColors.stockZeroBg,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          onPressed: producto.cantidad > 0
+                              ? () => _updateCantidad(producto, -1)
+                              : null,
+                          icon: Icon(
+                            Icons.remove,
+                            size: 14,
+                            color: SubliriumColors.stockOkText,
+                          ),
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Text(
+                            '${producto.cantidad}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13,
+                              color: producto.cantidad > 0
+                                  ? SubliriumColors.stockOkText
+                                  : SubliriumColors.stockZeroText,
+                            ),
                           ),
                         ),
-                      ),
-                      IconButton(
-                        onPressed: () => _updateCantidad(producto, 1),
-                        icon: Icon(
-                          Icons.add,
-                          size: 14,
-                          color: SubliriumColors.stockOkText,
+                        IconButton(
+                          onPressed: () => _updateCantidad(producto, 1),
+                          icon: Icon(
+                            Icons.add,
+                            size: 14,
+                            color: SubliriumColors.stockOkText,
+                          ),
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                         ),
-                        visualDensity: VisualDensity.compact,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
                 const Spacer(),
                 IconButton(
                   onPressed: () => _showVendidoDialog(producto),
@@ -1406,17 +1539,19 @@ class _ProductosScreenState extends State<ProductosScreen> {
                   ),
                 ),
                 const SizedBox(width: 6),
-                IconButton(
-                  onPressed: () => _showProductoDialog(producto),
-                  icon: const Icon(Icons.edit_outlined, size: 20),
-                  color: AppConfig.secondaryColor,
-                  tooltip: 'Editar',
-                  style: IconButton.styleFrom(
-                    backgroundColor: SubliriumColors.inputFocusedBg,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                // Solo mostrar editar si NO es un combo
+                if (!producto.esCombo)
+                  IconButton(
+                    onPressed: () => _showProductoDialog(producto),
+                    icon: const Icon(Icons.edit_outlined, size: 20),
+                    color: AppConfig.secondaryColor,
+                    tooltip: 'Editar',
+                    style: IconButton.styleFrom(
+                      backgroundColor: SubliriumColors.inputFocusedBg,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 6),
+                if (!producto.esCombo) const SizedBox(width: 6),
                 IconButton(
                   onPressed: () {
                     Navigator.push(

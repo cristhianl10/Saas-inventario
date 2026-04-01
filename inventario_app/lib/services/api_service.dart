@@ -349,6 +349,32 @@ class ApiService {
 
   // ==================== COMBOS ====================
 
+  /// Obtiene o crea la categoría "Combo"
+  Future<Categoria> _getOrCreateComboCategory() async {
+    return _runWithUserIdFallback((useUserId) async {
+      // Buscar categoría "Combo"
+      var query = _client.from('categorias').select().eq('nombre', 'Combo');
+      if (useUserId) query = query.eq('user_id', _userId);
+      
+      final response = await query.limit(1);
+      
+      if (response.isNotEmpty) {
+        return Categoria.fromJson(response.first);
+      }
+      
+      // Crear categoría "Combo" si no existe
+      final data = <String, dynamic>{'nombre': 'Combo'};
+      if (useUserId) data['user_id'] = _userId;
+      
+      final newResponse = await _client
+          .from('categorias')
+          .insert(data)
+          .select()
+          .single();
+      return Categoria.fromJson(newResponse);
+    });
+  }
+
   Future<List<Producto>> getCombos() async {
     return _runWithUserIdFallback((useUserId) async {
       var query = _client.from('productos').select().eq('es_combo', true);
@@ -360,14 +386,17 @@ class ApiService {
 
   Future<Producto> createCombo(Producto combo) async {
     return _runWithUserIdFallback((useUserId) async {
+      // Obtener o crear la categoría "Combo"
+      final comboCategory = await _getOrCreateComboCategory();
+      
       final data = <String, dynamic>{
-        'categoria_id': combo.categoriaId,
         'nombre': combo.nombre,
         'descripcion': combo.descripcion,
         'cantidad': combo.cantidad,
         'precio': combo.precio,
         'es_combo': true,
         'costo': combo.costo,
+        'categoria_id': comboCategory.id,
       };
       if (useUserId) data['user_id'] = _userId;
       final response = await _client
@@ -381,12 +410,16 @@ class ApiService {
 
   Future<Producto> updateCombo(Producto combo) async {
     return _runWithUserIdFallback((useUserId) async {
+      // Obtener o crear la categoría "Combo"
+      final comboCategory = await _getOrCreateComboCategory();
+      
       var query = _client
           .from('productos')
           .update({
             'nombre': combo.nombre,
             'descripcion': combo.descripcion,
             'precio': combo.precio,
+            'categoria_id': comboCategory.id,
             'fecha_actualizacion': DateTime.now().toIso8601String(),
           })
           .eq('id', combo.id!)
@@ -414,10 +447,13 @@ class ApiService {
     return _runWithUserIdFallback((useUserId) async {
       var query = _client
           .from('combo_items')
-          .select('*, productos(nombre)')
+          .select('*, productos!combo_items_producto_id_fkey(nombre)')
           .eq('combo_id', comboId);
       if (useUserId) {
-        query = query.eq('productos(user_id)', _userId);
+        query = query.eq(
+          'productos!combo_items_producto_id_fkey(user_id)',
+          _userId,
+        );
       }
       final response = await query;
       return response.map((json) {

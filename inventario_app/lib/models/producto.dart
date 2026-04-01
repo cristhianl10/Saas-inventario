@@ -26,15 +26,17 @@ class Producto {
   factory Producto.fromJson(Map<String, dynamic> json) {
     return Producto(
       id: json['id'] as int?,
-      categoriaId: json['categoria_id'] as int,
-      nombre: json['nombre'] as String,
+      categoriaId: (json['categoria_id'] as num?)?.toInt() ?? 0,
+      nombre: json['nombre'] as String? ?? '',
       descripcion: json['descripcion'] as String?,
-      cantidad: json['cantidad'] as int? ?? 0,
+      cantidad: (json['cantidad'] as num?)?.toInt() ?? 0,
       precio: json['precio'] != null
-          ? (json['precio'] as num).toDouble()
+          ? (json['precio'] as num?)?.toDouble() ?? 0.0
           : null,
       proveedorId: json['proveedor_id'] as int?,
-      costo: json['costo'] != null ? (json['costo'] as num).toDouble() : null,
+      costo: json['costo'] != null
+          ? (json['costo'] as num?)?.toDouble() ?? 0.0
+          : null,
       esCombo: json['es_combo'] as bool? ?? false,
       fechaActualizacion: json['fecha_actualizacion'] != null
           ? DateTime.parse(json['fecha_actualizacion'] as String)

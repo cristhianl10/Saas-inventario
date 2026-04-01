@@ -15,6 +15,7 @@ class _CombosScreenState extends State<CombosScreen> {
   final ApiService _apiService = ApiService();
   List<Producto> _combos = [];
   List<Producto> _productos = [];
+  Map<int, List<ComboItem>> _comboItems = {};
   bool _isLoading = true;
   String? _error;
 
@@ -32,9 +33,19 @@ class _CombosScreenState extends State<CombosScreen> {
     try {
       final combos = await _apiService.getCombos();
       final productos = await _apiService.getProductos();
+      final itemsMap = <int, List<ComboItem>>{};
+
+      for (final combo in combos) {
+        if (combo.id != null) {
+          final items = await _apiService.getComboItems(combo.id!);
+          itemsMap[combo.id!] = items;
+        }
+      }
+
       setState(() {
         _combos = combos;
         _productos = productos;
+        _comboItems = itemsMap;
         _isLoading = false;
       });
     } catch (e) {
@@ -70,18 +81,59 @@ class _CombosScreenState extends State<CombosScreen> {
         await _apiService.deleteCombo(combo.id!);
         _loadData();
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Combo eliminado')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Combo eliminado')));
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error: $e')));
         }
       }
     }
+  }
+
+  int _calcularStockCombo(Producto combo) {
+    final items = _comboItems[combo.id] ?? [];
+    if (items.isEmpty) return 0;
+
+    int stockMinimo = double.maxFinite.toInt();
+    bool sinStock = false;
+
+    for (final item in items) {
+      final producto = _productos
+          .where((p) => p.id == item.productoId)
+          .firstOrNull;
+      if (producto != null) {
+        if (producto.cantidad == 0) {
+          sinStock = true;
+          break;
+        }
+        final combosPosibles = (producto.cantidad / item.cantidad).floor();
+        if (combosPosibles < stockMinimo) {
+          stockMinimo = combosPosibles;
+        }
+      }
+    }
+
+    if (sinStock) return 0;
+    return stockMinimo == double.maxFinite.toInt() ? 0 : stockMinimo;
+  }
+
+  List<MapEntry<String, bool>> _getProductosConStock(Producto combo) {
+    final items = _comboItems[combo.id] ?? [];
+    return items.map((item) {
+      final producto = _productos
+          .where((p) => p.id == item.productoId)
+          .firstOrNull;
+      final tieneStock = producto != null && producto.cantidad >= item.cantidad;
+      return MapEntry(
+        item.nombreProducto ?? 'Producto #${item.productoId}',
+        tieneStock,
+      );
+    }).toList();
   }
 
   void _showComboDialog([Producto? combo]) {
@@ -91,6 +143,7 @@ class _CombosScreenState extends State<CombosScreen> {
         builder: (_) => ComboEditorScreen(
           combo: combo,
           productos: _productos,
+          comboItems: combo != null ? (_comboItems[combo.id] ?? []) : [],
           onSave: _loadData,
         ),
       ),
@@ -117,61 +170,69 @@ class _CombosScreenState extends State<CombosScreen> {
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadData,
+          Container(
+            margin: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.refresh, color: Colors.black),
+              onPressed: _loadData,
+              tooltip: 'Actualizar',
+            ),
           ),
         ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline, size: 48),
-                      const SizedBox(height: 8),
-                      Text(_error!),
-                      const SizedBox(height: 8),
-                      ElevatedButton(
-                        onPressed: _loadData,
-                        child: const Text('Reintentar'),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 48),
+                  const SizedBox(height: 8),
+                  Text(_error!),
+                  const SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed: _loadData,
+                    child: const Text('Reintentar'),
                   ),
-                )
-              : _combos.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.local_offer_outlined,
-                            size: 64,
-                            color: isDark ? Colors.grey[600] : Colors.grey[400],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No hay combos creados',
-                            style: theme.textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Crea tu primer combo de productos',
-                            style: theme.textTheme.bodySmall,
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(12),
-                      itemCount: _combos.length,
-                      itemBuilder: (context, index) {
-                        final combo = _combos[index];
-                        return _buildComboCard(combo, isDark, theme);
-                      },
-                    ),
+                ],
+              ),
+            )
+          : _combos.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.local_offer_outlined,
+                    size: 64,
+                    color: isDark ? Colors.grey[600] : Colors.grey[400],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No hay combos creados',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Crea tu primer combo de productos',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(12),
+              itemCount: _combos.length,
+              itemBuilder: (context, index) {
+                final combo = _combos[index];
+                return _buildComboCard(combo, isDark, theme);
+              },
+            ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showComboDialog(),
         backgroundColor: AppConfig.primaryColor,
@@ -182,6 +243,17 @@ class _CombosScreenState extends State<CombosScreen> {
   }
 
   Widget _buildComboCard(Producto combo, bool isDark, ThemeData theme) {
+    final stockCombo = _calcularStockCombo(combo);
+    final productosConStock = _getProductosConStock(combo);
+    final productosSinStock = productosConStock.where((e) => !e.value).toList();
+    final tieneProductosSinStock = productosSinStock.isNotEmpty;
+    final stockColor = stockCombo == 0
+        ? SubliriumColors.stockLowText
+        : (stockCombo < 5 ? Colors.orange : SubliriumColors.stockOkText);
+    final stockBg = stockCombo == 0
+        ? SubliriumColors.stockLowBg
+        : (stockCombo < 5 ? Colors.orange[50] : SubliriumColors.stockOkBg);
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
@@ -244,18 +316,116 @@ class _CombosScreenState extends State<CombosScreen> {
                 ],
               ),
               const SizedBox(height: 12),
+
+              // Warning de productos sin stock
+              if (tieneProductosSinStock) ...[
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.orange[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.orange[200]!),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.warning_amber,
+                        color: Colors.orange[700],
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Sin stock: ${productosSinStock.map((e) => e.key).join(", ")}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.orange[700],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+
+              // Stock del combo
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: stockBg,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      stockCombo == 0
+                          ? Icons.error_outline
+                          : Icons.inventory_2_outlined,
+                      size: 16,
+                      color: stockColor,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      stockCombo == 0 ? 'Sin stock' : 'Stock: $stockCombo',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: stockColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Lista de productos del combo
+              if (productosConStock.isNotEmpty) ...[
+                Text(
+                  'Productos:',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                ...productosConStock.map((entry) {
+                  final items = _comboItems[combo.id] ?? [];
+                  final item = items
+                      .where((i) => i.nombreProducto == entry.key)
+                      .firstOrNull;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: Row(
+                      children: [
+                        Icon(
+                          entry.value ? Icons.check_circle : Icons.cancel,
+                          size: 14,
+                          color: entry.value
+                              ? SubliriumColors.stockOkText
+                              : Colors.red,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${entry.key} x${item?.cantidad ?? 1}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: entry.value
+                                ? (isDark ? Colors.white70 : Colors.black87)
+                                : Colors.red,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+
+              const SizedBox(height: 8),
               Row(
                 children: [
-                  Icon(
-                    Icons.inventory_2_outlined,
-                    size: 16,
-                    color: isDark ? Colors.grey[400] : Colors.grey[600],
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Stock: ${combo.cantidad}',
-                    style: theme.textTheme.bodySmall,
-                  ),
                   const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.edit_outlined, size: 20),
@@ -280,12 +450,14 @@ class _CombosScreenState extends State<CombosScreen> {
 class ComboEditorScreen extends StatefulWidget {
   final Producto? combo;
   final List<Producto> productos;
+  final List<ComboItem> comboItems;
   final VoidCallback onSave;
 
   const ComboEditorScreen({
     super.key,
     this.combo,
     required this.productos,
+    required this.comboItems,
     required this.onSave,
   });
 
@@ -298,10 +470,11 @@ class _ComboEditorScreenState extends State<ComboEditorScreen> {
   final _nombreController = TextEditingController();
   final _descripcionController = TextEditingController();
   final _precioController = TextEditingController();
-  final _cantidadController = TextEditingController(text: '1');
-  
+
   List<ComboItem> _items = [];
+  List<Producto> _productosFiltrados = [];
   bool _isLoading = false;
+  String? _warningMessage;
 
   @override
   void initState() {
@@ -309,34 +482,45 @@ class _ComboEditorScreenState extends State<ComboEditorScreen> {
     if (widget.combo != null) {
       _nombreController.text = widget.combo!.nombre;
       _descripcionController.text = widget.combo!.descripcion ?? '';
-      _precioController.text = widget.combo!.precio?.toStringAsFixed(2) ?? '0.00';
-      _cantidadController.text = widget.combo!.cantidad.toString();
-      _loadComboItems();
+      _precioController.text =
+          widget.combo!.precio?.toStringAsFixed(2) ?? '0.00';
+      _items = List.from(widget.comboItems);
     }
+    _productosFiltrados = widget.productos.where((p) => !p.esCombo).toList();
+    _validarStock();
   }
 
-  Future<void> _loadComboItems() async {
-    if (widget.combo?.id == null) return;
-    setState(() => _isLoading = true);
-    try {
-      final items = await _apiService.getComboItems(widget.combo!.id!);
-      setState(() {
-        _items = items;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
+  void _validarStock() {
+    final sinStock = <String>[];
+    for (final item in _items) {
+      final producto = _productosFiltrados
+          .where((p) => p.id == item.productoId)
+          .firstOrNull;
+      if (producto != null && producto.cantidad < item.cantidad) {
+        sinStock.add(producto.nombre);
+      }
     }
+    setState(() {
+      _warningMessage = sinStock.isNotEmpty
+          ? 'Sin stock: ${sinStock.join(", ")}'
+          : null;
+    });
   }
 
   Future<void> _saveCombo() async {
     final nombre = _nombreController.text.trim();
     final precio = double.tryParse(_precioController.text) ?? 0;
-    final cantidad = int.tryParse(_cantidadController.text) ?? 1;
 
     if (nombre.isEmpty || precio <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Nombre y precio son obligatorios')),
+      );
+      return;
+    }
+
+    if (_items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Agrega al menos un producto al combo')),
       );
       return;
     }
@@ -346,11 +530,11 @@ class _ComboEditorScreenState extends State<ComboEditorScreen> {
     try {
       final combo = Producto(
         id: widget.combo?.id,
-        categoriaId: 0, // Los combos no tienen categoría
+        categoriaId: 0,
         nombre: nombre,
         descripcion: _descripcionController.text.trim(),
         precio: precio,
-        cantidad: cantidad,
+        cantidad: 0,
         esCombo: true,
       );
 
@@ -358,27 +542,39 @@ class _ComboEditorScreenState extends State<ComboEditorScreen> {
           ? await _apiService.createCombo(combo)
           : await _apiService.updateCombo(combo);
 
-      // Save items
+      // Eliminar items existentes si es edición
+      if (widget.combo != null) {
+        await _apiService.deleteComboItems(widget.combo!.id!);
+      }
+
+      // Guardar items
       for (final item in _items) {
-        if (item.id == null) {
-          await _apiService.addComboItem(
-            ComboItem(
-              comboId: savedCombo.id!,
-              productoId: item.productoId,
-              cantidad: item.cantidad,
-            ),
-          );
-        }
+        await _apiService.addComboItem(
+          ComboItem(
+            comboId: savedCombo.id!,
+            productoId: item.productoId,
+            cantidad: item.cantidad,
+          ),
+        );
       }
 
       widget.onSave();
       if (mounted) Navigator.pop(context);
+
+      if (_warningMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Combo guardado. $_warningMessage'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -387,16 +583,19 @@ class _ComboEditorScreenState extends State<ComboEditorScreen> {
     showDialog(
       context: context,
       builder: (context) => _ProductoSelectorDialog(
-        productos: widget.productos,
+        productos: _productosFiltrados,
         onSelect: (producto) {
           setState(() {
-            _items.add(ComboItem(
-              comboId: widget.combo?.id ?? 0,
-              productoId: producto.id!,
-              cantidad: 1,
-              nombreProducto: producto.nombre,
-            ));
+            _items.add(
+              ComboItem(
+                comboId: widget.combo?.id ?? 0,
+                productoId: producto.id!,
+                cantidad: 1,
+                nombreProducto: producto.nombre,
+              ),
+            );
           });
+          _validarStock();
         },
       ),
     );
@@ -437,33 +636,42 @@ class _ComboEditorScreenState extends State<ComboEditorScreen> {
                     maxLines: 2,
                   ),
                   const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _precioController,
-                          decoration: const InputDecoration(
-                            labelText: 'Precio del combo',
-                            prefixText: '\$ ',
-                            border: OutlineInputBorder(),
-                          ),
-                          keyboardType: TextInputType.number,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: _cantidadController,
-                          decoration: const InputDecoration(
-                            labelText: 'Stock inicial',
-                            border: OutlineInputBorder(),
-                          ),
-                          keyboardType: TextInputType.number,
-                        ),
-                      ),
-                    ],
+                  TextField(
+                    controller: _precioController,
+                    decoration: const InputDecoration(
+                      labelText: 'Precio del combo',
+                      prefixText: '\$ ',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
+
+                  // Warning de stock
+                  if (_warningMessage != null) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.orange[50],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.orange[200]!),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.warning_amber, color: Colors.orange[700]),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _warningMessage!,
+                              style: TextStyle(color: Colors.orange[700]),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -531,60 +739,98 @@ class _ComboEditorScreenState extends State<ComboEditorScreen> {
     );
   }
 
-  Widget _buildItemCard(ComboItem item, int index, bool isDark, ThemeData theme) {
+  Widget _buildItemCard(
+    ComboItem item,
+    int index,
+    bool isDark,
+    ThemeData theme,
+  ) {
+    final producto = _productosFiltrados
+        .where((p) => p.id == item.productoId)
+        .firstOrNull;
+    final precioProducto = producto?.precio ?? 0;
+    final tieneStock = producto != null && producto.cantidad >= item.cantidad;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       color: isDark ? Colors.grey[850] : Colors.grey[50],
       child: ListTile(
-        title: Text(item.nombreProducto ?? 'Producto #${item.productoId}'),
-        subtitle: Text('Cantidad: ${item.cantidad}'),
+        leading: Icon(
+          tieneStock ? Icons.check_circle : Icons.warning,
+          color: tieneStock ? SubliriumColors.stockOkText : Colors.orange,
+        ),
+        title: Text(
+          item.nombreProducto ?? 'Producto #${item.productoId}',
+          style: TextStyle(
+            color: isDark ? Colors.white : Colors.black,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        subtitle: Text(
+          'Cantidad: ${item.cantidad}  •  Precio c/u: \$${precioProducto.toStringAsFixed(2)}',
+          style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
+        ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              icon: const Icon(Icons.edit_outlined, size: 20),
-              onPressed: () {
-                // Editar cantidad
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Cantidad'),
-                    content: TextField(
-                      controller: TextEditingController(text: item.cantidad.toString()),
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Cantidad',
-                        border: OutlineInputBorder(),
-                      ),
-                      onChanged: (value) {
-                        final cantidad = int.tryParse(value) ?? 1;
-                        if (cantidad > 0) {
-                          setState(() {
-                            _items[index] = item.copyWith(cantidad: cantidad);
-                          });
-                        }
-                      },
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('Aceptar'),
-                      ),
-                    ],
-                  ),
-                );
-              },
+              icon: Icon(
+                Icons.edit_outlined,
+                size: 20,
+                color: isDark ? Colors.white70 : Colors.black54,
+              ),
+              onPressed: () => _editarCantidad(index, item),
             ),
             IconButton(
-              icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+              icon: const Icon(
+                Icons.delete_outline,
+                size: 20,
+                color: Colors.red,
+              ),
               onPressed: () {
-                setState(() {
-                  _items.removeAt(index);
-                });
+                setState(() => _items.removeAt(index));
+                _validarStock();
               },
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _editarCantidad(int index, ComboItem item) {
+    final controller = TextEditingController(text: item.cantidad.toString());
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cantidad'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: 'Cantidad',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final cantidad = int.tryParse(controller.text) ?? 1;
+              if (cantidad > 0) {
+                setState(() {
+                  _items[index] = item.copyWith(cantidad: cantidad);
+                });
+                _validarStock();
+              }
+              Navigator.pop(context);
+            },
+            child: const Text('Aceptar'),
+          ),
+        ],
       ),
     );
   }
@@ -612,7 +858,12 @@ class _ProductoSelectorDialog extends StatelessWidget {
             final producto = productos[index];
             return ListTile(
               title: Text(producto.nombre),
-              subtitle: Text('\$${producto.precio?.toStringAsFixed(2) ?? '0.00'}'),
+              subtitle: Text(
+                'Precio c/u: \$${producto.precio?.toStringAsFixed(2) ?? '0.00'} • Stock: ${producto.cantidad}',
+              ),
+              trailing: producto.cantidad == 0
+                  ? const Icon(Icons.warning, color: Colors.orange)
+                  : null,
               onTap: () {
                 onSelect(producto);
                 Navigator.pop(context);

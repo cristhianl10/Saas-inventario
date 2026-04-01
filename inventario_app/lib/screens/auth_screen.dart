@@ -76,7 +76,7 @@ class _AuthScreenState extends State<AuthScreen> {
       });
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error de conexión. Verifica tu internet.';
+        _errorMessage = _mapConnectionError(e);
       });
     } finally {
       setState(() {
@@ -105,6 +105,30 @@ class _AuthScreenState extends State<AuthScreen> {
     }
 
     return e.message;
+  }
+
+  String _mapConnectionError(dynamic e) {
+    final msg = e.toString().toLowerCase();
+
+    if (msg.contains('connection') ||
+        msg.contains('network') ||
+        msg.contains('socket') ||
+        msg.contains('timeout') ||
+        msg.contains('internet')) {
+      return 'No se puede conectar al servidor. Verifica tu conexión a internet.';
+    }
+
+    if (msg.contains('host') ||
+        msg.contains('dns') ||
+        msg.contains('resolve')) {
+      return 'No se encontró el servidor. Intenta más tarde.';
+    }
+
+    if (msg.contains('ssl') || msg.contains('certificate')) {
+      return 'Error de seguridad. Intenta más tarde.';
+    }
+
+    return 'Error de conexión. Verifica tu internet e intenta nuevamente.';
   }
 
   Future<void> _createTenantConfig(String userId) async {
@@ -273,7 +297,8 @@ class _AuthScreenState extends State<AuthScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor, // Uses designated brand background
+      backgroundColor:
+          theme.scaffoldBackgroundColor, // Uses designated brand background
       body: Stack(
         children: [
           // Background blobs for Glassmorphism
@@ -285,7 +310,9 @@ class _AuthScreenState extends State<AuthScreen> {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppConfig.primaryColor.withValues(alpha: isDark ? 0.3 : 0.15),
+                color: AppConfig.primaryColor.withValues(
+                  alpha: isDark ? 0.3 : 0.15,
+                ),
               ),
             ),
           ),
@@ -297,7 +324,9 @@ class _AuthScreenState extends State<AuthScreen> {
               height: 350,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppConfig.secondaryColor.withValues(alpha: isDark ? 0.3 : 0.15),
+                color: AppConfig.secondaryColor.withValues(
+                  alpha: isDark ? 0.3 : 0.15,
+                ),
               ),
             ),
           ),
@@ -305,7 +334,9 @@ class _AuthScreenState extends State<AuthScreen> {
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
               child: Container(
-                color: isDark ? Colors.black.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.2),
+                color: isDark
+                    ? Colors.black.withValues(alpha: 0.2)
+                    : Colors.white.withValues(alpha: 0.2),
               ),
             ),
           ),
@@ -313,11 +344,16 @@ class _AuthScreenState extends State<AuthScreen> {
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 24,
+                ),
                 child: Container(
                   padding: const EdgeInsets.all(32),
                   decoration: BoxDecoration(
-                    color: isDark ? Colors.grey[900]!.withValues(alpha: 0.85) : Colors.white.withValues(alpha: 0.85),
+                    color: isDark
+                        ? Colors.grey[900]!.withValues(alpha: 0.85)
+                        : Colors.white.withValues(alpha: 0.85),
                     borderRadius: BorderRadius.circular(32),
                     boxShadow: [
                       BoxShadow(
@@ -327,7 +363,9 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                     ],
                     border: Border.all(
-                      color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.6),
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.1)
+                          : Colors.white.withValues(alpha: 0.6),
                       width: 1.5,
                     ),
                   ),
@@ -341,7 +379,9 @@ class _AuthScreenState extends State<AuthScreen> {
                         Container(
                           width: 80,
                           height: 80,
-                          margin: const EdgeInsets.symmetric(horizontal: 100), // center manually via margin or parent constraints
+                          margin: const EdgeInsets.symmetric(
+                            horizontal: 100,
+                          ), // center manually via margin or parent constraints
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
                               colors: [Color(0xFF597FA9), Color(0xFFC1356F)],
@@ -351,7 +391,9 @@ class _AuthScreenState extends State<AuthScreen> {
                             borderRadius: BorderRadius.circular(24),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFFC1356F).withValues(alpha: 0.3),
+                                color: const Color(
+                                  0xFFC1356F,
+                                ).withValues(alpha: 0.3),
                                 blurRadius: 15,
                                 offset: const Offset(0, 8),
                               ),
@@ -419,7 +461,10 @@ class _AuthScreenState extends State<AuthScreen> {
                           controller: _passwordController,
                           decoration: InputDecoration(
                             labelText: 'Contraseña',
-                            prefixIcon: const Icon(Icons.lock_outlined, size: 20),
+                            prefixIcon: const Icon(
+                              Icons.lock_outlined,
+                              size: 20,
+                            ),
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _obscurePassword
@@ -471,7 +516,10 @@ class _AuthScreenState extends State<AuthScreen> {
                             ),
                             child: Text(
                               _errorMessage!,
-                              style: TextStyle(color: Colors.red[700], fontSize: 13),
+                              style: TextStyle(
+                                color: Colors.red[700],
+                                fontSize: 13,
+                              ),
                               textAlign: TextAlign.center,
                             ),
                           ),
@@ -488,7 +536,10 @@ class _AuthScreenState extends State<AuthScreen> {
                             ),
                             child: Text(
                               _successMessage!,
-                              style: TextStyle(color: Colors.green[700], fontSize: 13),
+                              style: TextStyle(
+                                color: Colors.green[700],
+                                fontSize: 13,
+                              ),
                               textAlign: TextAlign.center,
                             ),
                           ),
@@ -507,7 +558,9 @@ class _AuthScreenState extends State<AuthScreen> {
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFFC1356F).withValues(alpha: 0.25),
+                                color: const Color(
+                                  0xFFC1356F,
+                                ).withValues(alpha: 0.25),
                                 blurRadius: 20,
                                 offset: const Offset(0, 8),
                               ),
@@ -533,7 +586,9 @@ class _AuthScreenState extends State<AuthScreen> {
                                     ),
                                   )
                                 : Text(
-                                    _isLogin ? 'Iniciar Sesión' : 'Crear Cuenta',
+                                    _isLogin
+                                        ? 'Iniciar Sesión'
+                                        : 'Crear Cuenta',
                                     style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
@@ -555,7 +610,10 @@ class _AuthScreenState extends State<AuthScreen> {
                             });
                           },
                           style: TextButton.styleFrom(
-                            foregroundColor: Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.grey[800],
+                            foregroundColor:
+                                Theme.of(context).brightness == Brightness.dark
+                                ? Colors.white70
+                                : Colors.grey[800],
                           ),
                           child: Text(
                             _isLogin

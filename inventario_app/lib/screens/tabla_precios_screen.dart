@@ -481,14 +481,29 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.picture_as_pdf),
-            onPressed: _generarPdf,
-            tooltip: 'Descargar PDF',
+          Container(
+            margin: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.picture_as_pdf, color: Colors.black),
+              onPressed: _generarPdf,
+              tooltip: 'Descargar PDF',
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadData,
+          Container(
+            margin: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.refresh, color: Colors.black),
+              onPressed: _loadData,
+              tooltip: 'Actualizar',
+            ),
           ),
         ],
       ),
@@ -572,7 +587,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                         style: TextStyle(
                           fontWeight: FontWeight.w900,
                           fontSize: 12,
-                          color: Theme.of(context).textTheme.bodyMedium?.color,
+                          color: isDark ? Colors.white : Colors.black,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -581,20 +596,51 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                           Expanded(
                             child: DropdownButtonFormField<Categoria>(
                               value: _categoriaSeleccionada,
-                              dropdownColor: Theme.of(context).cardColor,
-                              decoration: const InputDecoration(
+                              dropdownColor: isDark ? const Color(0xFF1A1A1A) : Theme.of(context).cardColor,
+                              style: TextStyle(
+                                color: isDark ? Colors.white : Colors.black,
+                              ),
+                              iconEnabledColor: isDark ? Colors.white : Colors.black54,
+                              decoration: InputDecoration(
                                 labelText: 'Categoría',
-                                border: OutlineInputBorder(),
-                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                labelStyle: TextStyle(
+                                  color: isDark ? Colors.white70 : Colors.black54,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: isDark ? Colors.grey[600]! : Colors.grey[400]!,
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: isDark ? Colors.grey[600]! : Colors.grey[400]!,
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: isDark ? Colors.white : SubliriumColors.cyan,
+                                  ),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                filled: true,
+                                fillColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
                               ),
                               items: [
                                 DropdownMenuItem(
                                   value: null,
-                                  child: Text('Todas', style: Theme.of(context).textTheme.bodyMedium),
+                                  child: Text('Todas', 
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white : Colors.black,
+                                    ),
+                                  ),
                                 ),
                                 ..._categorias.map((c) => DropdownMenuItem(
                                       value: c,
-                                      child: Text(c.nombre, style: Theme.of(context).textTheme.bodyMedium),
+                                      child: Text(c.nombre, 
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white : Colors.black,
+                                        ),
+                                      ),
                                     )),
                               ],
                               onChanged: (value) {
@@ -613,23 +659,52 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                           Expanded(
                             child: DropdownButtonFormField<Producto>(
                               value: _productoSeleccionado,
-                              dropdownColor: Theme.of(context).cardColor,
-                              decoration: const InputDecoration(
+                              dropdownColor: isDark ? const Color(0xFF1A1A1A) : Theme.of(context).cardColor,
+                              style: TextStyle(
+                                color: isDark ? Colors.white : Colors.black,
+                              ),
+                              iconEnabledColor: isDark ? Colors.white : Colors.black54,
+                              decoration: InputDecoration(
                                 labelText: 'Producto',
-                                border: OutlineInputBorder(),
-                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                labelStyle: TextStyle(
+                                  color: isDark ? Colors.white70 : Colors.black54,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: isDark ? Colors.grey[600]! : Colors.grey[400]!,
+                                  ),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: isDark ? Colors.grey[600]! : Colors.grey[400]!,
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: isDark ? Colors.white : SubliriumColors.cyan,
+                                  ),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                filled: true,
+                                fillColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
                               ),
                               items: [
                                 DropdownMenuItem(
                                   value: null,
-                                  child: Text('Todos', style: Theme.of(context).textTheme.bodyMedium),
+                                  child: Text('Todos', 
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white : Colors.black,
+                                    ),
+                                  ),
                                 ),
                                 ..._productosFiltrados.map((p) => DropdownMenuItem(
                                       value: p,
                                       child: Text(
                                         p.nombre,
                                         overflow: TextOverflow.ellipsis,
-                                        style: Theme.of(context).textTheme.bodyMedium,
+                                        style: TextStyle(
+                                          color: isDark ? Colors.white : Colors.black,
+                                        ),
                                       ),
                                     )),
                               ],

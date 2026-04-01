@@ -113,6 +113,18 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  bool _isNetworkError(String error) {
+    final msg = error.toLowerCase();
+    return msg.contains('connection') ||
+        msg.contains('network') ||
+        msg.contains('socket') ||
+        msg.contains('timeout') ||
+        msg.contains('internet') ||
+        msg.contains('wifi') ||
+        msg.contains('host') ||
+        msg.contains('dns');
+  }
+
   Future<void> _deleteCategoria(Categoria categoria) async {
     // Proteger categoría Combo
     if (categoria.nombre.toLowerCase() == 'combo') {
@@ -254,15 +266,17 @@ class _HomeScreenState extends State<HomeScreen> {
           body: IndexedStack(
             index: _currentIndex,
             children: [
-              _buildCategorias(),           // index 0 – Inicio
-              const ProductosScreen(),      // index 1 – Inventario
-              const ResumenScreen(),        // index 2 – Resumen
-              const TablaPreciosScreen(),   // index 3 – Precios
-              CombosScreen(),         // index 4 – Combos
+              _buildCategorias(), // index 0 – Inicio
+              const ProductosScreen(), // index 1 – Inventario
+              const ResumenScreen(), // index 2 – Resumen
+              const TablaPreciosScreen(), // index 3 – Precios
+              CombosScreen(), // index 4 – Combos
             ],
           ),
           bottomNavigationBar: _buildBottomNav(),
-          floatingActionButton: (_currentIndex == 0 || _currentIndex == 4) ? _buildFab() : null,
+          floatingActionButton: (_currentIndex == 0 || _currentIndex == 4)
+              ? _buildFab()
+              : null,
         );
       },
     );
@@ -295,12 +309,17 @@ class _HomeScreenState extends State<HomeScreen> {
         else if (_currentIndex == 4)
           FloatingActionButton(
             heroTag: 'add_combo_btn',
-            onPressed: () {
+            onPressed: () async {
+              // Cargar productos antes de abrir el editor
+              final apiService = ApiService();
+              final productos = await apiService.getProductos();
+              if (!mounted) return;
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) => ComboEditorScreen(
-                    productos: [],
+                    productos: productos,
+                    comboItems: const [],
                     onSave: () {},
                   ),
                 ),
@@ -340,10 +359,7 @@ class _HomeScreenState extends State<HomeScreen> {
             background: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    AppConfig.secondaryColor,
-                    AppConfig.primaryColor,
-                  ],
+                  colors: [AppConfig.secondaryColor, AppConfig.primaryColor],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -352,7 +368,10 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           actions: [
             IconButton(
-              icon: Icon(Icons.refresh, color: AppConfig.secondaryContrastColor),
+              icon: Icon(
+                Icons.refresh,
+                color: AppConfig.secondaryContrastColor,
+              ),
               onPressed: _loadCategorias,
               tooltip: 'Actualizar',
             ),
@@ -371,7 +390,10 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
             PopupMenuButton<String>(
-              icon: Icon(Icons.more_vert, color: AppConfig.secondaryContrastColor),
+              icon: Icon(
+                Icons.more_vert,
+                color: AppConfig.secondaryContrastColor,
+              ),
               onSelected: (value) async {
                 if (value == 'config') {
                   await Navigator.push(
@@ -433,40 +455,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ],
-            ),
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: SubliriumColors.cardBackground,
-                  border: Border.all(color: SubliriumColors.cyan, width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: ClipOval(
-                  child: Image.asset(
-                    AppConfig.logoPath,
-                    fit: BoxFit.cover,
-                    width: 36,
-                    height: 36,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Icon(
-                        Icons.store,
-                        color: SubliriumColors.cyan,
-                        size: 20,
-                      );
-                    },
-                  ),
-                ),
-              ),
             ),
           ],
         ),
@@ -536,18 +524,49 @@ class _HomeScreenState extends State<HomeScreen> {
         else if (_error != null)
           SliverFillRemaining(
             child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.wifi_off, size: 48, color: textColor),
-                  const SizedBox(height: 8),
-                  Text('Error de conexión', style: TextStyle(color: textColor)),
-                  const SizedBox(height: 8),
-                  ElevatedButton(
-                    onPressed: _loadCategorias,
-                    child: const Text('Reintentar'),
-                  ),
-                ],
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.cloud_off,
+                      size: 64,
+                      color: textColor.withValues(alpha: 0.5),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No se pudo conectar',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: textColor,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _isNetworkError(_error!)
+                          ? 'Verifica tu conexión a internet'
+                          : 'Error del servidor',
+                      style: TextStyle(color: textColor.withValues(alpha: 0.7)),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed: _loadCategorias,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Reintentar'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppConfig.primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           )
@@ -602,7 +621,9 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Card(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: isDark ? Colors.grey[800]! : SubliriumColors.border),
+          side: BorderSide(
+            color: isDark ? Colors.grey[800]! : SubliriumColors.border,
+          ),
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
@@ -626,7 +647,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Center(
-                    child: Icon(Icons.folder_outlined, size: 24, color: SubliriumColors.cyan),
+                    child: Icon(
+                      Icons.folder_outlined,
+                      size: 24,
+                      color: SubliriumColors.cyan,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -650,15 +675,26 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
-                      icon: Icon(Icons.edit_outlined, size: 20, color: theme.iconTheme.color),
+                      icon: Icon(
+                        Icons.edit_outlined,
+                        size: 20,
+                        color: theme.iconTheme.color,
+                      ),
                       onPressed: () => _showCategoriaDialog(categoria),
                     ),
                     IconButton(
-                      icon: Icon(Icons.delete_outline, size: 20, color: Colors.red[300]),
+                      icon: Icon(
+                        Icons.delete_outline,
+                        size: 20,
+                        color: Colors.red[300],
+                      ),
                       onPressed: () => _deleteCategoria(categoria),
                     ),
                     const SizedBox(width: 4),
-                    Icon(Icons.chevron_right, color: theme.iconTheme.color?.withValues(alpha: 0.3)),
+                    Icon(
+                      Icons.chevron_right,
+                      color: theme.iconTheme.color?.withValues(alpha: 0.3),
+                    ),
                   ],
                 ),
               ],
@@ -668,7 +704,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
 
   Widget _buildBottomNav() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -741,15 +776,16 @@ class _HomeScreenState extends State<HomeScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final activeColor = AppConfig.primaryColor;
     final inactiveColor = isDark ? Colors.white38 : const Color(0xFF9E9E9E);
-    
+
     // En modo oscuro, si el color primario tiene poco contraste (< 0.3 luminosidad),
     // usamos blanco puro para máximo contraste en la sección activa
-    final bool needsHighContrast = isDark && AppConfig.isDarkColor(AppConfig.primaryColor);
-    final Color effectiveActiveColor = needsHighContrast 
-        ? Colors.white 
+    final bool needsHighContrast =
+        isDark && AppConfig.isDarkColor(AppConfig.primaryColor);
+    final Color effectiveActiveColor = needsHighContrast
+        ? Colors.white
         : activeColor;
-    final Color effectiveActiveTextColor = needsHighContrast 
-        ? Colors.white 
+    final Color effectiveActiveTextColor = needsHighContrast
+        ? Colors.white
         : activeColor;
 
     return Expanded(
@@ -762,14 +798,17 @@ class _HomeScreenState extends State<HomeScreen> {
           margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: isActive 
-                ? (needsHighContrast 
-                    ? Colors.white.withValues(alpha: 0.15) 
-                    : activeColor.withValues(alpha: isDark ? 0.2 : 0.1))
+            color: isActive
+                ? (needsHighContrast
+                      ? Colors.white.withValues(alpha: 0.15)
+                      : activeColor.withValues(alpha: isDark ? 0.2 : 0.1))
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             border: isActive && needsHighContrast
-                ? Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1)
+                ? Border.all(
+                    color: Colors.white.withValues(alpha: 0.5),
+                    width: 1,
+                  )
                 : null,
           ),
           child: Column(

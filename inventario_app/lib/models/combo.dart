@@ -97,9 +97,9 @@ class ComboItem {
   factory ComboItem.fromJson(Map<String, dynamic> json) {
     return ComboItem(
       id: json['id'] as int?,
-      comboId: json['combo_id'] as int,
-      productoId: json['producto_id'] as int,
-      cantidad: json['cantidad'] as int,
+      comboId: (json['combo_id'] as num?)?.toInt() ?? 0,
+      productoId: (json['producto_id'] as num?)?.toInt() ?? 0,
+      cantidad: (json['cantidad'] as num?)?.toInt() ?? 1,
       nombreProducto: json['nombre_producto'] as String?,
       precioUnitario: json['precio_unitario'] != null
           ? (json['precio_unitario'] as num).toDouble()

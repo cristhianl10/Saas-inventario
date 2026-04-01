@@ -22,11 +22,13 @@ class Venta {
   factory Venta.fromJson(Map<String, dynamic> json) {
     return Venta(
       id: json['id'] as int?,
-      productoId: json['producto_id'] as int,
-      cantidad: json['cantidad'] as int,
-      precioUnitario: (json['precio_unitario'] as num).toDouble(),
-      total: (json['total'] as num).toDouble(),
-      fechaVenta: DateTime.parse(json['fecha_venta'] as String),
+      productoId: (json['producto_id'] as num?)?.toInt() ?? 0,
+      cantidad: (json['cantidad'] as num?)?.toInt() ?? 0,
+      precioUnitario: (json['precio_unitario'] as num?)?.toDouble() ?? 0.0,
+      total: (json['total'] as num?)?.toDouble() ?? 0.0,
+      fechaVenta: json['fecha_venta'] != null
+          ? DateTime.parse(json['fecha_venta'] as String)
+          : DateTime.now(),
       vendidoA: json['vendido_a'] as String?,
       observaciones: json['observaciones'] as String?,
     );
