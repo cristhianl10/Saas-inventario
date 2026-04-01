@@ -105,92 +105,144 @@ class _ResumenScreenState extends State<ResumenScreen> {
   }
 
   Future<void> _deleteVenta(Venta venta) async {
-    final confirm = await showDialog<String>(
+    if (venta.id == null) return;
+
+    // Step 1: Ask how many units to return (or just delete)
+    final cantidadController = TextEditingController(text: venta.cantidad.toString());
+    bool devolverStock = false;
+
+    final resultado = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('¿Eliminar venta?'),
-        content: Text(
-          'Eliminar venta de ${venta.cantidad} unidad(es) por \$${venta.total.toStringAsFixed(2)}',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, 'cancelar'),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, 'solo'),
-            child: const Text('Solo eliminar'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, 'regresar'),
-            child: const Text('Regresar stock'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == null || venta.id == null) return;
-
-    if (confirm == 'cancelar') return;
-
-    try {
-      if (confirm == 'regresar') {
-        final cantidadController = TextEditingController(text: venta.cantidad.toString());
-        
-        final cantidadConfirm = await showDialog<int>(
-          context: context,
-          builder: (context) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: const Text('Regresar al inventario'),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(
+              children: [
+                Icon(Icons.delete_outline, color: SubliriumColors.deleteText, size: 22),
+                const SizedBox(width: 8),
+                const Text('Eliminar venta'),
+              ],
+            ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('¿Cuántas unidades desea regresar al inventario?'),
-                const SizedBox(height: 8),
-                Text(
-                  '(Máximo: ${venta.cantidad} unidades)',
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.grey[800] : const Color(0xFFF6F3EC),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.receipt_long, size: 18, color: SubliriumColors.textSecondary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _getNombreProducto(venta.productoId),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : SubliriumColors.textPrimary,
+                              ),
+                            ),
+                            Text(
+                              '${venta.cantidad} ud(s) · \$${venta.total.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isDark ? Colors.white60 : SubliriumColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 16),
-                TextField(
-                  controller: cantidadController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Cantidad',
-                    border: OutlineInputBorder(),
-                  ),
-                  autofocus: true,
+                // Toggle: devolver stock?
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '¿Devolver productos al stock?',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white : SubliriumColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    Switch(
+                      value: devolverStock,
+                      activeColor: SubliriumColors.stockOkText,
+                      onChanged: (v) => setDialogState(() => devolverStock = v),
+                    ),
+                  ],
                 ),
+                if (devolverStock) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Cantidad a devolver (máx. ${venta.cantidad}):',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? Colors.white60 : SubliriumColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: cantidadController,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: InputDecoration(
+                      labelText: 'Cantidad',
+                      border: const OutlineInputBorder(),
+                      suffixText: '/ ${venta.cantidad}',
+                    ),
+                    autofocus: true,
+                  ),
+                ],
               ],
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.pop(ctx, 'cancelar'),
                 child: const Text('Cancelar'),
               ),
               ElevatedButton(
-                onPressed: () {
-                  final cantidad = int.tryParse(cantidadController.text) ?? 0;
-                  if (cantidad > 0 && cantidad <= venta.cantidad) {
-                    Navigator.pop(context, cantidad);
-                  }
-                },
-                child: const Text('Aceptar'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: SubliriumColors.deleteText,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () => Navigator.pop(ctx, devolverStock ? 'regresar' : 'solo'),
+                child: Text(devolverStock ? 'Eliminar y devolver' : 'Solo eliminar'),
               ),
             ],
-          ),
-        );
+          );
+        },
+      ),
+    );
 
-        if (cantidadConfirm == null || cantidadConfirm <= 0) return;
+    if (resultado == null || resultado == 'cancelar') return;
 
-        final producto = _productos
-            .where((p) => p.id == venta.productoId)
-            .firstOrNull;
+    try {
+      if (resultado == 'regresar') {
+        final cantidadDevolver = int.tryParse(cantidadController.text) ?? 0;
+        if (cantidadDevolver <= 0 || cantidadDevolver > venta.cantidad) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Cantidad inválida')),
+            );
+          }
+          return;
+        }
+        final producto = _productos.where((p) => p.id == venta.productoId).firstOrNull;
         if (producto != null) {
           final productoActualizado = producto.copyWith(
-            cantidad: producto.cantidad + cantidadConfirm,
+            cantidad: producto.cantidad + cantidadDevolver,
             fechaActualizacion: DateTime.now(),
           );
           await _apiService.updateProducto(productoActualizado);
@@ -202,9 +254,10 @@ class _ResumenScreenState extends State<ResumenScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(confirm == 'regresar' 
-                ? 'Venta eliminada y stock actualizado' 
+            content: Text(resultado == 'regresar'
+                ? 'Venta eliminada y stock actualizado'
                 : 'Venta eliminada'),
+            backgroundColor: resultado == 'regresar' ? SubliriumColors.stockOkText : null,
           ),
         );
       }
@@ -236,6 +289,7 @@ class _ResumenScreenState extends State<ResumenScreen> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
           final cantidad = int.tryParse(cantidadController.text) ?? 1;
           final precio = double.tryParse(precioController.text) ?? 0;
           final total = cantidad * precio;
@@ -252,10 +306,10 @@ class _ResumenScreenState extends State<ResumenScreen> {
                 children: [
                   Text(
                     _getNombreProducto(venta.productoId),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 14,
-                      color: Colors.black,
+                      color: isDark ? Colors.white : Colors.black,
                     ),
                   ),
                   if (_getDescripcionProducto(venta.productoId) != null)
@@ -263,7 +317,7 @@ class _ResumenScreenState extends State<ResumenScreen> {
                       _getDescripcionProducto(venta.productoId)!,
                       style: TextStyle(
                         fontSize: 11,
-                        color: Colors.black.withValues(alpha: 0.7),
+                        color: isDark ? Colors.white70 : Colors.black54,
                       ),
                     ),
                   const SizedBox(height: 16),
@@ -348,9 +402,9 @@ class _ResumenScreenState extends State<ResumenScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'Total:',
-                          style: TextStyle(fontWeight: FontWeight.w900, color: Colors.black),
+                          style: TextStyle(fontWeight: FontWeight.w900, color: isDark ? Colors.white : Colors.black),
                         ),
                         Text(
                           '\$${total.toStringAsFixed(2)}',
@@ -484,13 +538,6 @@ class _ResumenScreenState extends State<ResumenScreen> {
                 tooltip: 'Descargar reporte',
               ),
               const SizedBox(width: 8),
-              Container(
-                margin: const EdgeInsets.only(right: 16),
-                child: CircleAvatar(
-                  backgroundColor: isDark ? Colors.grey[800] : const Color(0xFFE5E2DB),
-                  child: Icon(Icons.person_outline, color: theme.iconTheme.color),
-                ),
-              )
             ],
             flexibleSpace: FlexibleSpaceBar(
               titlePadding: const EdgeInsets.only(left: 24, bottom: 16, right: 24),
@@ -523,7 +570,7 @@ class _ResumenScreenState extends State<ResumenScreen> {
                       style: theme.textTheme.labelMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.5,
-                        color: SubliriumColors.textSecondary,
+                        color: isDark ? Colors.white : SubliriumColors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -575,7 +622,7 @@ class _ResumenScreenState extends State<ResumenScreen> {
                         style: theme.textTheme.labelMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.5,
-                          color: SubliriumColors.textSecondary,
+                          color: isDark ? Colors.white : SubliriumColors.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -714,7 +761,7 @@ class _ResumenScreenState extends State<ResumenScreen> {
       decoration: BoxDecoration(
         color: outOfStock 
             ? (isDark ? Colors.red[900]!.withValues(alpha: 0.2) : const Color(0xFFFFF0F2)) 
-            : (isDark ? Colors.grey[850] : const Color(0xFFF6F3EC)),
+            : (isDark ? Colors.grey[850] : const Color(0xFFE0E0E0)),
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
@@ -752,13 +799,19 @@ class _ResumenScreenState extends State<ResumenScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? Colors.grey[850] : Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark
+              ? AppConfig.primaryColor.withValues(alpha: 0.35)
+              : AppConfig.primaryColor.withValues(alpha: 0.18),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -812,6 +865,18 @@ class _ResumenScreenState extends State<ResumenScreen> {
                     Text(
                       '${venta.cantidad} uds',
                       style: TextStyle(color: isDark ? Colors.white70 : SubliriumColors.textSecondary, fontSize: 12),
+                    ),
+                    const SizedBox(height: 8),
+                    IconButton(
+                      onPressed: () => _deleteVenta(venta),
+                      icon: const Icon(Icons.delete_outline, size: 20),
+                      color: SubliriumColors.deleteText,
+                      tooltip: 'Eliminar venta',
+                      style: IconButton.styleFrom(
+                        backgroundColor: SubliriumColors.stockLowBg,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.all(6),
+                      ),
                     ),
                   ],
                 ),

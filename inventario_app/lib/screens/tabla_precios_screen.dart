@@ -527,18 +527,41 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                       TextField(
                         controller: _searchController,
                         onChanged: (value) => setState(() => _searchQuery = value),
-                        style: Theme.of(context).textTheme.bodyMedium,
+                        style: TextStyle(
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
                         decoration: InputDecoration(
                           hintText: 'Buscar producto...',
-                          hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).textTheme.bodySmall?.color,
+                          hintStyle: TextStyle(
+                            color: isDark ? Colors.white54 : Colors.black54,
+                            fontWeight: FontWeight.w500,
                           ),
-                          prefixIcon: const Icon(Icons.search, color: SubliriumColors.cyan),
+                          prefixIcon: Icon(
+                            Icons.search, 
+                            color: isDark ? Colors.white70 : SubliriumColors.cyan,
+                          ),
                           filled: true,
-                          fillColor: SubliriumColors.crema,
+                          fillColor: isDark ? const Color(0xFF3A3A3A) : Colors.white,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
+                            borderSide: BorderSide(
+                              color: isDark ? Colors.grey[600]! : SubliriumColors.border,
+                              width: 1.5,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: isDark ? Colors.grey[600]! : SubliriumColors.border,
+                              width: 1.5,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: SubliriumColors.cyan,
+                              width: 2,
+                            ),
                           ),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         ),

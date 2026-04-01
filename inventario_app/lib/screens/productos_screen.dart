@@ -898,6 +898,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
   @override
   Widget build(BuildContext context) {
     final bool esVistaGlobal = widget.categoria == null;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       body: CustomScrollView(
@@ -907,19 +908,22 @@ class _ProductosScreenState extends State<ProductosScreen> {
             expandedHeight: 90,
             floating: false,
             pinned: true,
+            centerTitle: true,
             automaticallyImplyLeading: !esVistaGlobal,
             leading: !esVistaGlobal ? IconButton(
               icon: const Icon(Icons.arrow_back),
               onPressed: () => Navigator.pop(context),
             ) : null,
             flexibleSpace: FlexibleSpaceBar(
-              title: Text(
-                esVistaGlobal
-                    ? 'Todos los Productos'
-                    : (widget.categoria?.nombre ?? 'Productos'),
-                style: const TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 14,
+              title: Center(
+                child: Text(
+                  esVistaGlobal
+                      ? 'Todos los Productos'
+                      : (widget.categoria?.nombre ?? 'Productos'),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                  ),
                 ),
               ),
               background: Container(
@@ -1002,18 +1006,36 @@ class _ProductosScreenState extends State<ProductosScreen> {
                       style: Theme.of(context).textTheme.bodyMedium,
                       decoration: InputDecoration(
                         hintText: 'Buscar producto...',
-                        hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).textTheme.bodySmall?.color,
+                        hintStyle: TextStyle(
+                          color: isDark ? Colors.white54 : Colors.black54,
+                          fontWeight: FontWeight.w500,
                         ),
-                        prefixIcon: const Icon(
+                        prefixIcon: Icon(
                           Icons.search,
-                          color: SubliriumColors.cyan,
+                          color: isDark ? Colors.white70 : SubliriumColors.cyan,
                         ),
                         filled: true,
-                        fillColor: SubliriumColors.crema,
+                        fillColor: isDark ? const Color(0xFF3A3A3A) : Colors.white,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
+                          borderSide: BorderSide(
+                            color: isDark ? Colors.grey[600]! : SubliriumColors.border,
+                            width: 1.5,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: isDark ? Colors.grey[600]! : SubliriumColors.border,
+                            width: 1.5,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: SubliriumColors.cyan,
+                            width: 2,
+                          ),
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -1221,11 +1243,16 @@ class _ProductosScreenState extends State<ProductosScreen> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: isDark ? Colors.grey[800]! : SubliriumColors.border),
+        side: BorderSide(
+          color: isDark ? Colors.grey[700]! : SubliriumColors.border,
+          width: 1.5,
+        ),
       ),
-      elevation: 0,
+      elevation: isDark ? 4 : 2,
+      shadowColor: isDark ? Colors.black : Colors.black.withValues(alpha: 0.1),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
