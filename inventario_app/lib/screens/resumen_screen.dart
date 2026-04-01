@@ -579,7 +579,7 @@ class _ResumenScreenState extends State<ResumenScreen> {
                       style: theme.textTheme.displayLarge?.copyWith(
                         fontWeight: FontWeight.w900,
                         letterSpacing: -2,
-                        color: AppConfig.primaryColor,
+                        color: isDark ? Colors.white : Colors.black,
                       ),
                     ),
                   ],

@@ -915,15 +915,15 @@ class _ProductosScreenState extends State<ProductosScreen> {
               onPressed: () => Navigator.pop(context),
             ) : null,
             flexibleSpace: FlexibleSpaceBar(
-              title: Center(
-                child: Text(
-                  esVistaGlobal
-                      ? 'Todos los Productos'
-                      : (widget.categoria?.nombre ?? 'Productos'),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 14,
-                  ),
+              centerTitle: true,
+              title: Text(
+                esVistaGlobal
+                    ? 'Todos los Productos'
+                    : (widget.categoria?.nombre ?? 'Productos'),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16,
+                  color: Colors.white,
                 ),
               ),
               background: Container(
@@ -1348,10 +1348,11 @@ class _ProductosScreenState extends State<ProductosScreen> {
                     color: producto.cantidad > 0
                         ? SubliriumColors.stockOkBg
                         : SubliriumColors.stockZeroBg,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
                         onPressed: producto.cantidad > 0
@@ -1359,20 +1360,20 @@ class _ProductosScreenState extends State<ProductosScreen> {
                             : null,
                         icon: Icon(
                           Icons.remove,
-                          size: 16,
+                          size: 14,
                           color: SubliriumColors.stockOkText,
                         ),
                         visualDensity: VisualDensity.compact,
                         padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
+                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                       ),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: Text(
                           '${producto.cantidad}',
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
-                            fontSize: 14,
+                            fontSize: 13,
                             color: producto.cantidad > 0
                                 ? SubliriumColors.stockOkText
                                 : SubliriumColors.stockZeroText,
@@ -1383,12 +1384,12 @@ class _ProductosScreenState extends State<ProductosScreen> {
                         onPressed: () => _updateCantidad(producto, 1),
                         icon: Icon(
                           Icons.add,
-                          size: 16,
+                          size: 14,
                           color: SubliriumColors.stockOkText,
                         ),
                         visualDensity: VisualDensity.compact,
                         padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
+                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                       ),
                     ],
                   ),

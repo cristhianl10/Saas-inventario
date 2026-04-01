@@ -8,6 +8,7 @@ import '../config/app_config.dart';
 import 'productos_screen.dart';
 import 'resumen_screen.dart';
 import 'tabla_precios_screen.dart';
+import 'combos_screen.dart';
 import 'configuracion_screen.dart';
 import '../main.dart';
 
@@ -257,10 +258,11 @@ class _HomeScreenState extends State<HomeScreen> {
               const ProductosScreen(),      // index 1 – Inventario
               const ResumenScreen(),        // index 2 – Resumen
               const TablaPreciosScreen(),   // index 3 – Precios
+              CombosScreen(),         // index 4 – Combos
             ],
           ),
           bottomNavigationBar: _buildBottomNav(),
-          floatingActionButton: _currentIndex == 0 ? _buildFab() : null,
+          floatingActionButton: (_currentIndex == 0 || _currentIndex == 4) ? _buildFab() : null,
         );
       },
     );
@@ -284,11 +286,30 @@ class _HomeScreenState extends State<HomeScreen> {
               child: const Icon(Icons.arrow_upward, color: Colors.white),
             ),
           ),
-        FloatingActionButton(
-          heroTag: 'add_cat_home_btn',
-          onPressed: () => _showCategoriaDialog(),
-          child: const Icon(Icons.add),
-        ),
+        if (_currentIndex == 0)
+          FloatingActionButton(
+            heroTag: 'add_cat_home_btn',
+            onPressed: () => _showCategoriaDialog(),
+            child: const Icon(Icons.add),
+          )
+        else if (_currentIndex == 4)
+          FloatingActionButton(
+            heroTag: 'add_combo_btn',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ComboEditorScreen(
+                    productos: [],
+                    onSave: () {},
+                  ),
+                ),
+              );
+            },
+            backgroundColor: AppConfig.accentColor,
+            foregroundColor: AppConfig.accentContrastColor,
+            child: const Icon(Icons.local_offer),
+          ),
       ],
     );
   }
@@ -309,11 +330,11 @@ class _HomeScreenState extends State<HomeScreen> {
           flexibleSpace: FlexibleSpaceBar(
             title: Text(
               AppConfig.appName,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1,
                 fontSize: 20,
-                color: Colors.white,
+                color: AppConfig.secondaryContrastColor,
               ),
             ),
             background: Container(
@@ -331,7 +352,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.refresh, color: Colors.white),
+              icon: Icon(Icons.refresh, color: AppConfig.secondaryContrastColor),
               onPressed: _loadCategorias,
               tooltip: 'Actualizar',
             ),
@@ -350,7 +371,7 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
             PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, color: Colors.white),
+              icon: Icon(Icons.more_vert, color: AppConfig.secondaryContrastColor),
               onSelected: (value) async {
                 if (value == 'config') {
                   await Navigator.push(
@@ -697,6 +718,13 @@ class _HomeScreenState extends State<HomeScreen> {
               isActive: _currentIndex == 3,
               onTap: () => setState(() => _currentIndex = 3),
             ),
+            _buildNavItem(
+              index: 4,
+              iconPath: 'assets/icons/inventory.svg',
+              label: 'Combos',
+              isActive: _currentIndex == 4,
+              onTap: () => setState(() => _currentIndex = 4),
+            ),
           ],
         ),
       ),
@@ -713,34 +741,61 @@ class _HomeScreenState extends State<HomeScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final activeColor = AppConfig.primaryColor;
     final inactiveColor = isDark ? Colors.white38 : const Color(0xFF9E9E9E);
+    
+    // En modo oscuro, si el color primario tiene poco contraste (< 0.3 luminosidad),
+    // usamos blanco puro para máximo contraste en la sección activa
+    final bool needsHighContrast = isDark && AppConfig.isDarkColor(AppConfig.primaryColor);
+    final Color effectiveActiveColor = needsHighContrast 
+        ? Colors.white 
+        : activeColor;
+    final Color effectiveActiveTextColor = needsHighContrast 
+        ? Colors.white 
+        : activeColor;
 
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isActive 
+                ? (needsHighContrast 
+                    ? Colors.white.withValues(alpha: 0.15) 
+                    : activeColor.withValues(alpha: isDark ? 0.2 : 0.1))
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: isActive && needsHighContrast
+                ? Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1)
+                : null,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // WhatsApp-style: active pill indicator above icon
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeInOut,
-                width: isActive ? 32 : 0,
-                height: 3,
-                margin: const EdgeInsets.only(bottom: 6),
-                decoration: BoxDecoration(
-                  color: activeColor,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
+              // Indicador de pill cuando está activo (solo si no es high contrast)
+              if (!needsHighContrast)
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeInOut,
+                  width: isActive ? 32 : 0,
+                  height: 3,
+                  margin: const EdgeInsets.only(bottom: 6),
+                  decoration: BoxDecoration(
+                    color: effectiveActiveColor,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                )
+              else
+                const SizedBox(height: 3),
               SvgPicture.asset(
                 iconPath,
                 width: 24,
                 height: 24,
                 colorFilter: ColorFilter.mode(
-                  isActive ? activeColor : inactiveColor,
+                  isActive ? effectiveActiveColor : inactiveColor,
                   BlendMode.srcIn,
                 ),
               ),
@@ -750,7 +805,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                  color: isActive ? activeColor : inactiveColor,
+                  color: isActive ? effectiveActiveTextColor : inactiveColor,
                   letterSpacing: isActive ? 0.3 : 0,
                 ),
               ),

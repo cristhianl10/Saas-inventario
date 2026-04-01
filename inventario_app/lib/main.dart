@@ -7,7 +7,7 @@ import 'config/app_theme.dart';
 import 'config/app_config.dart';
 import 'config/tenant_service.dart';
 
-final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.dark);
+final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -99,6 +99,7 @@ class _InventarioAppState extends State<InventarioApp> {
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeNotifier,
       builder: (_, ThemeMode currentMode, __) {
+        bool isDark = currentMode == ThemeMode.dark;
         return MaterialApp(
           title: AppConfig.appName,
           debugShowCheckedModeBanner: false,

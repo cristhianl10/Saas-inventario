@@ -47,4 +47,31 @@ class AppConfig {
       'background_color': backgroundColorHex,
     };
   }
+
+  /// Calcula la luminosidad relativa de un color (0-1)
+  /// Usa la fórmula de luminosidad percibida:
+  /// L = 0.299*R + 0.587*G + 0.114*B
+  static double _getLuminance(Color color) {
+    final r = color.r;
+    final g = color.g;
+    final b = color.b;
+    return 0.299 * r + 0.587 * g + 0.114 * b;
+  }
+
+  /// Determina si el color es oscuro (requiere texto claro)
+  /// Retorna true si el color es oscuro (luminosidad < 0.5)
+  static bool isDarkColor(Color color) {
+    return _getLuminance(color) < 0.5;
+  }
+
+  /// Retorna el color de texto apropiado para el contraste
+  /// Blanco para fondos oscuros, negro para fondos claros
+  static Color getContrastTextColor(Color backgroundColor) {
+    return isDarkColor(backgroundColor) ? Colors.white : Colors.black;
+  }
+
+  /// Colores de texto de alto contraste para los colores principales de la app
+  static Color get primaryContrastColor => getContrastTextColor(primaryColor);
+  static Color get secondaryContrastColor => getContrastTextColor(secondaryColor);
+  static Color get accentContrastColor => getContrastTextColor(accentColor);
 }

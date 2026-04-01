@@ -788,19 +788,19 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: SubliriumColors.cardBackground,
+        color: isDark ? const Color(0xFF1A1A1A) : SubliriumColors.cardBackground,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: SubliriumColors.border),
+        border: Border.all(color: isDark ? Colors.grey[700]! : SubliriumColors.border),
       ),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: SubliriumColors.cyan,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(11)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
             ),
-            child: const Row(
+            child: Row(
               children: [
                 Expanded(
                   flex: 2,
@@ -832,9 +832,9 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
             decoration: BoxDecoration(
-              color: SubliriumColors.cyan.withValues(alpha: 0.08),
-              border: const Border(
-                bottom: BorderSide(color: SubliriumColors.border, width: 0.5),
+              color: isDark ? const Color(0xFF252525) : SubliriumColors.cyan.withValues(alpha: 0.08),
+              border: Border(
+                bottom: BorderSide(color: isDark ? Colors.grey[800]! : SubliriumColors.border, width: 0.5),
               ),
             ),
             child: Row(
@@ -848,22 +848,22 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
-                            color: Colors.black,
+                            color: isDark ? Colors.white : Colors.black,
                           ),
                         ),
                       const SizedBox(width: 4),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: Colors.grey[200],
+                          color: isDark ? Colors.grey[700] : Colors.grey[200],
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: const Text(
+                        child: Text(
                           'BASE',
                           style: TextStyle(
                             fontSize: 8,
                             fontWeight: FontWeight.w900,
-                            color: Colors.grey,
+                            color: isDark ? Colors.white70 : Colors.grey,
                           ),
                         ),
                       ),
@@ -878,13 +878,13 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 14,
-                      color: Colors.grey[600],
+                      color: isDark ? Colors.white70 : Colors.grey[600],
                     ),
                   ),
                 ),
-                const SizedBox(
+                SizedBox(
                   width: 80,
-                  child: Icon(Icons.lock_outline, size: 18, color: Colors.grey),
+                  child: Icon(Icons.lock_outline, size: 18, color: isDark ? Colors.white38 : Colors.grey),
                 ),
               ],
             ),
