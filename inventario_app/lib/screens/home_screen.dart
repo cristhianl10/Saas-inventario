@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
@@ -247,16 +248,25 @@ class _HomeScreenState extends State<HomeScreen> {
       valueListenable: AppConfig.configNotifier,
       builder: (context, _, __) {
         return Scaffold(
-          body: _currentIndex == 0 ? _buildCategorias() : _buildOtros(),
+          // IndexedStack keeps all screens alive & preserves their state.
+          // This makes the active-tab indicator work perfectly for all sections.
+          body: IndexedStack(
+            index: _currentIndex,
+            children: [
+              _buildCategorias(),           // index 0 – Inicio
+              const ProductosScreen(),      // index 1 – Inventario
+              const ResumenScreen(),        // index 2 – Resumen
+              const TablaPreciosScreen(),   // index 3 – Precios
+            ],
+          ),
           bottomNavigationBar: _buildBottomNav(),
-          floatingActionButton: _buildFab(),
+          floatingActionButton: _currentIndex == 0 ? _buildFab() : null,
         );
       },
     );
   }
 
   Widget? _buildFab() {
-    if (_currentIndex != 0) return null;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -312,7 +322,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   colors: [
                     AppConfig.secondaryColor,
                     AppConfig.primaryColor,
-                    AppConfig.accentColor,
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -460,24 +469,24 @@ class _HomeScreenState extends State<HomeScreen> {
                     : null,
                 filled: true,
                 fillColor: bgColor,
-                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                contentPadding: const EdgeInsets.symmetric(vertical: 14),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(9),
+                  borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(color: borderColor),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(9),
+                  borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(color: borderColor),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(9),
+                  borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
                     color: AppConfig.primaryColor,
                     width: 2,
                   ),
                 ),
               ),
-              style: TextStyle(fontSize: 12, color: textColor),
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
           ),
         ),
@@ -489,19 +498,11 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Text(
                   'Categorías',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 12,
-                    color: textColor,
-                  ),
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
                 Text(
                   '${_categoriasFiltradas.length} categorías',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: textColor,
-                  ),
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
             ),
@@ -572,65 +573,18 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCategoriaItem(Categoria categoria, int count) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : Colors.black;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark ? Colors.grey[900] : SubliriumColors.cardBackground,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isDark ? Colors.grey[700]! : SubliriumColors.border,
-          ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: Card(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: isDark ? Colors.grey[800]! : SubliriumColors.border),
         ),
-        child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 4,
-          ),
-          leading: Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: SubliriumColors.cyan.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(9),
-            ),
-            child: const Center(
-              child: Icon(Icons.folder, size: 18, color: SubliriumColors.cyan),
-            ),
-          ),
-          title: Text(
-            categoria.nombre,
-            style: TextStyle(
-              fontWeight: FontWeight.w900,
-              fontSize: 12,
-              color: textColor,
-            ),
-          ),
-          subtitle: Text(
-            '$count productos',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: textColor.withValues(alpha: 0.7),
-            ),
-          ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                icon: Icon(Icons.edit, size: 16, color: textColor),
-                onPressed: () => _showCategoriaDialog(categoria),
-              ),
-              IconButton(
-                icon: Icon(Icons.delete, size: 16, color: Colors.red[300]),
-                onPressed: () => _deleteCategoria(categoria),
-              ),
-              Icon(Icons.chevron_right, color: textColor),
-            ],
-          ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
           onTap: () {
             Navigator.push(
               context,
@@ -639,74 +593,109 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             );
           },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: SubliriumColors.cyan.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.folder_outlined, size: 24, color: SubliriumColors.cyan),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        categoria.nombre,
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$count productos',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.edit_outlined, size: 20, color: theme.iconTheme.color),
+                      onPressed: () => _showCategoriaDialog(categoria),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.delete_outline, size: 20, color: Colors.red[300]),
+                      onPressed: () => _deleteCategoria(categoria),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(Icons.chevron_right, color: theme.iconTheme.color?.withValues(alpha: 0.3)),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildOtros() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            _currentIndex == 1 ? Icons.inventory_2 : Icons.analytics,
-            size: 64,
-          ),
-          const SizedBox(height: 16),
-          Text(_currentIndex == 1 ? 'Productos' : 'Resumen'),
-        ],
-      ),
-    );
-  }
 
   Widget _buildBottomNav() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final navBg = isDark ? const Color(0xFF141414) : Colors.white;
+    final navBorder = isDark ? Colors.white10 : const Color(0xFFE5E2DB);
+
     return Container(
       decoration: BoxDecoration(
-        color: SubliriumColors.cardBackground,
-        border: Border(
-          top: BorderSide(color: SubliriumColors.border, width: 1.5),
-        ),
+        color: navBg,
+        border: Border(top: BorderSide(color: navBorder, width: 1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
+          ),
+        ],
       ),
       child: SafeArea(
         child: Row(
           children: [
             _buildNavItem(
-              0,
-              '🏠',
-              'Inicio',
-              _currentIndex == 0,
-              () => setState(() => _currentIndex = 0),
+              index: 0,
+              iconPath: 'assets/icons/home.svg',
+              label: 'Inicio',
+              isActive: _currentIndex == 0,
+              onTap: () => setState(() => _currentIndex = 0),
             ),
             _buildNavItem(
-              1,
-              '📦',
-              'Productos',
-              false,
-              () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ProductosScreen()),
-              ),
+              index: 1,
+              iconPath: 'assets/icons/inventory.svg',
+              label: 'Inventario',
+              isActive: _currentIndex == 1,
+              onTap: () => setState(() => _currentIndex = 1),
             ),
             _buildNavItem(
-              2,
-              '📊',
-              'Resumen',
-              false,
-              () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ResumenScreen()),
-              ),
+              index: 2,
+              iconPath: 'assets/icons/stats.svg',
+              label: 'Resumen',
+              isActive: _currentIndex == 2,
+              onTap: () => setState(() => _currentIndex = 2),
             ),
             _buildNavItem(
-              3,
-              '💰',
-              'Precios',
-              false,
-              () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const TablaPreciosScreen()),
-              ),
+              index: 3,
+              iconPath: 'assets/icons/price.svg',
+              label: 'Precios',
+              isActive: _currentIndex == 3,
+              onTap: () => setState(() => _currentIndex = 3),
             ),
           ],
         ),
@@ -714,41 +703,55 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildNavItem(
-    int index,
-    String icon,
-    String label,
-    bool active,
-    VoidCallback onTap,
-  ) {
+  Widget _buildNavItem({
+    required int index,
+    required String iconPath,
+    required String label,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeColor = AppConfig.primaryColor;
+    final inactiveColor = isDark ? Colors.white38 : const Color(0xFF9E9E9E);
+
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: active
-              ? BoxDecoration(
-                  color: SubliriumColors.navActiveGreenLight,
-                  borderRadius: BorderRadius.circular(12),
-                )
-              : null,
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                icon,
-                style: TextStyle(
-                  fontSize: 18,
-                  color: active ? SubliriumColors.navActiveGreen : Colors.black,
+              // WhatsApp-style: active pill indicator above icon
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                width: isActive ? 32 : 0,
+                height: 3,
+                margin: const EdgeInsets.only(bottom: 6),
+                decoration: BoxDecoration(
+                  color: activeColor,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(height: 2),
+              SvgPicture.asset(
+                iconPath,
+                width: 24,
+                height: 24,
+                colorFilter: ColorFilter.mode(
+                  isActive ? activeColor : inactiveColor,
+                  BlendMode.srcIn,
+                ),
+              ),
+              const SizedBox(height: 4),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w800,
-                  color: active ? SubliriumColors.navActiveGreen : Colors.black,
+                  fontSize: 11,
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                  color: isActive ? activeColor : inactiveColor,
+                  letterSpacing: isActive ? 0.3 : 0,
                 ),
               ),
             ],

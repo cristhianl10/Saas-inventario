@@ -77,6 +77,8 @@ class _ResumenScreenState extends State<ResumenScreen> {
       _productos.where((p) => p.cantidad == 0).toList();
   int get _totalUnidadesStock =>
       _productosEnStock.fold(0, (sum, p) => sum + p.cantidad);
+  double get _totalAssetsValue =>
+      _productosEnStock.fold(0, (sum, p) => sum + (p.cantidad * (p.precio ?? 0)));
 
   double get _totalVentas => _ventas.fold(0, (sum, v) => sum + v.total);
   int get _totalUnidadesVendidas =>
@@ -454,36 +456,54 @@ class _ResumenScreenState extends State<ResumenScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
         controller: _scrollController,
         slivers: [
           SliverAppBar(
-            expandedHeight: 100,
+            expandedHeight: 120,
             floating: false,
             pinned: true,
+            automaticallyImplyLeading: false,
+            backgroundColor: theme.scaffoldBackgroundColor,
+            surfaceTintColor: Colors.transparent,
+            elevation: 0,
             actions: [
               IconButton(
-                icon: const Icon(Icons.refresh, color: Colors.white),
+                icon: Icon(Icons.refresh, color: isDark ? Colors.white : SubliriumColors.textPrimary),
                 onPressed: _loadData,
                 tooltip: 'Actualizar',
               ),
-              IconButton(icon: const Icon(Icons.picture_as_pdf, color: Colors.white), onPressed: _generarPdfVentas, tooltip: 'Descargar reporte'),
+              IconButton(
+                icon: Icon(Icons.picture_as_pdf, color: isDark ? Colors.white : SubliriumColors.textPrimary),
+                onPressed: _generarPdfVentas,
+                tooltip: 'Descargar reporte',
+              ),
+              const SizedBox(width: 8),
+              Container(
+                margin: const EdgeInsets.only(right: 16),
+                child: CircleAvatar(
+                  backgroundColor: isDark ? Colors.grey[800] : const Color(0xFFE5E2DB),
+                  child: Icon(Icons.person_outline, color: theme.iconTheme.color),
+                ),
+              )
             ],
             flexibleSpace: FlexibleSpaceBar(
-              title: const Text(
-                'Resumen de Ventas',
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
-              ),
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [AppConfig.secondaryColor, AppConfig.primaryColor, AppConfig.accentColor],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+              titlePadding: const EdgeInsets.only(left: 24, bottom: 16, right: 24),
+              title: Text(
+                'Dashboard',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 24,
+                  letterSpacing: -0.5,
+                  color: isDark ? Colors.white : SubliriumColors.textPrimary,
                 ),
               ),
+              background: Container(color: theme.scaffoldBackgroundColor),
             ),
           ),
           if (_isLoading)
@@ -491,145 +511,141 @@ class _ResumenScreenState extends State<ResumenScreen> {
               child: Center(child: CircularProgressIndicator()),
             )
           else ...[
-            // Stats principales
+            // Main Assets Value Board
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'ESTADÍSTICAS GENERALES',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        color: Theme.of(context).colorScheme.onBackground,
-                        letterSpacing: 1,
+                      'VALOR TOTAL INVENTARIO',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
+                        color: SubliriumColors.textSecondary,
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        _buildStatCard(
-                          'Total Ventas',
-                          '\$${_totalVentas.toStringAsFixed(2)}',
-                          Icons.attach_money,
-                          SubliriumColors.stockOkText,
-                        ),
-                        const SizedBox(width: 12),
-                        _buildStatCard(
-                          'Unidades Vendidas',
-                          '$_totalUnidadesVendidas',
-                          Icons.shopping_bag,
-                          SubliriumColors.cyan,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        _buildStatCard(
-                          'En Stock',
-                          '${_productosEnStock.length} productos',
-                          Icons.inventory,
-                          SubliriumColors.purple,
-                        ),
-                        const SizedBox(width: 12),
-                        _buildStatCard(
-                          'Total Unidades',
-                          '$_totalUnidadesStock',
-                          Icons.all_inbox,
-                          SubliriumColors.logoOrange,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            // Lista de ventas
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'REGISTRO DE VENTAS',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        color: Theme.of(context).colorScheme.onBackground,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    if (_ventas.isEmpty)
-                      Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: SubliriumColors.cardBackground,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: SubliriumColors.border),
-                        ),
-                        child: const Center(
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.receipt_long,
-                                size: 40,
-                                color: Colors.black,
-                              ),
-                              SizedBox(height: 8),
-                              Text(
-                                'No hay ventas registradas',
-                                style: TextStyle(color: Colors.black),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    else
-                      ...(_ventas.map((v) => _buildVentaCard(v))),
-                  ],
-                ),
-              ),
-            ),
-            // Inventario
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'RESUMEN DE INVENTARIO',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        color: Theme.of(context).colorScheme.onBackground,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildResumenCard(
-                      'En Stock',
-                      _productosEnStock.length,
-                      _totalUnidadesStock,
-                      SubliriumColors.stockOkText,
                     ),
                     const SizedBox(height: 8),
-                    _buildResumenCard(
-                      'Sin Stock',
-                      _productosSinStock.length,
-                      0,
-                      SubliriumColors.stockLowText,
+                    Text(
+                      '\$${_totalAssetsValue.toStringAsFixed(2)}',
+                      style: theme.textTheme.displayLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -2,
+                        color: AppConfig.primaryColor,
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+
+            // Secondary Stats Cards
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                child: Row(
+                  children: [
+                    _buildStatCardGlass(
+                      'Total Ventas',
+                      '\$${_totalVentas.toStringAsFixed(2)}',
+                      Icons.attach_money,
+                    ),
+                    const SizedBox(width: 16),
+                    _buildStatCardGlass(
+                      'En Stock',
+                      '$_totalUnidadesStock uds',
+                      Icons.inventory_2_outlined,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Inventario Alerts (Low stock feature from Prompt)
+            if (_productosSinStock.isNotEmpty || _productosEnStock.any((p) => p.cantidad <= 5))
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'ALERTAS DE INVENTARIO',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.5,
+                          color: SubliriumColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        height: 140,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          children: [
+                            ..._productosSinStock.map((p) => _buildAlertCard(p, true)),
+                            ..._productosEnStock.where((p) => p.cantidad <= 5).map((p) => _buildAlertCard(p, false)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+            // Registro de Ventas (List)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
+                child: Text(
+                  'VENTAS RECIENTES',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
+                    color: SubliriumColors.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+            
+            if (_ventas.isEmpty)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Container(
+                    padding: const EdgeInsets.all(32),
+                    margin: const EdgeInsets.only(bottom: 100),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.grey[900] : const Color(0xFFF6F3EC),
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'No hay ventas registradas recientes.',
+                        style: TextStyle(color: SubliriumColors.textSecondary),
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            else
+              SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final isLast = index == _ventas.length - 1;
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        left: 24,
+                        right: 24,
+                        bottom: isLast ? 100 : 12, // Ensure no cutoff by bottom nav bar
+                      ),
+                      child: _buildVentaCardGlass(_ventas[index]),
+                    );
+                  },
+                  childCount: _ventas.length,
+                ),
+              ),
           ],
         ],
       ),
@@ -638,44 +654,50 @@ class _ResumenScreenState extends State<ResumenScreen> {
               onPressed: () => _scrollController.animateTo(0,
                   duration: const Duration(milliseconds: 500),
                   curve: Curves.easeInOut),
-              backgroundColor: SubliriumColors.cyan.withValues(alpha: 0.8),
+              backgroundColor: AppConfig.primaryColor,
               child: const Icon(Icons.arrow_upward, color: Colors.white),
             )
           : null,
     );
   }
 
-  Widget _buildStatCard(
-    String titulo,
-    String valor,
-    IconData icono,
-    Color color,
-  ) {
+
+  Widget _buildStatCardGlass(String titulo, String valor, IconData icono) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: SubliriumColors.cardBackground,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: SubliriumColors.border),
+          color: isDark ? Colors.grey[850] : Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icono, color: color, size: 24),
-            const SizedBox(height: 8),
-            Text(
-              valor,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                color: color,
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.grey[800] : const Color(0xFFF6F3EC),
+                borderRadius: BorderRadius.circular(12),
               ),
+              child: Icon(icono, color: isDark ? Colors.white70 : SubliriumColors.textSecondary, size: 20),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 16),
             Text(
               titulo,
-              style: const TextStyle(fontSize: 10, color: Colors.black),
+              style: TextStyle(color: isDark ? Colors.white70 : SubliriumColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              valor,
+              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: isDark ? Colors.white : SubliriumColors.textPrimary),
             ),
           ],
         ),
@@ -683,232 +705,120 @@ class _ResumenScreenState extends State<ResumenScreen> {
     );
   }
 
-  Widget _buildVentaCard(Venta venta) {
+  Widget _buildAlertCard(Producto p, bool outOfStock) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      width: 160,
+      margin: const EdgeInsets.only(right: 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: SubliriumColors.cardBackground,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: SubliriumColors.border),
+        color: outOfStock 
+            ? (isDark ? Colors.red[900]!.withValues(alpha: 0.2) : const Color(0xFFFFF0F2)) 
+            : (isDark ? Colors.grey[850] : const Color(0xFFF6F3EC)),
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: SubliriumColors.cyan.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.folder,
-                    size: 20,
-                    color: SubliriumColors.cyan,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _getNombreProducto(venta.productoId),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 12,
-                        color: Colors.black,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        const Icon(Icons.person, size: 12, color: Colors.black),
-                        const SizedBox(width: 4),
-                        Text(
-                          venta.vendidoA ?? 'Cliente',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '\$${venta.total.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 14,
-                      color: SubliriumColors.stockOkText,
-                    ),
-                  ),
-                  Text(
-                    '${venta.cantidad} x \$${venta.precioUnitario.toStringAsFixed(2)}',
-                    style: const TextStyle(fontSize: 9, color: Colors.black),
-                  ),
-                ],
-              ),
-            ],
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: outOfStock ? const Color(0xFFD31842) : AppConfig.accentColor,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              outOfStock ? 'CRÍTICO' : 'BAJO STOCK',
+              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+            ),
           ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              const Icon(Icons.calendar_today, size: 12, color: Colors.black),
-              const SizedBox(width: 4),
-              Text(
-                _formatFecha(venta.fechaVenta),
-                style: const TextStyle(fontSize: 10, color: Colors.black),
-              ),
-              if (venta.observaciones != null &&
-                  venta.observaciones!.isNotEmpty) ...[
-                const SizedBox(width: 8),
-                const Icon(Icons.note, size: 12, color: Colors.black),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    venta.observaciones!,
-                    style: const TextStyle(fontSize: 10, color: Colors.black),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-              const Spacer(),
-              GestureDetector(
-                onTap: () => _showEditarVentaDialog(venta),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: SubliriumColors.inputFocusedBg,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.edit, size: 12, color: SubliriumColors.cyan),
-                      SizedBox(width: 4),
-                      Text(
-                        'Editar',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: SubliriumColors.cyan,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 4),
-              GestureDetector(
-                onTap: () => _deleteVenta(venta),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: SubliriumColors.stockLowBg,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(
-                        Icons.delete,
-                        size: 12,
-                        color: SubliriumColors.deleteText,
-                      ),
-                      SizedBox(width: 4),
-                      Text(
-                        'Eliminar',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: SubliriumColors.deleteText,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+          const Spacer(),
+          Text(
+            p.nombre,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: isDark ? Colors.white : Colors.black),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Stock: ${p.cantidad}',
+            style: TextStyle(color: isDark ? Colors.white70 : SubliriumColors.textSecondary.withValues(alpha: 0.8), fontSize: 12),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildResumenCard(
-    String titulo,
-    int cantidad,
-    int unidades,
-    Color color,
-  ) {
+  Widget _buildVentaCardGlass(Venta venta) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: SubliriumColors.cardBackground,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: SubliriumColors.border),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              cantidad > 0 ? Icons.check_circle : Icons.warning,
-              color: color,
-            ),
+        color: isDark ? Colors.grey[850] : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(24),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onTap: () => _showEditarVentaDialog(venta),
+          onLongPress: () => _deleteVenta(venta),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
               children: [
-                Text(
-                  titulo,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 14,
-                    color: Colors.black,
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.grey[800] : const Color(0xFFF6F3EC),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Center(
+                    child: Icon(Icons.receipt_long, color: isDark ? Colors.white70 : SubliriumColors.textSecondary),
                   ),
                 ),
-                Text(
-                  '$cantidad productos',
-                  style: const TextStyle(fontSize: 11, color: Colors.black),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _getNombreProducto(venta.productoId),
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: isDark ? Colors.white : Colors.black),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        DateFormat('dd MMM, HH:mm').format(venta.fechaVenta),
+                        style: TextStyle(color: isDark ? Colors.white70 : SubliriumColors.textSecondary, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '\$${venta.total.toStringAsFixed(2)}',
+                      style: TextStyle(fontWeight: FontWeight.w900, color: isDark ? AppConfig.primaryColor : AppConfig.primaryColor, fontSize: 16),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${venta.cantidad} uds',
+                      style: TextStyle(color: isDark ? Colors.white70 : SubliriumColors.textSecondary, fontSize: 12),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          if (unidades > 0)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                '$unidades uds',
-                style: TextStyle(fontWeight: FontWeight.w900, color: color),
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }

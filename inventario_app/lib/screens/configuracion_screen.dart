@@ -262,7 +262,7 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
                 controller: _appNameController,
                 decoration: const InputDecoration(
                   labelText: 'Nombre de la App',
-                  hintText: 'Ej: Inventario',
+                  hintText: 'Ej: StockFlow',
                   prefixIcon: Icon(Icons.apps),
                 ),
                 validator: (value) {
@@ -385,9 +385,8 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: const TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
+      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+        fontWeight: FontWeight.w900,
       ),
     );
   }

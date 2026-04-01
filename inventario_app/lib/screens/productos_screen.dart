@@ -907,10 +907,11 @@ class _ProductosScreenState extends State<ProductosScreen> {
             expandedHeight: 90,
             floating: false,
             pinned: true,
-            leading: IconButton(
+            automaticallyImplyLeading: !esVistaGlobal,
+            leading: !esVistaGlobal ? IconButton(
               icon: const Icon(Icons.arrow_back),
               onPressed: () => Navigator.pop(context),
-            ),
+            ) : null,
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
                 esVistaGlobal
@@ -927,7 +928,6 @@ class _ProductosScreenState extends State<ProductosScreen> {
                     colors: [
                       AppConfig.secondaryColor,
                       AppConfig.primaryColor,
-                      AppConfig.accentColor,
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -979,18 +979,14 @@ class _ProductosScreenState extends State<ProductosScreen> {
                         esVistaGlobal
                             ? 'Total productos:'
                             : 'Total en inventario:',
-                        style: const TextStyle(
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
                           fontWeight: FontWeight.w700,
-                          fontSize: 12,
-                          color: Colors.black,
                         ),
                       ),
                       Text(
                         '$_totalInventario unidades',
-                        style: const TextStyle(
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w900,
-                          fontSize: 14,
-                          color: Colors.black,
                         ),
                       ),
                     ],
@@ -1003,10 +999,12 @@ class _ProductosScreenState extends State<ProductosScreen> {
                         _searchQuery = value;
                         _aplicarFiltro();
                       }),
-                      style: const TextStyle(color: Colors.black),
+                      style: Theme.of(context).textTheme.bodyMedium,
                       decoration: InputDecoration(
                         hintText: 'Buscar producto...',
-                        hintStyle: TextStyle(color: Colors.grey[500]),
+                        hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).textTheme.bodySmall?.color,
+                        ),
                         prefixIcon: const Icon(
                           Icons.search,
                           color: SubliriumColors.cyan,
@@ -1014,14 +1012,12 @@ class _ProductosScreenState extends State<ProductosScreen> {
                         filled: true,
                         fillColor: SubliriumColors.crema,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(
-                            color: SubliriumColors.border,
-                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
                         ),
                         contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
+                          horizontal: 16,
+                          vertical: 14,
                         ),
                       ),
                     ),
@@ -1038,11 +1034,11 @@ class _ProductosScreenState extends State<ProductosScreen> {
                     const SizedBox(height: 8),
                     DropdownButtonFormField<Proveedor?>(
                       value: _proveedorSeleccionadoFiltro,
-                      style: const TextStyle(color: Colors.black),
-                      dropdownColor: Colors.white,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                      dropdownColor: Theme.of(context).cardColor,
                       decoration: InputDecoration(
                         labelText: 'Filtrar por proveedor',
-                        labelStyle: const TextStyle(color: Colors.black),
+                        labelStyle: Theme.of(context).textTheme.bodyMedium,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -1052,11 +1048,11 @@ class _ProductosScreenState extends State<ProductosScreen> {
                         ),
                       ),
                       items: [
-                        const DropdownMenuItem<Proveedor?>(
+                        DropdownMenuItem<Proveedor?>(
                           value: null,
                           child: Text(
                             'Todos los proveedores',
-                            style: TextStyle(color: Colors.black),
+                            style: Theme.of(context).textTheme.bodyMedium,
                           ),
                         ),
                         ..._proveedores.map(
@@ -1064,7 +1060,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
                             value: p,
                             child: Text(
                               p.nombre,
-                              style: const TextStyle(color: Colors.black),
+                              style: Theme.of(context).textTheme.bodyMedium,
                             ),
                           ),
                         ),
@@ -1220,236 +1216,214 @@ class _ProductosScreenState extends State<ProductosScreen> {
   }
 
   Widget _buildProductoCard(Producto producto) {
-    return Container(
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: SubliriumColors.cardBackground,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: isDark ? Colors.grey[800]! : SubliriumColors.border),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      producto.nombre,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 14,
-                        color: Colors.black,
-                      ),
-                    ),
-                    if (producto.descripcion != null)
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        producto.descripcion!,
-                        style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                        producto.nombre,
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 4),
+                      if (producto.descripcion != null)
+                        Text(
+                          producto.descripcion!,
+                          style: theme.textTheme.bodySmall,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    if (producto.precio != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: SubliriumColors.inputFocusedBg,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '\$${producto.precio!.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: AppConfig.secondaryColor,
+                          ),
+                        ),
+                      ),
+                    if (producto.costo != null)
+                      Container(
+                        margin: const EdgeInsets.only(top: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: SubliriumColors.naranja.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Costo: \$${producto.costo!.toStringAsFixed(2)}',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: AppConfig.accentColor,
+                          ),
+                        ),
                       ),
                   ],
                 ),
-              ),
-              Column(
+              ],
+            ),
+            if (producto.proveedorId != null) ...[
+              const SizedBox(height: 8),
+              Row(
                 children: [
-                  if (producto.precio != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: SubliriumColors.inputFocusedBg,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        '\$${producto.precio!.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: AppConfig.secondaryColor,
-                        ),
-                      ),
-                    ),
-                  if (producto.costo != null)
-                    Container(
-                      margin: const EdgeInsets.only(top: 4),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: SubliriumColors.naranja.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        'Costo: \$${producto.costo!.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: AppConfig.accentColor,
-                        ),
-                      ),
-                    ),
+                  Icon(Icons.business_outlined, size: 14, color: theme.iconTheme.color?.withValues(alpha: 0.6)),
+                  const SizedBox(width: 6),
+                  Text(
+                    _getNombreProveedor(producto.proveedorId),
+                    style: theme.textTheme.bodySmall,
+                  ),
                 ],
               ),
             ],
-          ),
-          if (producto.proveedorId != null) ...[
-            const SizedBox(height: 4),
+            const SizedBox(height: 16),
             Row(
               children: [
-                Icon(Icons.business, size: 12, color: Colors.grey[500]),
-                const SizedBox(width: 4),
-                Text(
-                  _getNombreProveedor(producto.proveedorId),
-                  style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                _buildStockBadge(producto.cantidad),
+                const SizedBox(width: 8),
+                Container(
+                  decoration: BoxDecoration(
+                    color: producto.cantidad > 0
+                        ? SubliriumColors.stockOkBg
+                        : SubliriumColors.stockZeroBg,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: producto.cantidad > 0
+                            ? () => _updateCantidad(producto, -1)
+                            : null,
+                        icon: Icon(
+                          Icons.remove,
+                          size: 16,
+                          color: SubliriumColors.stockOkText,
+                        ),
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          '${producto.cantidad}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14,
+                            color: producto.cantidad > 0
+                                ? SubliriumColors.stockOkText
+                                : SubliriumColors.stockZeroText,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => _updateCantidad(producto, 1),
+                        icon: Icon(
+                          Icons.add,
+                          size: 16,
+                          color: SubliriumColors.stockOkText,
+                        ),
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  onPressed: () => _showVendidoDialog(producto),
+                  icon: const Icon(Icons.point_of_sale_outlined, size: 20),
+                  color: AppConfig.secondaryColor,
+                  tooltip: 'Registrar venta',
+                  style: IconButton.styleFrom(
+                    backgroundColor: AppConfig.secondaryColor.withValues(alpha: 0.1),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                IconButton(
+                  onPressed: () => _showProductoDialog(producto),
+                  icon: const Icon(Icons.edit_outlined, size: 20),
+                  color: AppConfig.secondaryColor,
+                  tooltip: 'Editar',
+                  style: IconButton.styleFrom(
+                    backgroundColor: SubliriumColors.inputFocusedBg,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                IconButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => TablaPreciosScreen(
+                          productoIdInicial: producto.id,
+                          categoriaIdInicial: producto.categoriaId,
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.attach_money, size: 20),
+                  color: AppConfig.accentColor,
+                  tooltip: 'Tarifas',
+                  style: IconButton.styleFrom(
+                    backgroundColor: SubliriumColors.naranja.withValues(alpha: 0.15),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                IconButton(
+                  onPressed: () => _deleteProducto(producto),
+                  icon: const Icon(Icons.delete_outline, size: 20),
+                  color: SubliriumColors.stockLowText,
+                  tooltip: 'Eliminar',
+                  style: IconButton.styleFrom(
+                    backgroundColor: SubliriumColors.stockLowBg,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
                 ),
               ],
             ),
           ],
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              _buildStockBadge(producto.cantidad),
-              const SizedBox(width: 8),
-              Container(
-                decoration: BoxDecoration(
-                  color: producto.cantidad > 0
-                      ? SubliriumColors.stockOkBg
-                      : SubliriumColors.stockZeroBg,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      onTap: producto.cantidad > 0
-                          ? () => _updateCantidad(producto, -1)
-                          : null,
-                      child: Icon(
-                        Icons.remove,
-                        size: 16,
-                        color: SubliriumColors.stockOkText,
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Text(
-                        '${producto.cantidad}',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                          color: producto.cantidad > 0
-                              ? SubliriumColors.stockOkText
-                              : SubliriumColors.stockZeroText,
-                        ),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () => _updateCantidad(producto, 1),
-                      child: Icon(
-                        Icons.add,
-                        size: 16,
-                        color: SubliriumColors.stockOkText,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Spacer(),
-              GestureDetector(
-                onTap: () => _showVendidoDialog(producto),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppConfig.secondaryColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    'Registrar venta',
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w900,
-                      color: AppConfig.secondaryColor,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 4),
-              GestureDetector(
-                onTap: () => _showProductoDialog(producto),
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: SubliriumColors.inputFocusedBg,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Icon(
-                    Icons.edit,
-                    size: 14,
-                    color: AppConfig.secondaryColor,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 4),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => TablaPreciosScreen(
-                        productoIdInicial: producto.id,
-                        categoriaIdInicial: producto.categoriaId,
-                      ),
-                    ),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: SubliriumColors.naranja.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Icon(
-                    Icons.attach_money,
-                    size: 14,
-                    color: AppConfig.accentColor,
-                  ),
-                ),
-              ),
-              GestureDetector(
-                onTap: () => _deleteProducto(producto),
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: SubliriumColors.stockLowBg,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Icon(
-                    Icons.delete,
-                    size: 14,
-                    color: SubliriumColors.stockLowText,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -1479,15 +1453,16 @@ class _ProductosScreenState extends State<ProductosScreen> {
 
   Widget _buildFiltroChip(String label, FiltroStock filtro) {
     final bool activo = _filtroActual == filtro;
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: () => setState(() {
         _filtroActual = filtro;
         _aplicarFiltro();
       }),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: activo ? SubliriumColors.cyan : SubliriumColors.cardBackground,
+          color: activo ? SubliriumColors.cyan : theme.cardColor,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: activo ? SubliriumColors.cyan : SubliriumColors.border,
@@ -1497,8 +1472,8 @@ class _ProductosScreenState extends State<ProductosScreen> {
           label,
           style: TextStyle(
             fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: activo ? Colors.white : Colors.black,
+            fontWeight: FontWeight.w700,
+            color: activo ? Colors.white : theme.textTheme.bodyMedium?.color,
           ),
         ),
       ),

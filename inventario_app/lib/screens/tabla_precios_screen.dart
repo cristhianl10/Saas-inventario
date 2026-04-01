@@ -468,12 +468,13 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Tabla de Precios'),
+        automaticallyImplyLeading: false,
         backgroundColor: AppConfig.secondaryColor,
         foregroundColor: Colors.white,
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [AppConfig.secondaryColor, AppConfig.primaryColor, AppConfig.accentColor],
+              colors: [AppConfig.secondaryColor, AppConfig.primaryColor],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -498,9 +499,9 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.wifi_off, size: 48, color: Colors.black),
+                      Icon(Icons.wifi_off, size: 48, color: Theme.of(context).iconTheme.color),
                       const SizedBox(height: 8),
-                      Text('Error de conexión', style: TextStyle(color: Colors.black)),
+                      Text('Error de conexión', style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color)),
                       const SizedBox(height: 8),
                       ElevatedButton(onPressed: _loadData, child: const Text('Reintentar')),
                     ],
@@ -526,18 +527,20 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                       TextField(
                         controller: _searchController,
                         onChanged: (value) => setState(() => _searchQuery = value),
-                        style: TextStyle(color: Colors.black),
+                        style: Theme.of(context).textTheme.bodyMedium,
                         decoration: InputDecoration(
                           hintText: 'Buscar producto...',
-                          hintStyle: TextStyle(color: Colors.grey[500]),
+                          hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).textTheme.bodySmall?.color,
+                          ),
                           prefixIcon: const Icon(Icons.search, color: SubliriumColors.cyan),
                           filled: true,
                           fillColor: SubliriumColors.crema,
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: SubliriumColors.border),
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
                           ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -546,7 +549,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                         style: TextStyle(
                           fontWeight: FontWeight.w900,
                           fontSize: 12,
-                          color: Colors.black,
+                          color: Theme.of(context).textTheme.bodyMedium?.color,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -555,21 +558,20 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                           Expanded(
                             child: DropdownButtonFormField<Categoria>(
                               value: _categoriaSeleccionada,
-                              dropdownColor: SubliriumColors.cardBackground,
-                              decoration: InputDecoration(
+                              dropdownColor: Theme.of(context).cardColor,
+                              decoration: const InputDecoration(
                                 labelText: 'Categoría',
-                                labelStyle: TextStyle(color: Colors.black),
                                 border: OutlineInputBorder(),
                                 contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               ),
                               items: [
                                 DropdownMenuItem(
                                   value: null,
-                                  child: Text('Todas', style: TextStyle(color: Colors.black)),
+                                  child: Text('Todas', style: Theme.of(context).textTheme.bodyMedium),
                                 ),
                                 ..._categorias.map((c) => DropdownMenuItem(
                                       value: c,
-                                      child: Text(c.nombre, style: TextStyle(color: Colors.black)),
+                                      child: Text(c.nombre, style: Theme.of(context).textTheme.bodyMedium),
                                     )),
                               ],
                               onChanged: (value) {
@@ -588,24 +590,23 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                           Expanded(
                             child: DropdownButtonFormField<Producto>(
                               value: _productoSeleccionado,
-                              dropdownColor: SubliriumColors.cardBackground,
-                              decoration: InputDecoration(
+                              dropdownColor: Theme.of(context).cardColor,
+                              decoration: const InputDecoration(
                                 labelText: 'Producto',
-                                labelStyle: TextStyle(color: Colors.black),
                                 border: OutlineInputBorder(),
                                 contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               ),
                               items: [
                                 DropdownMenuItem(
                                   value: null,
-                                  child: Text('Todos', style: TextStyle(color: Colors.black)),
+                                  child: Text('Todos', style: Theme.of(context).textTheme.bodyMedium),
                                 ),
                                 ..._productosFiltrados.map((p) => DropdownMenuItem(
                                       value: p,
                                       child: Text(
                                         p.nombre,
                                         overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(color: Colors.black),
+                                        style: Theme.of(context).textTheme.bodyMedium,
                                       ),
                                     )),
                               ],
