@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/app_config.dart';
 import '../config/tenant_service.dart';
+import '../services/user_status_service.dart';
+import '../utils/dialog_utils.dart';
+import '../screens/auth_screen.dart';
 
 class ConfiguracionScreen extends StatefulWidget {
   const ConfiguracionScreen({super.key});
@@ -375,6 +378,61 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+              
+              // Sección de gestión de cuenta
+              _buildSectionTitle('Cuenta de Usuario'),
+              const SizedBox(height: 16),
+              
+              Card(
+                color: Colors.red[50],
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Colors.red[200]!),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.warning_amber, color: Colors.red[700]),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Zona de Peligro',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red[700],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Al desactivar tu cuenta, no podrás iniciar sesión hasta que sea reactivada por un administrador. Tus datos no se eliminarán.',
+                        style: TextStyle(
+                          color: Colors.red[600],
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _showDeactivateAccountDialog,
+                          icon: const Icon(Icons.block),
+                          label: const Text('Desactivar Mi Cuenta'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
             ],
           ),
         ),
@@ -477,5 +535,81 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
     _appNameController.dispose();
     _brandNameController.dispose();
     super.dispose();
+  }
+
+  void _showDeactivateAccountDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        icon: Icon(Icons.block, color: Colors.red, size: 48),
+        title: const Text(
+          '¿Desactivar tu cuenta?',
+          textAlign: TextAlign.center,
+        ),
+        content: const Text(
+          'Esta acción cerrará tu sesión y no podrás volver a iniciar sesión hasta que un administrador reactive tu cuenta.\n\n¿Estás seguro?',
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _deactivateAccount();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Sí, desactivar'),
+          ),
+        ],
+        actionsAlignment: MainAxisAlignment.center,
+      ),
+    );
+  }
+
+  Future<void> _deactivateAccount() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      await UserStatusService.deactivateAccount(user.id);
+      await Supabase.instance.client.auth.signOut();
+      
+      if (mounted) {
+        await showMessageDialog(
+          context: context,
+          title: 'Cuenta Desactivada',
+          message: 'Tu cuenta ha sido desactivada. Contacta al administrador si deseas reactivarla.',
+          type: MessageType.warning,
+        );
+        
+        // Navegar a pantalla de login
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (_) => AuthScreen(
+              onAuthSuccess: () {},
+              onEmailVerified: (_) {},
+            ),
+          ),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        await showMessageDialog(
+          context: context,
+          title: 'Error',
+          message: 'No se pudo desactivar la cuenta: $e',
+          type: MessageType.error,
+        );
+      }
+    }
   }
 }

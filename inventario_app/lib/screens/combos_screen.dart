@@ -803,7 +803,7 @@ class _ComboEditorScreenState extends State<ComboEditorScreen> {
           color: tieneStock ? SubliriumColors.stockOkText : Colors.orange,
         ),
         title: Text(
-          item.nombreProducto ?? 'Producto #${item.productoId}',
+          producto?.nombre ?? 'Producto #${item.productoId}',
           style: TextStyle(
             color: isDark ? Colors.white : Colors.black,
             fontWeight: FontWeight.w600,

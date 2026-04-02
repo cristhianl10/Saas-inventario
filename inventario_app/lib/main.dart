@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/screens.dart';
 import 'config/app_theme.dart';
 import 'config/app_config.dart';
@@ -32,6 +33,7 @@ class _InventarioAppState extends State<InventarioApp> {
   bool _isAuthenticated = false;
   bool _isLoading = true;
   bool _emailVerified = false;
+  bool _termsAccepted = false;
   String? _verifiedEmail;
   StreamSubscription<AuthState>? _authSubscription;
 
@@ -42,8 +44,17 @@ class _InventarioAppState extends State<InventarioApp> {
   }
 
   Future<void> _initializeApp() async {
+    await _checkTermsAccepted();
     _listenAuthChanges();
     await _checkAuth();
+  }
+
+  Future<void> _checkTermsAccepted() async {
+    final prefs = await SharedPreferences.getInstance();
+    final accepted = prefs.getBool('terms_accepted') ?? false;
+    setState(() {
+      _termsAccepted = accepted;
+    });
   }
 
   void _listenAuthChanges() {
@@ -55,10 +66,6 @@ class _InventarioAppState extends State<InventarioApp> {
       final event = data.event;
       final session = data.session;
       final user = session?.user;
-
-      debugPrint(
-        'Auth Event: $event, User: ${user?.email}, Confirmed: ${user?.emailConfirmedAt}',
-      );
 
       if (event == AuthChangeEvent.signedOut || session == null) {
         TenantService.clearTenant();
@@ -169,6 +176,10 @@ class _InventarioAppState extends State<InventarioApp> {
           ),
         ),
       );
+    }
+
+    if (!_termsAccepted) {
+      return const TermsAcceptanceScreen();
     }
 
     if (_emailVerified && _verifiedEmail != null) {

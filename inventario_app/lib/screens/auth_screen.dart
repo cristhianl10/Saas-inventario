@@ -2,7 +2,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/app_config.dart';
+import '../services/user_status_service.dart';
 import 'email_verified_screen.dart';
+import 'legal_screen.dart';
 
 class AuthScreen extends StatefulWidget {
   final VoidCallback onAuthSuccess;
@@ -53,10 +55,27 @@ class _AuthScreenState extends State<AuthScreen> {
       final brandName = _sanitizeInput(_businessNameController.text.trim());
 
       if (_isLogin) {
-        await Supabase.instance.client.auth.signInWithPassword(
+        final response = await Supabase.instance.client.auth.signInWithPassword(
           email: email,
           password: password,
         );
+
+        // Verificar si el usuario está activo
+        if (response.user != null) {
+          final isActive = await UserStatusService.isUserActive(
+            response.user!.id,
+          );
+          if (!isActive) {
+            await Supabase.instance.client.auth.signOut();
+            setState(() {
+              _errorMessage =
+                  'Tu cuenta ha sido desactivada. Contacta al administrador para reactivarla.';
+              _isLoading = false;
+            });
+            return;
+          }
+        }
+
         widget.onAuthSuccess();
       } else {
         final passwordError = _validatePasswordStrength(password);
@@ -592,7 +611,70 @@ class _AuthScreenState extends State<AuthScreen> {
                           ),
                         ],
 
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const TerminosYCondiciones(),
+                                  ),
+                                );
+                              },
+                              style: TextButton.styleFrom(
+                                foregroundColor: isDark
+                                    ? Colors.white70
+                                    : Colors.grey[600],
+                                padding: EdgeInsets.zero,
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: const Text(
+                                'Términos',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                            ),
+                            Text(
+                              ' y ',
+                              style: TextStyle(
+                                color: isDark
+                                    ? Colors.white70
+                                    : Colors.grey[600],
+                                fontSize: 12,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const PoliticaDePrivacidad(),
+                                  ),
+                                );
+                              },
+                              style: TextButton.styleFrom(
+                                foregroundColor: isDark
+                                    ? Colors.white70
+                                    : Colors.grey[600],
+                                padding: EdgeInsets.zero,
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: const Text(
+                                'Política de Privacidad',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 8),
 
                         Container(
                           width: double.infinity,
