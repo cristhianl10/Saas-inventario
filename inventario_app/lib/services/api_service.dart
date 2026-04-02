@@ -113,10 +113,12 @@ class ApiService {
     if (producto.id == null) {
       throw Exception('ID del producto no válido');
     }
+    // Validar que la cantidad nunca sea negativa
+    final cantidadValida = producto.cantidad < 0 ? 0 : producto.cantidad;
     final response = await _client
         .from('productos')
         .update({
-          'cantidad': producto.cantidad,
+          'cantidad': cantidadValida,
           'precio': producto.precio,
           'nombre': producto.nombre,
           'descripcion': producto.descripcion,
@@ -482,6 +484,24 @@ class ApiService {
       if (producto != null) {
         final nuevaCantidad =
             producto.cantidad - (item.cantidad * cantidadVenta);
+        // Asegurar que nunca sea negativo
+        final cantidadValida = nuevaCantidad < 0 ? 0 : nuevaCantidad;
+        await updateProducto(producto.copyWith(cantidad: cantidadValida));
+      }
+    }
+  }
+
+  Future<void> restaurarStockCombo(int comboId, int cantidadDevolver) async {
+    final items = await getComboItems(comboId);
+    final productos = await getProductos();
+
+    for (final item in items) {
+      final producto = productos
+          .where((p) => p.id == item.productoId)
+          .firstOrNull;
+      if (producto != null) {
+        final nuevaCantidad =
+            producto.cantidad + (item.cantidad * cantidadDevolver);
         await updateProducto(producto.copyWith(cantidad: nuevaCantidad));
       }
     }

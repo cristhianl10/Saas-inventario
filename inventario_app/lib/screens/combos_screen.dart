@@ -260,23 +260,26 @@ class _CombosScreenState extends State<CombosScreen> {
         : (stockCombo < 5 ? Colors.orange[50] : SubliriumColors.stockOkBg);
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 8),
       color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         side: BorderSide(
           color: isDark ? Colors.grey[700]! : SubliriumColors.border,
         ),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         onTap: () => _showComboDialog(combo),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
+              // Header: Nombre + Precio + Botones
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: Column(
@@ -286,162 +289,197 @@ class _CombosScreenState extends State<CombosScreen> {
                           combo.nombre,
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
+                            fontSize: 16,
                           ),
                         ),
-                        if (combo.descripcion != null) ...[
-                          const SizedBox(height: 4),
+                        if (combo.descripcion != null && combo.descripcion!.isNotEmpty) ...[
+                          const SizedBox(height: 2),
                           Text(
                             combo.descripcion!,
-                            style: theme.textTheme.bodySmall,
-                            maxLines: 2,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontSize: 11,
+                            ),
+                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ],
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppConfig.accentColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '\$${combo.precio?.toStringAsFixed(2) ?? '0.00'}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        color: AppConfig.accentColor,
-                        fontSize: 16,
+                  const SizedBox(width: 8),
+                  // Precio y botones juntos
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppConfig.accentColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          '\$${combo.precio?.toStringAsFixed(2) ?? '0.00'}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            color: AppConfig.accentColor,
+                            fontSize: 14,
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          InkWell(
+                            onTap: () => _showComboDialog(combo),
+                            child: Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: SubliriumColors.cyan.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Icon(
+                                Icons.edit_outlined,
+                                size: 14,
+                                color: SubliriumColors.cyan,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          InkWell(
+                            onTap: () => _deleteCombo(combo),
+                            child: Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: Colors.red[50],
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Icon(
+                                Icons.delete_outline,
+                                size: 14,
+                                color: Colors.red[300],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
 
-              // Warning de productos sin stock
+              // Warning de productos sin stock (compacto)
               if (tieneProductosSinStock) ...[
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.orange[50],
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(6),
                     border: Border.all(color: Colors.orange[200]!),
                   ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         Icons.warning_amber,
                         color: Colors.orange[700],
-                        size: 20,
+                        size: 14,
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
+                      const SizedBox(width: 4),
+                      Flexible(
                         child: Text(
                           'Sin stock: ${productosSinStock.map((e) => e.key.value).join(", ")}',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: 10,
                             color: Colors.orange[700],
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
               ],
 
-              // Stock del combo
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: stockBg,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      stockCombo == 0
-                          ? Icons.error_outline
-                          : Icons.inventory_2_outlined,
-                      size: 16,
-                      color: stockColor,
+              // Stock del combo (en línea con productos si hay espacio)
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      stockCombo == 0 ? 'Sin stock' : 'Stock: $stockCombo',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: stockColor,
-                      ),
+                    decoration: BoxDecoration(
+                      color: stockBg,
+                      borderRadius: BorderRadius.circular(6),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              // Lista de productos del combo
-              if (productosConStock.isNotEmpty) ...[
-                Text(
-                  'Productos:',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                ...productosConStock.map((entry) {
-                  final items = _comboItems[combo.id] ?? [];
-                  final item = items
-                      .where((i) => i.productoId == entry.key.key)
-                      .firstOrNull;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 2),
                     child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          entry.value ? Icons.check_circle : Icons.cancel,
+                          stockCombo == 0
+                              ? Icons.error_outline
+                              : Icons.inventory_2_outlined,
                           size: 14,
-                          color: entry.value
-                              ? SubliriumColors.stockOkText
-                              : Colors.red,
+                          color: stockColor,
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 4),
                         Text(
-                          '${entry.key.value} x${item?.cantidad ?? 1}',
+                          stockCombo == 0 ? 'Sin stock' : 'Stock: $stockCombo',
                           style: TextStyle(
-                            fontSize: 12,
-                            color: entry.value
-                                ? (isDark ? Colors.white70 : Colors.black87)
-                                : Colors.red,
+                            fontWeight: FontWeight.w700,
+                            color: stockColor,
+                            fontSize: 11,
                           ),
                         ),
                       ],
                     ),
-                  );
-                }),
-              ],
-
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.edit_outlined, size: 20),
-                    onPressed: () => _showComboDialog(combo),
-                    color: SubliriumColors.cyan,
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 20),
-                    onPressed: () => _deleteCombo(combo),
-                    color: Colors.red[300],
-                  ),
+                  const SizedBox(width: 8),
+                  // Productos en línea horizontal si caben
+                  if (productosConStock.isNotEmpty)
+                    Expanded(
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 2,
+                        children: productosConStock.map((entry) {
+                          final items = _comboItems[combo.id] ?? [];
+                          final item = items
+                              .where((i) => i.productoId == entry.key.key)
+                              .firstOrNull;
+                          return Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                entry.value ? Icons.check_circle : Icons.cancel,
+                                size: 10,
+                                color: entry.value
+                                    ? SubliriumColors.stockOkText
+                                    : Colors.red,
+                              ),
+                              const SizedBox(width: 2),
+                              Text(
+                                '${entry.key.value} x${item?.cantidad ?? 1}',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: entry.value
+                                      ? (isDark ? Colors.white70 : Colors.black87)
+                                      : Colors.red,
+                                ),
+                              ),
+                            ],
+                          );
+                        }).toList(),
+                      ),
+                    ),
                 ],
               ),
             ],

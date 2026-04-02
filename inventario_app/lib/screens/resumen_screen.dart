@@ -109,6 +109,18 @@ class _ResumenScreenState extends State<ResumenScreen> {
   Future<void> _deleteVenta(Venta venta) async {
     if (venta.id == null) return;
 
+    // Verificar si es un combo
+    final producto = _productos
+        .where((p) => p.id == venta.productoId)
+        .firstOrNull;
+    final esCombo = producto?.esCombo ?? false;
+
+    // Si es combo, cargar los items
+    List<ComboItem> comboItems = [];
+    if (esCombo && producto != null && producto.id != null) {
+      comboItems = await _apiService.getComboItems(producto.id!);
+    }
+
     // Step 1: Ask how many units to return (or just delete)
     final cantidadController = TextEditingController(
       text: venta.cantidad.toString(),
@@ -120,6 +132,7 @@ class _ResumenScreenState extends State<ResumenScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
           final isDark = Theme.of(context).brightness == Brightness.dark;
+          final cantidadDevolver = int.tryParse(cantidadController.text) ?? venta.cantidad;
           return AlertDialog(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
@@ -135,99 +148,198 @@ class _ResumenScreenState extends State<ResumenScreen> {
                 const Text('Eliminar venta'),
               ],
             ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isDark ? Colors.grey[800] : const Color(0xFFF6F3EC),
-                    borderRadius: BorderRadius.circular(12),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.grey[800] : const Color(0xFFF6F3EC),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.receipt_long,
+                          size: 18,
+                          color: SubliriumColors.textSecondary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _getNombreProducto(venta.productoId),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark
+                                      ? Colors.white
+                                      : SubliriumColors.textPrimary,
+                                ),
+                              ),
+                              Text(
+                                '${venta.cantidad} ud(s) · \$${venta.total.toStringAsFixed(2)}${esCombo ? ' (COMBO)' : ''}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isDark
+                                      ? Colors.white60
+                                      : SubliriumColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Row(
+                  const SizedBox(height: 16),
+                  // Toggle: devolver stock?
+                  Row(
                     children: [
-                      const Icon(
-                        Icons.receipt_long,
-                        size: 18,
-                        color: SubliriumColors.textSecondary,
-                      ),
-                      const SizedBox(width: 8),
                       Expanded(
+                        child: Text(
+                          '¿Devolver productos al stock?',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? Colors.white
+                                : SubliriumColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      Switch(
+                        value: devolverStock,
+                        activeColor: SubliriumColors.stockOkText,
+                        onChanged: (v) => setDialogState(() => devolverStock = v),
+                      ),
+                    ],
+                  ),
+                  if (devolverStock) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Cantidad a devolver (máx. ${venta.cantidad}):',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark
+                            ? Colors.white60
+                            : SubliriumColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: cantidadController,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      decoration: InputDecoration(
+                        labelText: 'Cantidad',
+                        border: const OutlineInputBorder(),
+                        suffixText: '/ ${venta.cantidad}',
+                      ),
+                      autofocus: true,
+                      onChanged: (_) => setDialogState(() {}),
+                    ),
+                    // Mostrar detalle de productos a devolver si es combo
+                    if (esCombo && comboItems.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.grey[850] : const Color(0xFFF0FDF4),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isDark ? Colors.grey[700]! : const Color(0xFF86EFAC),
+                          ),
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              _getNombreProducto(venta.productoId),
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: isDark
-                                    ? Colors.white
-                                    : SubliriumColors.textPrimary,
-                              ),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.inventory_2_outlined,
+                                  size: 16,
+                                  color: SubliriumColors.stockOkText,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Stock a devolver:',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                    color: isDark
+                                        ? Colors.white
+                                        : SubliriumColors.stockOkText,
+                                  ),
+                                ),
+                              ],
                             ),
-                            Text(
-                              '${venta.cantidad} ud(s) · \$${venta.total.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: isDark
-                                    ? Colors.white60
-                                    : SubliriumColors.textSecondary,
-                              ),
-                            ),
+                            const SizedBox(height: 8),
+                            ...comboItems.map((item) {
+                              final cantidadADevolver = item.cantidad * cantidadDevolver;
+                              final productoItem = _productos
+                                  .where((p) => p.id == item.productoId)
+                                  .firstOrNull;
+                              final nombreItem = productoItem?.nombre ?? 'Producto #${item.productoId}';
+                              final stockActual = productoItem?.cantidad ?? 0;
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 6),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        '• $nombreItem',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: isDark
+                                              ? Colors.white70
+                                              : Colors.black87,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: SubliriumColors.stockOkBg,
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        '+$cantidadADevolver',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: SubliriumColors.stockOkText,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '(stock: $stockActual)',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: isDark
+                                            ? Colors.white.withOpacity(0.4)
+                                            : Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }),
                           ],
                         ),
                       ),
                     ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Toggle: devolver stock?
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '¿Devolver productos al stock?',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: isDark
-                              ? Colors.white
-                              : SubliriumColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                    Switch(
-                      value: devolverStock,
-                      activeColor: SubliriumColors.stockOkText,
-                      onChanged: (v) => setDialogState(() => devolverStock = v),
-                    ),
                   ],
-                ),
-                if (devolverStock) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    'Cantidad a devolver (máx. ${venta.cantidad}):',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDark
-                          ? Colors.white60
-                          : SubliriumColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: cantidadController,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: InputDecoration(
-                      labelText: 'Cantidad',
-                      border: const OutlineInputBorder(),
-                      suffixText: '/ ${venta.cantidad}',
-                    ),
-                    autofocus: true,
-                  ),
                 ],
-              ],
+              ),
             ),
             actions: [
               TextButton(
@@ -264,15 +376,19 @@ class _ResumenScreenState extends State<ResumenScreen> {
           }
           return;
         }
-        final producto = _productos
-            .where((p) => p.id == venta.productoId)
-            .firstOrNull;
-        if (producto != null) {
-          final productoActualizado = producto.copyWith(
-            cantidad: producto.cantidad + cantidadDevolver,
-            fechaActualizacion: DateTime.now(),
-          );
-          await _apiService.updateProducto(productoActualizado);
+
+        if (esCombo && producto != null && producto.id != null) {
+          // Es un combo - restaurar stock de cada producto
+          await _apiService.restaurarStockCombo(producto.id!, cantidadDevolver);
+        } else {
+          // Producto normal
+          if (producto != null) {
+            final productoActualizado = producto.copyWith(
+              cantidad: producto.cantidad + cantidadDevolver,
+              fechaActualizacion: DateTime.now(),
+            );
+            await _apiService.updateProducto(productoActualizado);
+          }
         }
       }
 

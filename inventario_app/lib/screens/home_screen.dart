@@ -10,6 +10,7 @@ import 'resumen_screen.dart';
 import 'tabla_precios_screen.dart';
 import 'combos_screen.dart';
 import 'configuracion_screen.dart';
+import 'auth_screen.dart';
 import '../main.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -431,6 +432,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   try {
                     await Future.delayed(const Duration(milliseconds: 500));
                     await Supabase.instance.client.auth.signOut();
+                    // Navegar explícitamente al login después de cerrar sesión
+                    if (mounted) {
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(
+                          builder: (_) => AuthScreen(
+                            onAuthSuccess: () {},
+                            onEmailVerified: (_) {},
+                          ),
+                        ),
+                        (route) => false,
+                      );
+                    }
                   } catch (e) {
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(

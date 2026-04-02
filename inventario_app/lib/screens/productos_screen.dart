@@ -1481,107 +1481,109 @@ class _ProductosScreenState extends State<ProductosScreen> {
                       color: producto.cantidad > 0
                           ? SubliriumColors.stockOkBg
                           : SubliriumColors.stockZeroBg,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        IconButton(
-                          onPressed: producto.cantidad > 0
+                        InkWell(
+                          onTap: producto.cantidad > 0
                               ? () => _updateCantidad(producto, -1)
                               : null,
-                          icon: Icon(
-                            Icons.remove,
-                            size: 14,
-                            color: SubliriumColors.stockOkText,
+                          child: Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Icon(
+                              Icons.remove,
+                              size: 14,
+                              color: producto.cantidad > 0
+                                  ? SubliriumColors.stockOkText
+                                  : Colors.grey,
+                            ),
                           ),
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                         ),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
                           child: Text(
                             '${producto.cantidad}',
                             style: TextStyle(
                               fontWeight: FontWeight.w800,
-                              fontSize: 13,
+                              fontSize: 12,
                               color: producto.cantidad > 0
                                   ? SubliriumColors.stockOkText
                                   : SubliriumColors.stockZeroText,
                             ),
                           ),
                         ),
-                        IconButton(
-                          onPressed: () => _updateCantidad(producto, 1),
-                          icon: Icon(
-                            Icons.add,
-                            size: 14,
-                            color: SubliriumColors.stockOkText,
+                        InkWell(
+                          onTap: () => _updateCantidad(producto, 1),
+                          child: Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Icon(
+                              Icons.add,
+                              size: 14,
+                              color: SubliriumColors.stockOkText,
+                            ),
                           ),
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                         ),
                       ],
                     ),
                   ),
                 const Spacer(),
-                IconButton(
-                  onPressed: () => _showVendidoDialog(producto),
-                  icon: const Icon(Icons.point_of_sale_outlined, size: 20),
-                  color: AppConfig.secondaryColor,
-                  tooltip: 'Registrar venta',
-                  style: IconButton.styleFrom(
-                    backgroundColor: AppConfig.secondaryColor.withValues(alpha: 0.1),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                // Solo mostrar editar si NO es un combo
-                if (!producto.esCombo)
-                  IconButton(
-                    onPressed: () => _showProductoDialog(producto),
-                    icon: const Icon(Icons.edit_outlined, size: 20),
-                    color: AppConfig.secondaryColor,
-                    tooltip: 'Editar',
-                    style: IconButton.styleFrom(
-                      backgroundColor: SubliriumColors.inputFocusedBg,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                // Botones de acción más compactos
+                Wrap(
+                  spacing: 4,
+                  children: [
+                    _buildActionButton(
+                      icon: Icons.point_of_sale_outlined,
+                      color: AppConfig.secondaryColor,
+                      bgColor: AppConfig.secondaryColor.withValues(alpha: 0.1),
+                      onTap: () => _showVendidoDialog(producto),
+                      tooltip: 'Venta',
                     ),
-                  ),
-                if (!producto.esCombo) const SizedBox(width: 6),
-                IconButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => TablaPreciosScreen(
-                          productoIdInicial: producto.id,
-                          categoriaIdInicial: producto.categoriaId,
-                        ),
+                    if (!producto.esCombo)
+                      _buildActionButton(
+                        icon: Icons.edit_outlined,
+                        color: AppConfig.secondaryColor,
+                        bgColor: SubliriumColors.inputFocusedBg,
+                        onTap: () => _showProductoDialog(producto),
+                        tooltip: 'Editar',
                       ),
-                    );
-                  },
-                  icon: const Icon(Icons.attach_money, size: 20),
-                  color: AppConfig.accentColor,
-                  tooltip: 'Tarifas',
-                  style: IconButton.styleFrom(
-                    backgroundColor: SubliriumColors.naranja.withValues(alpha: 0.15),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                IconButton(
-                  onPressed: () => _deleteProducto(producto),
-                  icon: const Icon(Icons.delete_outline, size: 20),
-                  color: SubliriumColors.stockLowText,
-                  tooltip: 'Eliminar',
-                  style: IconButton.styleFrom(
-                    backgroundColor: SubliriumColors.stockLowBg,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
+                    _buildActionButton(
+                      icon: Icons.attach_money,
+                      color: AppConfig.accentColor,
+                      bgColor: SubliriumColors.naranja.withValues(alpha: 0.15),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => TablaPreciosScreen(
+                              productoIdInicial: producto.id,
+                              categoriaIdInicial: producto.categoriaId,
+                            ),
+                          ),
+                        );
+                      },
+                      tooltip: 'Tarifas',
+                    ),
+                    _buildActionButton(
+                      icon: Icons.delete_outline,
+                      color: SubliriumColors.stockLowText,
+                      bgColor: SubliriumColors.stockLowBg,
+                      onTap: () => _deleteProducto(producto),
+                      tooltip: 'Eliminar',
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -1609,6 +1611,34 @@ class _ProductosScreenState extends State<ProductosScreen> {
           color: hayStock
               ? SubliriumColors.stockOkText
               : SubliriumColors.deleteText,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required Color color,
+    required Color bgColor,
+    required VoidCallback onTap,
+    required String tooltip,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            icon,
+            size: 16,
+            color: color,
+          ),
         ),
       ),
     );
