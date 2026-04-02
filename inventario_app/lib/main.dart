@@ -31,37 +31,71 @@ class InventarioApp extends StatefulWidget {
 class _InventarioAppState extends State<InventarioApp> {
   bool _isAuthenticated = false;
   bool _isLoading = true;
+  bool _emailVerified = false;
+  String? _verifiedEmail;
   StreamSubscription<AuthState>? _authSubscription;
 
   @override
   void initState() {
     super.initState();
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
     _listenAuthChanges();
-    _checkAuth();
+    await _checkAuth();
   }
 
   void _listenAuthChanges() {
-    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((
+      data,
+    ) async {
       if (!mounted) return;
+
       final event = data.event;
       final session = data.session;
+      final user = session?.user;
+
+      debugPrint(
+        'Auth Event: $event, User: ${user?.email}, Confirmed: ${user?.emailConfirmedAt}',
+      );
 
       if (event == AuthChangeEvent.signedOut || session == null) {
         TenantService.clearTenant();
         setState(() {
           _isAuthenticated = false;
+          _emailVerified = false;
+          _verifiedEmail = null;
           _isLoading = false;
         });
         return;
       }
 
-      final user = session.user;
-      await TenantService.loadTenantConfig(user.id);
-      if (!mounted) return;
-      setState(() {
-        _isAuthenticated = true;
-        _isLoading = false;
-      });
+      if (event == AuthChangeEvent.userUpdated && user != null) {
+        if (user.emailConfirmedAt != null) {
+          setState(() {
+            _emailVerified = true;
+            _verifiedEmail = user.email;
+            _isAuthenticated = true;
+          });
+        }
+      }
+
+      if (user != null && user.emailConfirmedAt != null) {
+        await TenantService.loadTenantConfig(user.id);
+        if (!mounted) return;
+        setState(() {
+          _isAuthenticated = true;
+          _emailVerified = true;
+          _verifiedEmail = user.email;
+          _isLoading = false;
+        });
+      } else if (user != null && user.emailConfirmedAt == null) {
+        setState(() {
+          _emailVerified = false;
+          _isLoading = false;
+        });
+      }
     });
   }
 
@@ -71,6 +105,8 @@ class _InventarioAppState extends State<InventarioApp> {
       await TenantService.loadTenantConfig(user.id);
       setState(() {
         _isAuthenticated = true;
+        _emailVerified = user.emailConfirmedAt != null;
+        _verifiedEmail = user.email;
       });
     }
     setState(() {
@@ -82,8 +118,16 @@ class _InventarioAppState extends State<InventarioApp> {
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
       await TenantService.loadTenantConfig(user.id);
+      setState(() {
+        _isAuthenticated = true;
+      });
     }
+  }
+
+  void _onEmailVerified(String email) {
     setState(() {
+      _emailVerified = true;
+      _verifiedEmail = email;
       _isAuthenticated = true;
     });
   }
@@ -99,22 +143,52 @@ class _InventarioAppState extends State<InventarioApp> {
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeNotifier,
       builder: (_, ThemeMode currentMode, __) {
-        bool isDark = currentMode == ThemeMode.dark;
         return MaterialApp(
           title: AppConfig.appName,
           debugShowCheckedModeBanner: false,
           theme: AppTheme.lightTheme(),
           darkTheme: AppTheme.darkTheme(),
           themeMode: currentMode,
-          home: _isLoading
-              ? const Scaffold(
-                  body: Center(child: CircularProgressIndicator()),
-                )
-              : _isAuthenticated
-                  ? const HomeScreen()
-                  : AuthScreen(onAuthSuccess: _onAuthSuccess),
+          home: _buildHome(),
         );
       },
+    );
+  }
+
+  Widget _buildHome() {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Cargando...'),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_emailVerified && _verifiedEmail != null) {
+      return EmailVerifiedScreen(
+        email: _verifiedEmail!,
+        onContinue: () {
+          setState(() {
+            _emailVerified = false;
+          });
+        },
+      );
+    }
+
+    if (_isAuthenticated) {
+      return const HomeScreen();
+    }
+
+    return AuthScreen(
+      onAuthSuccess: _onAuthSuccess,
+      onEmailVerified: _onEmailVerified,
     );
   }
 }

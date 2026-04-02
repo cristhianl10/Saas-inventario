@@ -122,7 +122,9 @@ class _CombosScreenState extends State<CombosScreen> {
     return stockMinimo == double.maxFinite.toInt() ? 0 : stockMinimo;
   }
 
-  List<MapEntry<String, bool>> _getProductosConStock(Producto combo) {
+  List<MapEntry<MapEntry<int, String>, bool>> _getProductosConStock(
+    Producto combo,
+  ) {
     final items = _comboItems[combo.id] ?? [];
     return items.map((item) {
       final producto = _productos
@@ -130,7 +132,10 @@ class _CombosScreenState extends State<CombosScreen> {
           .firstOrNull;
       final tieneStock = producto != null && producto.cantidad >= item.cantidad;
       return MapEntry(
-        item.nombreProducto ?? 'Producto #${item.productoId}',
+        MapEntry(
+          item.productoId,
+          producto?.nombre ?? 'Producto #${item.productoId}',
+        ),
         tieneStock,
       );
     }).toList();
@@ -336,7 +341,7 @@ class _CombosScreenState extends State<CombosScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Sin stock: ${productosSinStock.map((e) => e.key).join(", ")}',
+                          'Sin stock: ${productosSinStock.map((e) => e.key.value).join(", ")}',
                           style: TextStyle(
                             fontSize: 11,
                             color: Colors.orange[700],
@@ -394,7 +399,7 @@ class _CombosScreenState extends State<CombosScreen> {
                 ...productosConStock.map((entry) {
                   final items = _comboItems[combo.id] ?? [];
                   final item = items
-                      .where((i) => i.nombreProducto == entry.key)
+                      .where((i) => i.productoId == entry.key.key)
                       .firstOrNull;
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 2),
@@ -409,7 +414,7 @@ class _CombosScreenState extends State<CombosScreen> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          '${entry.key} x${item?.cantidad ?? 1}',
+                          '${entry.key.value} x${item?.cantidad ?? 1}',
                           style: TextStyle(
                             fontSize: 12,
                             color: entry.value

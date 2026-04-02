@@ -18,6 +18,8 @@ dependencies:
   flutter_dotenv: ^5.1.0
   google_fonts: ^8.0.2
   flutter_svg: ^2.0.10+1
+  crypto: ^3.0.3
+  confetti: ^0.7.0
 
 dev_dependencies:
   flutter_test:

@@ -428,8 +428,19 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   );
-                  await Future.delayed(const Duration(milliseconds: 500));
-                  await Supabase.instance.client.auth.signOut();
+                  try {
+                    await Future.delayed(const Duration(milliseconds: 500));
+                    await Supabase.instance.client.auth.signOut();
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error al cerrar sesión: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
                 }
               },
               itemBuilder: (context) => [

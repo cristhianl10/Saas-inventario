@@ -2,11 +2,17 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/app_config.dart';
+import 'email_verified_screen.dart';
 
 class AuthScreen extends StatefulWidget {
   final VoidCallback onAuthSuccess;
+  final Function(String email)? onEmailVerified;
 
-  const AuthScreen({super.key, required this.onAuthSuccess});
+  const AuthScreen({
+    super.key,
+    required this.onAuthSuccess,
+    this.onEmailVerified,
+  });
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
@@ -42,27 +48,45 @@ class _AuthScreenState extends State<AuthScreen> {
     });
 
     try {
+      final email = _sanitizeInput(_emailController.text.trim());
+      final password = _passwordController.text;
+      final brandName = _sanitizeInput(_businessNameController.text.trim());
+
       if (_isLogin) {
         await Supabase.instance.client.auth.signInWithPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
+          email: email,
+          password: password,
         );
         widget.onAuthSuccess();
       } else {
-        await Supabase.instance.client.auth.signUp(
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
+        final passwordError = _validatePasswordStrength(password);
+        if (passwordError.isNotEmpty) {
+          setState(() {
+            _errorMessage = passwordError;
+            _isLoading = false;
+          });
+          return;
+        }
+
+        final response = await Supabase.instance.client.auth.signUp(
+          email: email,
+          password: password,
           data: {
-            'brand_name': _businessNameController.text.trim().isEmpty
-                ? 'Mi Negocio'
-                : _businessNameController.text.trim(),
+            'brand_name': brandName.isEmpty ? 'Mi Negocio' : brandName,
+            'created_at': DateTime.now().toIso8601String(),
           },
         );
 
-        final user = Supabase.instance.client.auth.currentUser;
-        if (user != null) {
-          await _createTenantConfig(user.id);
-          widget.onAuthSuccess();
+        if (response.user != null) {
+          if (response.user!.emailConfirmedAt != null) {
+            await _createTenantConfig(response.user!.id);
+            widget.onEmailVerified?.call(email);
+          } else {
+            setState(() {
+              _successMessage =
+                  '✓ Cuenta creada. Se ha enviado un enlace de verificación a tu correo.';
+            });
+          }
         } else {
           setState(() {
             _successMessage =
@@ -129,6 +153,29 @@ class _AuthScreenState extends State<AuthScreen> {
     }
 
     return 'Error de conexión. Verifica tu internet e intenta nuevamente.';
+  }
+
+  String _validatePasswordStrength(String password) {
+    if (password.isEmpty) return 'La contraseña es obligatoria';
+    if (password.length < 8)
+      return 'La contraseña debe tener al menos 8 caracteres';
+    if (!RegExp(r'[A-Z]').hasMatch(password))
+      return 'Debe incluir al menos una mayúscula';
+    if (!RegExp(r'[a-z]').hasMatch(password))
+      return 'Debe incluir al menos una minúscula';
+    if (!RegExp(r'[0-9]').hasMatch(password))
+      return 'Debe incluir al menos un número';
+    return '';
+  }
+
+  String _sanitizeInput(String input) {
+    return input
+        .trim()
+        .replaceAll('<', '')
+        .replaceAll('>', '')
+        .replaceAll('"', '')
+        .replaceAll("'", '')
+        .replaceAll('\\', '');
   }
 
   Future<void> _createTenantConfig(String userId) async {
