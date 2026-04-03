@@ -24,6 +24,7 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _isLogin = true;
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _termsAccepted = false;
   String? _errorMessage;
   String? _successMessage;
 
@@ -87,6 +88,57 @@ class _AuthScreenState extends State<AuthScreen> {
           return;
         }
 
+        if (!_termsAccepted) {
+          setState(() {
+            _errorMessage = 'Debes aceptar los términos para continuar';
+            _isLoading = false;
+          });
+          return;
+        }
+
+        AuthResponse? existingUser;
+        try {
+          existingUser = await Supabase.instance.client.auth.signInWithPassword(
+            email: email,
+            password: password,
+          );
+        } catch (_) {
+          existingUser = null;
+        }
+
+        if (existingUser?.user != null && existingUser?.session == null) {
+          setState(() {
+            _errorMessage =
+                'Este correo ya tiene una cuenta. Confirma tu correo para iniciar.';
+            _isLoading = false;
+          });
+          return;
+        }
+
+        if (existingUser?.user != null && existingUser?.session != null) {
+          setState(() {
+            _errorMessage = 'Este correo ya está registrado. Inicia sesión.';
+            _isLoading = false;
+          });
+          return;
+        }
+
+        try {
+          final existingEmail = await Supabase.instance.client
+              .from('users')
+              .select('email')
+              .eq('email', email)
+              .maybeSingle();
+
+          if (existingEmail != null) {
+            setState(() {
+              _errorMessage = 'Este correo ya está registrado. Inicia sesión.';
+              _isLoading = false;
+            });
+            return;
+          }
+        } catch (_) {}
+
         final response = await Supabase.instance.client.auth.signUp(
           email: email,
           password: password,
@@ -97,16 +149,13 @@ class _AuthScreenState extends State<AuthScreen> {
         );
 
         if (response.user != null) {
-          if (response.user!.emailConfirmedAt != null) {
-            await _createTenantConfig(response.user!.id);
-            widget.onEmailVerified?.call(email);
-          } else {
-            setState(() {
-              _successMessage =
-                  '✓ Cuenta creada. Se ha enviado un enlace de verificación a tu correo.';
+          try {
+            await Supabase.instance.client.from('users').insert({
+              'id': response.user!.id,
+              'email': email,
             });
-          }
-        } else {
+          } catch (_) {}
+
           setState(() {
             _successMessage =
                 '✓ Cuenta creada. Revisa tu correo y confirma tu cuenta para iniciar sesión.';
@@ -195,31 +244,6 @@ class _AuthScreenState extends State<AuthScreen> {
         .replaceAll('"', '')
         .replaceAll("'", '')
         .replaceAll('\\', '');
-  }
-
-  Future<void> _createTenantConfig(String userId) async {
-    final brandName = _businessNameController.text.trim().isEmpty
-        ? 'Mi Negocio'
-        : _businessNameController.text.trim();
-
-    final config = {
-      'app_name': 'StockFlow',
-      'brand_name': brandName,
-      'logo_path': 'assets/logos/logo_default.png',
-      'primary_color': '#C1356F',
-      'secondary_color': '#597FA9',
-      'accent_color': '#E57836',
-      'background_color': '#FBF8F1',
-    };
-
-    try {
-      await Supabase.instance.client.from('tenant_config').insert({
-        'user_id': userId,
-        'config': config,
-      });
-    } catch (e) {
-      debugPrint('Error creando tenant_config: $e');
-    }
   }
 
   void _showForgotPasswordDialog() {
@@ -571,6 +595,87 @@ class _AuthScreenState extends State<AuthScreen> {
                           ),
                         ],
 
+                        if (!_isLogin) ...[
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.blue[50],
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.blue[100]!),
+                            ),
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    Checkbox(
+                                      value: _termsAccepted,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          _termsAccepted = value ?? false;
+                                        });
+                                      },
+                                      activeColor: AppConfig.primaryColor,
+                                    ),
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            _termsAccepted = !_termsAccepted;
+                                          });
+                                        },
+                                        child: const Text(
+                                          'Acepto los Términos y Condiciones y la Política de Privacidad',
+                                          style: TextStyle(fontSize: 12),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                const TerminosYCondiciones(),
+                                          ),
+                                        );
+                                      },
+                                      child: const Text(
+                                        'Ver Términos',
+                                        style: TextStyle(fontSize: 11),
+                                      ),
+                                    ),
+                                    const Text(
+                                      ' • ',
+                                      style: TextStyle(fontSize: 11),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                const PoliticaDePrivacidad(),
+                                          ),
+                                        );
+                                      },
+                                      child: const Text(
+                                        'Ver Privacidad',
+                                        style: TextStyle(fontSize: 11),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+
                         if (_errorMessage != null) ...[
                           const SizedBox(height: 12),
                           Container(
@@ -612,69 +717,6 @@ class _AuthScreenState extends State<AuthScreen> {
                         ],
 
                         const SizedBox(height: 16),
-
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        const TerminosYCondiciones(),
-                                  ),
-                                );
-                              },
-                              style: TextButton.styleFrom(
-                                foregroundColor: isDark
-                                    ? Colors.white70
-                                    : Colors.grey[600],
-                                padding: EdgeInsets.zero,
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              child: const Text(
-                                'Términos',
-                                style: TextStyle(fontSize: 12),
-                              ),
-                            ),
-                            Text(
-                              ' y ',
-                              style: TextStyle(
-                                color: isDark
-                                    ? Colors.white70
-                                    : Colors.grey[600],
-                                fontSize: 12,
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        const PoliticaDePrivacidad(),
-                                  ),
-                                );
-                              },
-                              style: TextButton.styleFrom(
-                                foregroundColor: isDark
-                                    ? Colors.white70
-                                    : Colors.grey[600],
-                                padding: EdgeInsets.zero,
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              child: const Text(
-                                'Política de Privacidad',
-                                style: TextStyle(fontSize: 12),
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 8),
 
                         Container(
                           width: double.infinity,

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:confetti/confetti.dart';
 import '../config/app_config.dart';
 import 'home_screen.dart';
 
@@ -22,7 +21,6 @@ class _EmailVerifiedScreenState extends State<EmailVerifiedScreen>
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
-  late ConfettiController _confettiController;
 
   @override
   void initState() {
@@ -47,25 +45,18 @@ class _EmailVerifiedScreenState extends State<EmailVerifiedScreen>
       ),
     );
 
-    _confettiController = ConfettiController(
-      duration: const Duration(seconds: 3),
-    );
-
     _animationController.forward();
-    _confettiController.play();
   }
 
   @override
   void dispose() {
     _animationController.dispose();
-    _confettiController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final size = MediaQuery.of(context).size;
 
     return Scaffold(
       body: Stack(
@@ -280,29 +271,6 @@ class _EmailVerifiedScreenState extends State<EmailVerifiedScreen>
                   ],
                 ),
               ),
-            ),
-          ),
-
-          Align(
-            alignment: Alignment.topCenter,
-            child: ConfettiWidget(
-              confettiController: _confettiController,
-              blastDirectionality: BlastDirectionality.explosive,
-              shouldLoop: false,
-              colors: const [
-                Color(0xFFC1356F),
-                Color(0xFF597FA9),
-                Color(0xFFE57836),
-                Colors.green,
-                Colors.blue,
-                Colors.purple,
-                Colors.orange,
-              ],
-              numberOfParticles: 50,
-              maxBlastForce: 20,
-              minBlastForce: 10,
-              emissionFrequency: 0.05,
-              gravity: 0.2,
             ),
           ),
         ],

@@ -1,26 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
-import 'auth_screen.dart';
+import '../services/terms_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class TermsAcceptanceScreen extends StatefulWidget {
-  const TermsAcceptanceScreen({super.key});
+class NewTermsScreen extends StatefulWidget {
+  final VoidCallback onAccepted;
+
+  const NewTermsScreen({super.key, required this.onAccepted});
 
   @override
-  State<TermsAcceptanceScreen> createState() => _TermsAcceptanceScreenState();
+  State<NewTermsScreen> createState() => _NewTermsScreenState();
 }
 
-class _TermsAcceptanceScreenState extends State<TermsAcceptanceScreen> {
+class _NewTermsScreenState extends State<NewTermsScreen> {
   bool _hasAccepted = false;
   bool _isLoading = true;
+  bool _isSaving = false;
   final ScrollController _scrollController = ScrollController();
   bool _hasScrolledToBottom = false;
 
   @override
   void initState() {
     super.initState();
-    _checkAcceptance();
     _scrollController.addListener(_onScroll);
+    _checkAcceptance();
   }
 
   @override
@@ -42,29 +45,43 @@ class _TermsAcceptanceScreenState extends State<TermsAcceptanceScreen> {
   }
 
   Future<void> _checkAcceptance() async {
-    final prefs = await SharedPreferences.getInstance();
-    final accepted = prefs.getBool('terms_accepted') ?? false;
-    setState(() {
-      _hasAccepted = accepted;
-      _isLoading = false;
-    });
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId != null) {
+      final acceptedVersion = await TermsService.getAcceptedVersion(userId);
+      setState(() {
+        _hasAccepted = acceptedVersion == TermsService.currentVersion;
+        _isLoading = false;
+      });
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _acceptTerms() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('terms_accepted', true);
-    await prefs.setString(
-      'terms_accepted_date',
-      DateTime.now().toIso8601String(),
-    );
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return;
 
-    if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) =>
-              AuthScreen(onAuthSuccess: () {}, onEmailVerified: (_) {}),
-        ),
-      );
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      await TermsService.acceptTerms(userId);
+      widget.onAccepted();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al guardar: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        setState(() {
+          _isSaving = false;
+        });
+      }
     }
   }
 
@@ -245,14 +262,10 @@ Esta Política de Privacidad se rige por la legislación vigente de la Repúblic
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  Icon(
-                    Icons.privacy_tip_outlined,
-                    size: 48,
-                    color: AppConfig.primaryColor,
-                  ),
+                  Icon(Icons.update, size: 48, color: AppConfig.primaryColor),
                   const SizedBox(height: 8),
                   Text(
-                    'Política de Privacidad',
+                    'Términos Actualizados',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -260,7 +273,7 @@ Esta Política de Privacidad se rige por la legislación vigente de la Repúblic
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Por favor lee todo el documento para continuar',
+                    'Hemos actualizado nuestra Política de Privacidad. Por favor lee los cambios para continuar.',
                     style: Theme.of(
                       context,
                     ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
@@ -377,11 +390,13 @@ Esta Política de Privacidad se rige por la legislación vigente de la Repúblic
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: (_hasScrolledToBottom && _hasAccepted)
+                      onPressed:
+                          (_hasScrolledToBottom && _hasAccepted && !_isSaving)
                           ? _acceptTerms
                           : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: (_hasScrolledToBottom && _hasAccepted)
+                        backgroundColor:
+                            (_hasScrolledToBottom && _hasAccepted && !_isSaving)
                             ? AppConfig.primaryColor
                             : Colors.grey[300],
                         foregroundColor: Colors.white,
@@ -390,13 +405,24 @@ Esta Política de Privacidad se rige por la legislación vigente de la Repúblic
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text(
-                        'Continuar',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      child: _isSaving
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                          : const Text(
+                              'Aceptar y Continuar',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
                   ),
                 ],

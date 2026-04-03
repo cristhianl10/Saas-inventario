@@ -2,11 +2,46 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/screens.dart';
 import 'config/app_theme.dart';
 import 'config/app_config.dart';
 import 'config/tenant_service.dart';
+import 'services/terms_service.dart';
+
+Future<void> _ensureTenantExists(String userId) async {
+  try {
+    final existing = await Supabase.instance.client
+        .from('tenant_config')
+        .select('user_id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    if (existing == null) {
+      final config = {
+        'app_name': 'StockFlow',
+        'brand_name': 'Mi Negocio',
+        'logo_path': 'assets/logos/logo_default.png',
+        'primary_color': '#C1356F',
+        'secondary_color': '#597FA9',
+        'accent_color': '#E57836',
+        'background_color': '#FBF8F1',
+      };
+
+      await Supabase.instance.client.from('tenant_config').insert({
+        'user_id': userId,
+        'config': config,
+      });
+
+      await Supabase.instance.client.from('user_terms').insert({
+        'user_id': userId,
+        'terms_version': TermsService.currentVersion,
+        'accepted_at': DateTime.now().toIso8601String(),
+      });
+    }
+  } catch (e) {
+    debugPrint('Error ensuring tenant exists: $e');
+  }
+}
 
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
 
@@ -33,7 +68,7 @@ class _InventarioAppState extends State<InventarioApp> {
   bool _isAuthenticated = false;
   bool _isLoading = true;
   bool _emailVerified = false;
-  bool _termsAccepted = false;
+  bool _needsNewTerms = false;
   String? _verifiedEmail;
   StreamSubscription<AuthState>? _authSubscription;
 
@@ -44,17 +79,8 @@ class _InventarioAppState extends State<InventarioApp> {
   }
 
   Future<void> _initializeApp() async {
-    await _checkTermsAccepted();
     _listenAuthChanges();
     await _checkAuth();
-  }
-
-  Future<void> _checkTermsAccepted() async {
-    final prefs = await SharedPreferences.getInstance();
-    final accepted = prefs.getBool('terms_accepted') ?? false;
-    setState(() {
-      _termsAccepted = accepted;
-    });
   }
 
   void _listenAuthChanges() {
@@ -72,6 +98,7 @@ class _InventarioAppState extends State<InventarioApp> {
         setState(() {
           _isAuthenticated = false;
           _emailVerified = false;
+          _needsNewTerms = false;
           _verifiedEmail = null;
           _isLoading = false;
         });
@@ -80,24 +107,33 @@ class _InventarioAppState extends State<InventarioApp> {
 
       if (event == AuthChangeEvent.userUpdated && user != null) {
         if (user.emailConfirmedAt != null) {
+          await _ensureTenantExists(user.id);
+          await TenantService.loadTenantConfig(user.id);
+          final needsNew = await TermsService.needsToAcceptNewTerms(user.id);
+          if (!mounted) return;
           setState(() {
             _emailVerified = true;
             _verifiedEmail = user.email;
             _isAuthenticated = true;
+            _needsNewTerms = needsNew;
           });
         }
       }
 
       if (user != null && user.emailConfirmedAt != null) {
+        await _ensureTenantExists(user.id);
         await TenantService.loadTenantConfig(user.id);
+        final needsNew = await TermsService.needsToAcceptNewTerms(user.id);
         if (!mounted) return;
         setState(() {
           _isAuthenticated = true;
           _emailVerified = true;
           _verifiedEmail = user.email;
+          _needsNewTerms = needsNew;
           _isLoading = false;
         });
       } else if (user != null && user.emailConfirmedAt == null) {
+        if (!mounted) return;
         setState(() {
           _emailVerified = false;
           _isLoading = false;
@@ -109,12 +145,23 @@ class _InventarioAppState extends State<InventarioApp> {
   Future<void> _checkAuth() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
-      await TenantService.loadTenantConfig(user.id);
-      setState(() {
-        _isAuthenticated = true;
-        _emailVerified = user.emailConfirmedAt != null;
-        _verifiedEmail = user.email;
-      });
+      if (user.emailConfirmedAt != null) {
+        await _ensureTenantExists(user.id);
+        await TenantService.loadTenantConfig(user.id);
+        final needsNew = await TermsService.needsToAcceptNewTerms(user.id);
+        setState(() {
+          _isAuthenticated = true;
+          _emailVerified = true;
+          _verifiedEmail = user.email;
+          _needsNewTerms = needsNew;
+        });
+      } else {
+        setState(() {
+          _isAuthenticated = true;
+          _emailVerified = false;
+          _verifiedEmail = user.email;
+        });
+      }
     }
     setState(() {
       _isLoading = false;
@@ -124,10 +171,29 @@ class _InventarioAppState extends State<InventarioApp> {
   void _onAuthSuccess() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
-      await TenantService.loadTenantConfig(user.id);
-      setState(() {
-        _isAuthenticated = true;
-      });
+      if (user.emailConfirmedAt != null) {
+        await _ensureTenantExists(user.id);
+        await TenantService.loadTenantConfig(user.id);
+        final needsNew = await TermsService.needsToAcceptNewTerms(user.id);
+        if (mounted) {
+          setState(() {
+            _isAuthenticated = true;
+            _emailVerified = true;
+            _verifiedEmail = user.email;
+            _needsNewTerms = needsNew;
+            _isLoading = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _isAuthenticated = true;
+            _emailVerified = false;
+            _verifiedEmail = user.email;
+            _isLoading = false;
+          });
+        }
+      }
     }
   }
 
@@ -136,6 +202,12 @@ class _InventarioAppState extends State<InventarioApp> {
       _emailVerified = true;
       _verifiedEmail = email;
       _isAuthenticated = true;
+    });
+  }
+
+  void _onTermsAccepted() {
+    setState(() {
+      _needsNewTerms = false;
     });
   }
 
@@ -178,8 +250,8 @@ class _InventarioAppState extends State<InventarioApp> {
       );
     }
 
-    if (!_termsAccepted) {
-      return const TermsAcceptanceScreen();
+    if (_needsNewTerms) {
+      return NewTermsScreen(onAccepted: _onTermsAccepted);
     }
 
     if (_emailVerified && _verifiedEmail != null) {

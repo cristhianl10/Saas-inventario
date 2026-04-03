@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Correo Verificado - StockFlow</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #C1356F 0%, #597FA9 100%);
+        }
+        .container {
+            background: white;
+            border-radius: 24px;
+            padding: 48px;
+            text-align: center;
+            max-width: 420px;
+            margin: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        .icon {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #C1356F, #597FA9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 32px;
+        }
+        .icon svg {
+            width: 50px;
+            height: 50px;
+            fill: white;
+        }
+        h1 {
+            color: #1a1a2e;
+            font-size: 28px;
+            margin-bottom: 16px;
+        }
+        p {
+            color: #666;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+        .email {
+            background: #f5f5f5;
+            padding: 12px 24px;
+            border-radius: 12px;
+            display: inline-block;
+            margin-bottom: 32px;
+            color: #333;
+            font-weight: 500;
+        }
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #C1356F, #597FA9);
+            color: white;
+            text-decoration: none;
+            padding: 16px 48px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 10px 25px rgba(193, 53, 111, 0.3);
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(193, 53, 111, 0.4);
+        }
+        .footer {
+            margin-top: 32px;
+            color: #999;
+            font-size: 12px;
+        }
+        .confetti {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .confetti-piece {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            top: -10px;
+            animation: fall 3s ease-in forwards;
+        }
+        @keyframes fall {
+            to {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="confetti" id="confetti"></div>
+    <div class="container">
+        <div class="icon">
+            <svg viewBox="0 0 24 24">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+            </svg>
+        </div>
+        <h1>¡Correo Verificado!</h1>
+        <p>Tu cuenta ha sido verificada exitosamente.</p>
+        <div class="email" id="email">📧 usuario@email.com</div>
+        <br>
+        <a href="stockflow://auth/callback" class="btn">
+            Abrir StockFlow
+        </a>
+        <div class="footer">
+            © 2026 StockFlow - Gestión de Inventario
+        </div>
+    </div>
+    <script>
+        // Confetti animation
+        const colors = ['#C1356F', '#597FA9', '#E57836', '#4CAF50', '#FF9800'];
+        const confetti = document.getElementById('confetti');
+        
+        for (let i = 0; i < 50; i++) {
+            const piece = document.createElement('div');
+            piece.className = 'confetti-piece';
+            piece.style.left = Math.random() * 100 + '%';
+            piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+            piece.style.animationDelay = Math.random() * 2 + 's';
+            piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+            confetti.appendChild(piece);
+        }
+        
+        // Get email from URL if present
+        const params = new URLSearchParams(window.location.search);
+        const email = params.get('email');
+        if (email) {
+            document.getElementById('email').textContent = email;
+        }
+    </script>
+</body>
+</html>
