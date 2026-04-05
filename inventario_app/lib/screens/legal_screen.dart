@@ -108,24 +108,22 @@ StockFlow es una aplicación de gestión de inventario que permite a los usuario
 
 8.3. Los datos que usted ingresa siguen siendo de su propiedad.
 
-9. LIMITACIÓN DE RESPONSABILIDAD
+  9. LIMITACIÓN DE RESPONSABILIDAD
 
-9.1. STOCKFLOW SE PROPORCIONA "TAL COMO ES".
+  9.1. NO SOMOS RESPONSABLES POR:
+  • Pérdida de datos por fallos técnicos
+  • Decisiones tomadas basadas en los reportes
+  • Interrupciones del servicio
 
-9.2. NO SOMOS RESPONSABLES POR:
-• Pérdida de datos por fallos técnicos
-• Decisiones tomadas basadas en los reportes
-• Interrupciones del servicio
+  9.2. Nuestra responsabilidad máxima es el monto que haya pagado por el servicio.
 
-9.3. Nuestra responsabilidad máxima es el monto que haya pagado por el servicio.
+  10. CAMBIOS A ESTOS TÉRMINOS
 
-10. CAMBIOS A ESTOS TÉRMINOS
+  Podemos actualizar estos términos ocasionalmente. El uso continuado después de los cambios constituye aceptación.
 
-Podemos actualizar estos términos ocasionalmente. El uso continuado después de los cambios constituye aceptación.
+  11. CONTACTO
 
-11. CONTACTO
-
-Para preguntas sobre estos términos, contacte a: tu-email@tu-dominio.com
+  Para preguntas sobre estos términos, contacte a: cristhian.loor05@outlook.com
 
 ---
 
@@ -142,84 +140,122 @@ class PoliticaDePrivacidad extends StatelessWidget {
   Widget build(BuildContext context) {
     return const LegalScreen(
       title: 'Política de Privacidad',
-      content: '''
-POLÍTICA DE PRIVACIDAD
-
-StockFlow
-
+      content: '''STOCKFLOW
+Política de Privacidad
 Última actualización: Abril 2026
 
-1. INTRODUCCIÓN
+Resumen de puntos clave
+- No vendemos sus datos personales a terceros bajo ninguna circunstancia.
+- Sus datos de inventario y negocio son exclusivamente suyos.
+- Puede solicitar eliminación completa de sus datos en cualquier momento.
+- Toda la comunicación está cifrada con TLS/HTTPS.
 
-En StockFlow, respetamos su privacidad y nos comprometemos a proteger sus datos personales.
+1. Introducción
 
-Esta Política de Privacidad explica cómo recopilamos, usamos, almacenamos y protegemos su información.
+StockFlow es una aplicación de gestión de inventario diseñada para pequeños negocios y emprendimientos. Respetamos su privacidad y nos comprometemos a proteger sus datos personales con las más altas medidas de seguridad.
 
-2. INFORMACIÓN QUE RECOPILAMOS
+Esta Política de Privacidad describe de forma transparente cómo recopilamos, usamos, almacenamos y protegemos su información cuando utiliza nuestra aplicación móvil y servicios relacionados.
 
-2.1. Información que usted proporciona:
-• Datos de cuenta: Email y contraseña (encriptada)
-• Datos del negocio: Nombre, colores, logo
-• Datos de inventario: Productos, categorías, precios
-• Datos de ventas: Transacciones, clientes
+Al registrarse y utilizar StockFlow, usted acepta las prácticas descritas en este documento. Si tiene dudas, puede contactarnos antes de continuar.
 
-2.2. Información recopilada automáticamente:
-• Datos técnicos: Tipo de dispositivo, sistema operativo
-• Datos de uso: Funciones usadas, errores
+2. Información que Recopilamos
 
-3. CÓMO USAMOS SU INFORMACIÓN
+2.1. Información que usted proporciona directamente
+- Datos de cuenta: dirección de correo electrónico y contraseña (almacenada con hash bcrypt, nunca en texto plano).
+- Datos del negocio: nombre comercial, colores de marca, logotipo.
+- Datos de inventario: productos, categorías, precios de compra y venta, niveles de stock.
+- Datos de ventas: transacciones, fechas, montos, información opcional de clientes.
 
-Usamos su información para:
-• Proporcionar el servicio
-• Mejorar el servicio
-• Comunicaciones relacionadas con su cuenta
-• Seguridad
+2.2. Información recopilada automáticamente
+- Datos técnicos del dispositivo: tipo de dispositivo, sistema operativo y versión, identificadores anónimos de sesión.
+- Datos de uso: funcionalidades utilizadas, frecuencia de acceso, errores y crashlogs (sin datos de negocio asociados).
+- Metadatos de red: dirección IP, zona horaria (para sincronización de datos).
 
-4. COMPARTIR INFORMACIÓN
+2.3. Información que NO recopilamos
+- No accedemos a su micrófono, cámara ni galería sin su consentimiento explícito.
+- No recopilamos datos de ubicación GPS.
+- No rastreamos su actividad fuera de la aplicación.
 
-NO vendemos sus datos personales. Compartimos información únicamente con:
-• Proveedores de servicios (hosting, email)
-• Por razones legales (si es requerido)
+3. Cómo Usamos su Información
 
-5. ALMACENAMIENTO Y SEGURIDAD
+- Servicio: Proveer, mantener y mejorar las funcionalidades de StockFlow, incluyendo sincronización de datos entre dispositivos.
+- Soporte: Responder a sus consultas, resolver problemas técnicos y notificarle sobre actualizaciones importantes de la app.
+- Seguridad: Detectar, prevenir y responder a fraudes, abusos o accesos no autorizados a su cuenta.
+- Mejoras: Analizar patrones de uso de forma agregada y anónima para desarrollar nuevas funcionalidades.
+- Legal: Cumplir con obligaciones legales aplicables en Ecuador y normativas internacionales de protección de datos.
 
-• Datos encriptados en tránsito (HTTPS)
-• Contraseñas encriptadas
-• Control de acceso (RLS)
-• Monitoreo de seguridad
+4. Compartir Información con Terceros
 
-6. SUS DERECHOS
+StockFlow NO vende, alquila ni comercializa sus datos personales. Compartimos información únicamente en los siguientes casos limitados:
 
-Usted tiene derecho a:
-• Acceder a sus datos
-• Rectificar datos inexactos
-• Eliminar sus datos
-• Portabilidad de datos
+- Proveedores de infraestructura: Supabase (base de datos y autenticación), con contratos de protección de datos (DPA).
+- Servicios de email transaccional: para notificaciones de cuenta (confirmación de registro, restablecimiento de contraseña).
+- Obligaciones legales: cuando así lo requiera una orden judicial o autoridad competente ecuatoriana, previa verificación de legitimidad.
+- Con su consentimiento explícito: en cualquier otro caso no contemplado, le solicitaremos permiso expreso.
 
-Para ejercer sus derechos, contacte a: cristhian.loor05@outlook.com
+5. Almacenamiento y Seguridad
 
-7. COOKIES
+Sus datos se almacenan en servidores seguros gestionados por Supabase. Las medidas de seguridad implementadas incluyen:
 
-Usamos cookies esenciales para:
-• Mantener su sesión iniciada
-• Recordar preferencias
-• Analizar uso de la app
+- Cifrado en tránsito: toda comunicación entre la app y el servidor usa TLS 1.2+ (HTTPS).
+- Cifrado en reposo: los datos sensibles están cifrados en la base de datos.
+- Contraseñas: almacenadas únicamente con hash criptográfico (bcrypt). Nunca en texto plano.
+- Control de acceso por filas (RLS): cada usuario solo puede acceder a sus propios datos, impuesto a nivel de base de datos.
+- Autenticación segura: sesiones con tokens JWT de corta duración y renovación automática.
+- Monitoreo continuo: registro de eventos de acceso y alertas automáticas ante comportamientos anómalos.
 
-8. NIÑOS
+En caso de detectar una brecha de seguridad que afecte sus datos, le notificaremos dentro de las 72 horas siguientes al descubrimiento.
 
-La Aplicación no está diseñada para menores de 18 años.
+6. Sus Derechos sobre sus Datos
 
-9. CAMBIOS A ESTA POLÍTICA
+- Acceso: solicitar una copia completa de los datos que tenemos sobre usted.
+- Rectificación: corregir datos incorrectos o desactualizados directamente desde la app o por email.
+- Eliminación: solicitar la eliminación permanente de su cuenta y todos sus datos asociados (máximo 30 días).
+- Portabilidad: recibir sus datos en formato estructurado (JSON/CSV) para exportarlos a otro servicio.
+- Oposición: oponerse al uso de sus datos para ciertos fines, como análisis de uso.
+- Limitación: solicitar que restrinjamos el procesamiento de sus datos mientras se resuelve una disputa.
 
-Pueden actualizar esta política periódicamente. Cambios significativos serán notificados.
+Para ejercer cualquiera de estos derechos: cristhian.loor05@outlook.com — respondemos en máximo 5 días hábiles.
 
-10. CONTACTO
+7. Retención de Datos
 
+- Datos de cuenta y negocio: se conservan mientras la cuenta esté activa y hasta 30 días después de una solicitud de eliminación.
+- Datos de uso y logs técnicos: se eliminan automáticamente tras 90 días.
+- Copias de seguridad: se conservan hasta 30 días adicionales por razones de continuidad del servicio.
+
+8. Cookies y Tecnologías Similares
+
+StockFlow utiliza almacenamiento local en el dispositivo para:
+
+- Mantener su sesión iniciada de forma segura (tokens de autenticación cifrados).
+- Recordar sus preferencias de interfaz (tema, idioma, configuración).
+- Analizar patrones de uso de la app de forma anónima y agregada.
+
+No utilizamos cookies de rastreo publicitario ni compartimos datos de uso con plataformas de publicidad.
+
+9. Transferencias Internacionales de Datos
+
+Sus datos pueden ser procesados en servidores ubicados fuera de Ecuador (principalmente en Estados Unidos), donde opera la infraestructura de Supabase. Nos aseguramos de que dichas transferencias estén protegidas mediante:
+
+- Cláusulas contractuales estándar de protección de datos (DPA) con nuestros proveedores.
+- Servidores certificados bajo marcos de seguridad reconocidos internacionalmente (SOC 2, ISO 27001).
+
+10. Cambios a Esta Política
+
+Podemos actualizar esta Política de Privacidad periódicamente para reflejar cambios en nuestra app o en la legislación aplicable. La fecha de la última actualización se indica siempre al inicio del documento. Le recomendamos revisarla periódicamente.
+
+11. Legislación Aplicable
+
+Esta Política de Privacidad se rige por la legislación vigente de la República del Ecuador, incluyendo la Ley Orgánica de Protección de Datos Personales (LOPDP) y sus reglamentos.
+
+12. Contacto
+
+Aplicación: StockFlow
+Desarrollador: Cristhian Loor
 Email: cristhian.loor05@outlook.com
+Respuesta: Máximo 5 días hábiles
 
----
-
-*Esta política de privacidad fue actualizada por última vez en Abril 2026.*
+Este documento fue actualizado por última vez el 1 de Abril de 2026.
 ''',
     );
   }

@@ -10,3 +10,4 @@ export 'resumen_screen.dart';
 export 'tabla_precios_screen.dart';
 export 'terms_acceptance_screen.dart';
 export 'new_terms_screen.dart';
+export 'planes_screen.dart';

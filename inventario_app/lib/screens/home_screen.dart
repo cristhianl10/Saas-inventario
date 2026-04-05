@@ -11,6 +11,7 @@ import 'tabla_precios_screen.dart';
 import 'combos_screen.dart';
 import 'configuracion_screen.dart';
 import 'auth_screen.dart';
+import 'planes_screen.dart';
 import '../main.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -404,6 +405,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   );
                   AppConfig.configNotifier.value++;
+                } else if (value == 'planes') {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PlanesScreen()),
+                  );
                 } else if (value == 'logout') {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -457,6 +463,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
               },
               itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'planes',
+                  child: Row(
+                    children: [
+                      Icon(Icons.workspace_premium, size: 20),
+                      SizedBox(width: 8),
+                      Text('Planes'),
+                    ],
+                  ),
+                ),
                 const PopupMenuItem(
                   value: 'config',
                   child: Row(
