@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>StockFlow - Inventario</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #C1356F;
+            --primary-light: rgba(193, 53, 111, 0.1);
+            --secondary: #597FA9;
+            --accent: #E57836;
+            --bg: #FBF8F1;
+            --card-bg: #FFFFFF;
+            --text: #1A1A1A;
+            --text-secondary: #6B7280;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --border: #E5E7EB;
+            --shadow: 0 2px 8px rgba(0,0,0,0.08);
+            --radius: 16px;
+            --radius-sm: 12px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            max-width: 430px;
+            margin: 0 auto;
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 20px;
+            padding-top: 50px;
+        }
+        
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-weight: 700;
+        }
+        
+        .brand-name {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        
+        .stat-card {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            padding: 16px;
+            border-radius: var(--radius);
+            text-align: center;
+        }
+        
+        .stat-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        
+        /* Main Content */
+        .content {
+            padding: 20px;
+            padding-bottom: 100px;
+        }
+        
+        .section-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            margin-top: 24px;
+        }
+        
+        .section-title h2 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        
+        .section-title a {
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        /* Sale Card */
+        .sale-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: transform 0.2s;
+        }
+        
+        .sale-card:active {
+            transform: scale(0.98);
+        }
+        
+        .sale-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary-light), rgba(89,127,169,0.1));
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .sale-info {
+            flex: 1;
+        }
+        
+        .sale-product {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        
+        .sale-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .sale-meta .material-icons {
+            font-size: 14px;
+        }
+        
+        .sale-price {
+            text-align: right;
+        }
+        
+        .sale-price .amount {
+            font-weight: 700;
+            font-size: 16px;
+            color: var(--success);
+        }
+        
+        .sale-price .time {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+        
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 430px;
+            background: var(--card-bg);
+            border-top: 1px solid var(--border);
+            display: flex;
+            padding: 8px 0;
+            padding-bottom: max(8px, env(safe-area-inset-bottom));
+        }
+        
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        
+        .nav-item.active {
+            color: var(--primary);
+        }
+        
+        .nav-item .material-icons {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+        
+        .nav-item span {
+            font-size: 11px;
+            font-weight: 500;
+        }
+        
+        .nav-indicator {
+            width: 32px;
+            height: 3px;
+            background: var(--primary);
+            border-radius: 2px;
+            margin-top: 4px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .nav-item.active .nav-indicator {
+            opacity: 1;
+        }
+        
+        /* Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        
+        .status-badge.low-stock {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+        }
+        
+        .status-badge.warning {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+        
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        
+        .quick-btn {
+            background: var(--card-bg);
+            border: none;
+            border-radius: var(--radius);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .quick-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .quick-btn .material-icons {
+            font-size: 32px;
+            color: var(--primary);
+        }
+        
+        .quick-btn span {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text);
+        }
+    </style>
+</head>
+<body>
+    <!-- HOME SCREEN -->
+    <header class="header">
+        <div class="header-top">
+            <div class="logo">
+                <div class="logo-icon">S</div>
+                <span class="brand-name">Mi Negocio</span>
+            </div>
+            <span class="material-icons" style="font-size:24px;cursor:pointer;">dark_mode</span>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">inventory_2</div>
+                <div class="stat-value">24</div>
+                <div class="stat-label">Productos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">point_of_sale</div>
+                <div class="stat-value">45</div>
+                <div class="stat-label">Ventas del mes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="color:#F59E0B;">warning</div>
+                <div class="stat-value">3</div>
+                <div class="stat-label">Stock bajo</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">people</div>
+                <div class="stat-value">12</div>
+                <div class="stat-label">Clientes</div>
+            </div>
+        </div>
+    </header>
+    
+    <main class="content">
+        <div class="section-title">
+            <h2>Ventas Recientes</h2>
+            <a href="#">Ver todas</a>
+        </div>
+        
+        <div class="sale-card">
+            <div class="sale-icon">🧴</div>
+            <div class="sale-info">
+                <div class="sale-product">Shampoo Anticaspa</div>
+                <div class="sale-meta">
+                    <span class="material-icons">person</span>
+                    Juan Pérez
+                </div>
+            </div>
+            <div class="sale-price">
+                <div class="amount">$15.00</div>
+                <div class="time">hace 2 horas</div>
+            </div>
+        </div>
+        
+        <div class="sale-card">
+            <div class="sale-icon">🧴</div>
+            <div class="sale-info">
+                <div class="sale-product">Acondicionador Premium</div>
+                <div class="sale-meta">
+                    <span class="material-icons">person</span>
+                    María García
+                </div>
+            </div>
+            <div class="sale-price">
+                <div class="amount">$12.00</div>
+                <div class="time">hace 5 horas</div>
+            </div>
+        </div>
+        
+        <div class="sale-card">
+            <div class="sale-icon">🧴</div>
+            <div class="sale-info">
+                <div class="sale-product">Crema Peinar</div>
+                <div class="sale-meta">
+                    <span class="material-icons">person</span>
+                    Sin cliente
+                </div>
+            </div>
+            <div class="sale-price">
+                <div class="amount">$10.00</div>
+                <div class="time">hace 1 día</div>
+            </div>
+        </div>
+        
+        <div class="section-title" style="margin-top:32px;">
+            <h2>Acciones Rápidas</h2>
+        </div>
+        
+        <div class="quick-actions">
+            <button class="quick-btn">
+                <span class="material-icons">add_circle</span>
+                <span>Nueva Venta</span>
+            </button>
+            <button class="quick-btn">
+                <span class="material-icons">inventory</span>
+                <span>Agregar Producto</span>
+            </button>
+            <button class="quick-btn">
+                <span class="material-icons">people</span>
+                <span>Nuevo Cliente</span>
+            </button>
+            <button class="quick-btn">
+                <span class="material-icons">receipt_long</span>
+                <span>Ver Reportes</span>
+            </button>
+        </div>
+    </main>
+    
+    <nav class="bottom-nav">
+        <a href="#" class="nav-item active">
+            <span class="material-icons">home</span>
+            <span>Inicio</span>
+            <div class="nav-indicator"></div>
+        </a>
+        <a href="#" class="nav-item">
+            <span class="material-icons">inventory_2</span>
+            <span>Inventario</span>
+            <div class="nav-indicator"></div>
+        </a>
+        <a href="#" class="nav-item">
+            <span class="material-icons">point_of_sale</span>
+            <span>Ventas</span>
+            <div class="nav-indicator"></div>
+        </a>
+        <a href="#" class="nav-item">
+            <span class="material-icons">more_horiz</span>
+            <span>Más</span>
+            <div class="nav-indicator"></div>
+        </a>
+    </nav>
+</body>
+</html>

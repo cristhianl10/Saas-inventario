@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockFlow - Nueva Venta</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #C1356F;
+            --primary-light: rgba(193, 53, 111, 0.1);
+            --secondary: #597FA9;
+            --bg: #FBF8F1;
+            --card-bg: #FFFFFF;
+            --text: #1A1A1A;
+            --text-secondary: #6B7280;
+            --success: #10B981;
+            --border: #E5E7EB;
+            --shadow: 0 2px 8px rgba(0,0,0,0.08);
+            --radius: 16px;
+            --radius-sm: 12px;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            max-width: 430px;
+            margin: 0 auto;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 20px;
+            padding-top: 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .close-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .content {
+            padding: 24px 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        
+        .form-select {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 15px;
+            background: var(--card-bg);
+            color: var(--text);
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24' viewBox='0 0 24 24' width='24'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            cursor: pointer;
+        }
+        
+        .product-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-sm);
+            padding: 14px;
+            margin-top: 8px;
+            border: 1px solid var(--border);
+        }
+        
+        .product-card .product-name {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        
+        .product-card .product-info {
+            font-size: 13px;
+            color: var(--text-secondary);
+            display: flex;
+            gap: 12px;
+        }
+        
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            background: var(--card-bg);
+            border-radius: var(--radius-sm);
+            padding: 12px;
+            border: 1px solid var(--border);
+        }
+        
+        .qty-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .qty-btn.minus {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        
+        .qty-btn.plus {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .qty-value {
+            font-size: 24px;
+            font-weight: 700;
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .text-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 15px;
+            background: var(--card-bg);
+            color: var(--text);
+        }
+        
+        .text-input::placeholder {
+            color: var(--text-secondary);
+        }
+        
+        .textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        
+        .create-client-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px;
+            margin-top: 8px;
+            color: var(--primary);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        
+        .total-section {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: var(--radius);
+            padding: 24px;
+            margin: 24px 0;
+            color: white;
+            text-align: center;
+        }
+        
+        .total-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 4px;
+        }
+        
+        .total-value {
+            font-size: 36px;
+            font-weight: 700;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .submit-btn:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>Nueva Venta</h1>
+        <button class="close-btn">
+            <span class="material-icons">close</span>
+        </button>
+    </header>
+    
+    <div class="content">
+        <div class="form-group">
+            <label class="form-label">Producto</label>
+            <select class="form-select">
+                <option>Seleccionar producto</option>
+                <option>Shampoo Anticaspa - $10.00</option>
+                <option>Acondicionador Premium - $15.00</option>
+                <option>Crema Peinar - $12.00</option>
+            </select>
+            
+            <div class="product-card">
+                <div class="product-name">🧴 Shampoo Anticaspa</div>
+                <div class="product-info">
+                    <span>Precio: $10.00</span>
+                    <span>Stock: 45</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Cantidad</label>
+            <div class="quantity-control">
+                <button class="qty-btn minus">−</button>
+                <span class="qty-value">2</span>
+                <button class="qty-btn plus">+</button>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Cliente</label>
+            <select class="form-select">
+                <option>Seleccionar cliente</option>
+                <option>Juan Pérez</option>
+                <option>María García</option>
+                <option>Pedro López</option>
+            </select>
+            <div class="create-client-link">
+                <span class="material-icons">add</span>
+                Crear nuevo cliente
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Observaciones</label>
+            <textarea class="text-input textarea" placeholder="Agregar notas sobre la venta..."></textarea>
+        </div>
+        
+        <div class="total-section">
+            <div class="total-label">Total a Pagar</div>
+            <div class="total-value">$20.00</div>
+        </div>
+        
+        <button class="submit-btn">
+            <span class="material-icons">payments</span>
+            REGISTRAR VENTA
+        </button>
+    </div>
+</body>
+</html>

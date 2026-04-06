@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockFlow - Menú</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #C1356F;
+            --primary-light: rgba(193, 53, 111, 0.1);
+            --secondary: #597FA9;
+            --bg: #FBF8F1;
+            --card-bg: #FFFFFF;
+            --text: #1A1A1A;
+            --text-secondary: #6B7280;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --border: #E5E7EB;
+            --shadow: 0 2px 8px rgba(0,0,0,0.08);
+            --radius: 16px;
+            --radius-sm: 12px;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            max-width: 430px;
+            margin: 0 auto;
+            min-height: 100vh;
+            padding-bottom: 100px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 20px;
+            padding-top: 50px;
+        }
+        
+        .header h1 { font-size: 20px; font-weight: 600; }
+        
+        .content { padding: 20px; }
+        
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        
+        .menu-item {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 20px 12px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .menu-item:active { transform: scale(0.95); }
+        
+        .menu-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-sm);
+            margin: 0 auto 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .menu-icon.prices { background: rgba(16, 185, 129, 0.15); }
+        .menu-icon.combos { background: rgba(139, 92, 246, 0.15); }
+        .menu-icon.reports { background: rgba(245, 158, 11, 0.15); }
+        .menu-icon.suppliers { background: rgba(89, 127, 169, 0.15); }
+        .menu-icon.clients { background: rgba(236, 72, 153, 0.15); }
+        .menu-icon.settings { background: rgba(107, 114, 128, 0.15); }
+        
+        .menu-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text);
+        }
+        
+        .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin: 24px 0 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .plan-card {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: var(--radius);
+            padding: 20px;
+            color: white;
+        }
+        
+        .plan-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.2);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        
+        .plan-name {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+        
+        .plan-features {
+            margin-bottom: 16px;
+        }
+        
+        .plan-feature {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+        
+        .plan-feature .material-icons {
+            font-size: 18px;
+        }
+        
+        .plan-feature.included .material-icons { color: var(--success); }
+        .plan-feature.excluded { opacity: 0.6; }
+        .plan-feature.excluded .material-icons { color: var(--danger); }
+        
+        .upgrade-btn {
+            width: 100%;
+            padding: 14px;
+            background: white;
+            color: var(--primary);
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .bottom-nav {
+            position: fixed;
+            bottom: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 100%; max-width: 430px;
+            background: var(--card-bg);
+            border-top: 1px solid var(--border);
+            display: flex;
+            padding: 8px 0;
+            padding-bottom: max(8px, env(safe-area-inset-bottom));
+        }
+        
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+        
+        .nav-item.active { color: var(--primary); }
+        .nav-item .material-icons { font-size: 24px; margin-bottom: 4px; }
+        .nav-item span { font-size: 11px; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>Más opciones</h1>
+    </header>
+    
+    <div class="content">
+        <div class="menu-grid">
+            <div class="menu-item">
+                <div class="menu-icon prices">💰</div>
+                <div class="menu-label">Precios</div>
+            </div>
+            <div class="menu-item">
+                <div class="menu-icon combos">📦</div>
+                <div class="menu-label">Combos</div>
+            </div>
+            <div class="menu-item">
+                <div class="menu-icon reports">📊</div>
+                <div class="menu-label">Reportes</div>
+            </div>
+            <div class="menu-item">
+                <div class="menu-icon suppliers">🏭</div>
+                <div class="menu-label">Proveedores</div>
+            </div>
+            <div class="menu-item">
+                <div class="menu-icon clients">👥</div>
+                <div class="menu-label">Clientes</div>
+            </div>
+            <div class="menu-item">
+                <div class="menu-icon settings">⚙️</div>
+                <div class="menu-label">Config</div>
+            </div>
+        </div>
+        
+        <div class="section-title">Plan Actual</div>
+        
+        <div class="plan-card">
+            <div class="plan-badge">
+                <span class="material-icons">workspace_premium</span>
+                PLAN BÁSICO
+            </div>
+            
+            <div class="plan-name">Básico</div>
+            
+            <div class="plan-features">
+                <div class="plan-feature included">
+                    <span class="material-icons">check_circle</span>
+                    Inventario ilimitado
+                </div>
+                <div class="plan-feature included">
+                    <span class="material-icons">check_circle</span>
+                    Ventas y clientes
+                </div>
+                <div class="plan-feature included">
+                    <span class="material-icons">check_circle</span>
+                    Hasta 3 usuarios
+                </div>
+                <div class="plan-feature excluded">
+                    <span class="material-icons">cancel</span>
+                    Reportes avanzados
+                </div>
+                <div class="plan-feature excluded">
+                    <span class="material-icons">cancel</span>
+                    Combos y bundles
+                </div>
+                <div class="plan-feature excluded">
+                    <span class="material-icons">cancel</span>
+                    Proveedores
+                </div>
+            </div>
+            
+            <button class="upgrade-btn">
+                <span class="material-icons">upgrade</span>
+                ACTUALIZAR PLAN
+            </button>
+        </div>
+    </div>
+    
+    <nav class="bottom-nav">
+        <a href="#" class="nav-item">
+            <span class="material-icons">home</span>
+            <span>Inicio</span>
+        </a>
+        <a href="#" class="nav-item">
+            <span class="material-icons">inventory_2</span>
+            <span>Inventario</span>
+        </a>
+        <a href="#" class="nav-item">
+            <span class="material-icons">point_of_sale</span>
+            <span>Ventas</span>
+        </a>
+        <a href="#" class="nav-item active">
+            <span class="material-icons">more_horiz</span>
+            <span>Más</span>
+        </a>
+    </nav>
+</body>
+</html>

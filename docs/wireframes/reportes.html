@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockFlow - Reportes</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #C1356F;
+            --primary-light: rgba(193, 53, 111, 0.1);
+            --secondary: #597FA9;
+            --bg: #FBF8F1;
+            --card-bg: #FFFFFF;
+            --text: #1A1A1A;
+            --text-secondary: #6B7280;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --gold: #FFB800;
+            --silver: #C0C0C0;
+            --bronze: #CD7F32;
+            --border: #E5E7EB;
+            --shadow: 0 2px 8px rgba(0,0,0,0.08);
+            --radius: 16px;
+            --radius-sm: 12px;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            max-width: 430px;
+            margin: 0 auto;
+            min-height: 100vh;
+            padding-bottom: 100px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 20px;
+            padding-top: 50px;
+        }
+        
+        .header h1 { font-size: 20px; font-weight: 600; }
+        
+        .content { padding: 20px; }
+        
+        .form-group { margin-bottom: 16px; }
+        
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        
+        .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            background: var(--card-bg);
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24' viewBox='0 0 24 24' width='24'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+        }
+        
+        .date-range {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .date-input {
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            background: var(--card-bg);
+        }
+        
+        .generate-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: var(--radius);
+            padding: 24px;
+            color: white;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .stats-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .stats-value {
+            font-size: 36px;
+            font-weight: 700;
+            margin: 8px 0;
+        }
+        
+        .stats-sub {
+            font-size: 13px;
+            opacity: 0.8;
+        }
+        
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin: 24px 0 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .ranking-list {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        
+        .ranking-item {
+            display: flex;
+            align-items: center;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .ranking-item:last-child { border-bottom: none; }
+        
+        .rank-badge {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            margin-right: 12px;
+        }
+        
+        .rank-badge.gold { background: rgba(255, 184, 0, 0.2); color: var(--gold); }
+        .rank-badge.silver { background: rgba(192, 192, 192, 0.2); color: var(--silver); }
+        .rank-badge.bronze { background: rgba(205, 127, 50, 0.2); color: var(--bronze); }
+        .rank-badge.normal { background: var(--primary-light); color: var(--primary); }
+        
+        .ranking-info { flex: 1; }
+        
+        .ranking-name {
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .ranking-qty {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .ranking-amount {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--success);
+        }
+        
+        .export-btns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        .export-btn {
+            padding: 14px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--card-bg);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .bottom-nav {
+            position: fixed;
+            bottom: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 100%; max-width: 430px;
+            background: var(--card-bg);
+            border-top: 1px solid var(--border);
+            display: flex;
+            padding: 8px 0;
+            padding-bottom: max(8px, env(safe-area-inset-bottom));
+        }
+        
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+        
+        .nav-item.active { color: var(--primary); }
+        .nav-item .material-icons { font-size: 24px; margin-bottom: 4px; }
+        .nav-item span { font-size: 11px; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>Reportes</h1>
+    </header>
+    
+    <div class="content">
+        <div class="form-group">
+            <label class="form-label">Tipo de Reporte</label>
+            <select class="form-select">
+                <option>Ventas por período</option>
+                <option>Productos más vendidos</option>
+                <option>Utilidad por producto</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Rango de Fechas</label>
+            <div class="date-range">
+                <input type="date" class="date-input" value="2024-03-01">
+                <input type="date" class="date-input" value="2024-03-31">
+            </div>
+        </div>
+        
+        <button class="generate-btn">
+            <span class="material-icons">analytics</span>
+            GENERAR REPORTE
+        </button>
+        
+        <div class="stats-card">
+            <div class="stats-label">TOTAL EN VENTAS</div>
+            <div class="stats-value">$1,245.00</div>
+            <div class="stats-sub">85 transacciones</div>
+        </div>
+        
+        <div class="section-title">🏆 Top Productos Vendidos</div>
+        
+        <div class="ranking-list">
+            <div class="ranking-item">
+                <div class="rank-badge gold">🥇</div>
+                <div class="ranking-info">
+                    <div class="ranking-name">Shampoo Anticaspa</div>
+                    <div class="ranking-qty">25 unidades</div>
+                </div>
+                <div class="ranking-amount">$250.00</div>
+            </div>
+            
+            <div class="ranking-item">
+                <div class="rank-badge silver">🥈</div>
+                <div class="ranking-info">
+                    <div class="ranking-name">Acondicionador Premium</div>
+                    <div class="ranking-qty">18 unidades</div>
+                </div>
+                <div class="ranking-amount">$270.00</div>
+            </div>
+            
+            <div class="ranking-item">
+                <div class="rank-badge bronze">🥉</div>
+                <div class="ranking-info">
+                    <div class="ranking-name">Crema Peinar</div>
+                    <div class="ranking-qty">12 unidades</div>
+                </div>
+                <div class="ranking-amount">$144.00</div>
+            </div>
+            
+            <div class="ranking-item">
+                <div class="rank-badge normal">4</div>
+                <div class="ranking-info">
+                    <div class="ranking-name">Mascarilla Hidratante</div>
+                    <div class="ranking-qty">8 unidades</div>
+                </div>
+                <div class="ranking-amount">$120.00</div>
+            </div>
+        </div>
+        
+        <div class="export-btns">
+            <button class="export-btn">
+                <span class="material-icons">table_chart</span>
+                Exportar Excel
+            </button>
+            <button class="export-btn">
+                <span class="material-icons">picture_as_pdf</span>
+                Exportar PDF
+            </button>
+        </div>
+    </div>
+    
+    <nav class="bottom-nav">
+        <a href="#" class="nav-item">
+            <span class="material-icons">home</span>
+            <span>Inicio</span>
+        </a>
+        <a href="#" class="nav-item">
+            <span class="material-icons">inventory_2</span>
+            <span>Inventario</span>
+        </a>
+        <a href="#" class="nav-item">
+            <span class="material-icons">point_of_sale</span>
+            <span>Ventas</span>
+        </a>
+        <a href="#" class="nav-item active">
+            <span class="material-icons">more_horiz</span>
+            <span>Más</span>
+        </a>
+    </nav>
+</body>
+</html>

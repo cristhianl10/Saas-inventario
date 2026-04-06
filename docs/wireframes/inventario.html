@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockFlow - Inventario</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #C1356F;
+            --primary-light: rgba(193, 53, 111, 0.1);
+            --secondary: #597FA9;
+            --bg: #FBF8F1;
+            --card-bg: #FFFFFF;
+            --text: #1A1A1A;
+            --text-secondary: #6B7280;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --border: #E5E7EB;
+            --shadow: 0 2px 8px rgba(0,0,0,0.08);
+            --radius: 16px;
+            --radius-sm: 12px;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            max-width: 430px;
+            margin: 0 auto;
+            min-height: 100vh;
+            padding-bottom: 100px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 20px;
+            padding-top: 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .header-actions .material-icons {
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .search-bar {
+            padding: 16px 20px;
+            background: var(--card-bg);
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 12px 16px;
+            padding-left: 44px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            background: var(--bg);
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24' viewBox='0 0 24 24' width='24'%3E%3Cpath d='M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: 12px center;
+        }
+        
+        .filters {
+            padding: 12px 20px;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .filter-chip {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text);
+        }
+        
+        .filter-chip.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .filter-dropdown {
+            padding: 0 20px 12px;
+        }
+        
+        .filter-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            background: var(--card-bg);
+            color: var(--text);
+        }
+        
+        .product-list {
+            padding: 0 20px;
+        }
+        
+        .product-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow);
+        }
+        
+        .product-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+        
+        .product-name {
+            font-weight: 600;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .product-category {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        
+        .product-stock {
+            text-align: right;
+        }
+        
+        .stock-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .stock-badge.ok {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+        
+        .stock-badge.low {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+        }
+        
+        .stock-badge.empty {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+        
+        .product-details {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+        
+        .detail-item {
+            text-align: center;
+        }
+        
+        .detail-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 2px;
+        }
+        
+        .detail-value {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .detail-value.price {
+            color: var(--success);
+        }
+        
+        .detail-value.cost {
+            color: var(--text-secondary);
+        }
+        
+        .product-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+        
+        .action-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        
+        .action-btn.edit {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        
+        .action-btn.delete {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+        
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 430px;
+            background: var(--card-bg);
+            border-top: 1px solid var(--border);
+            display: flex;
+            padding: 8px 0;
+            padding-bottom: max(8px, env(safe-area-inset-bottom));
+        }
+        
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+        
+        .nav-item.active {
+            color: var(--primary);
+        }
+        
+        .nav-item .material-icons {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+        
+        .nav-item span {
+            font-size: 11px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>Inventario</h1>
+        <div class="header-actions">
+            <span class="material-icons">search</span>
+            <span class="material-icons">add</span>
+        </div>
+    </header>
+    
+    <div class="search-bar">
+        <input type="text" class="search-input" placeholder="Buscar producto...">
+    </div>
+    
+    <div class="filters">
+        <div class="filter-chip active">Todos</div>
+        <div class="filter-chip">En stock</div>
+        <div class="filter-chip">Sin stock</div>
+        <div class="filter-chip">Stock bajo</div>
+    </div>
+    
+    <div class="filter-dropdown">
+        <select class="filter-select">
+            <option>Todos los proveedores</option>
+            <option>Distribuidora XYZ</option>
+            <option>Proveedor ABC</option>
+        </select>
+    </div>
+    
+    <div class="product-list">
+        <div class="product-card">
+            <div class="product-header">
+                <div>
+                    <div class="product-name">🧴 Shampoo Anticaspa</div>
+                    <div class="product-category">Cuidado Capilar</div>
+                </div>
+                <div class="product-stock">
+                    <span class="stock-badge ok">
+                        <span class="material-icons" style="font-size:12px">inventory_2</span>
+                        45 uds
+                    </span>
+                </div>
+            </div>
+            <div class="product-details">
+                <div class="detail-item">
+                    <div class="detail-label">Stock</div>
+                    <div class="detail-value">45</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Precio</div>
+                    <div class="detail-value price">$10.00</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Ganancia</div>
+                    <div class="detail-value">$5.00</div>
+                </div>
+            </div>
+            <div class="product-actions">
+                <button class="action-btn edit">
+                    <span class="material-icons" style="font-size:16px">edit</span>
+                    Editar
+                </button>
+                <button class="action-btn delete">
+                    <span class="material-icons" style="font-size:16px">delete</span>
+                    Eliminar
+                </button>
+            </div>
+        </div>
+        
+        <div class="product-card">
+            <div class="product-header">
+                <div>
+                    <div class="product-name">🧴 Acondicionador Premium</div>
+                    <div class="product-category">Cuidado Capilar</div>
+                </div>
+                <div class="product-stock">
+                    <span class="stock-badge low">
+                        <span class="material-icons" style="font-size:12px">warning</span>
+                        3 uds
+                    </span>
+                </div>
+            </div>
+            <div class="product-details">
+                <div class="detail-item">
+                    <div class="detail-label">Stock</div>
+                    <div class="detail-value">3</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Precio</div>
+                    <div class="detail-value price">$15.00</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Ganancia</div>
+                    <div class="detail-value">$8.00</div>
+                </div>
+            </div>
+            <div class="product-actions">
+                <button class="action-btn edit">
+                    <span class="material-icons" style="font-size:16px">edit</span>
+                    Editar
+                </button>
+                <button class="action-btn delete">
+                    <span class="material-icons" style="font-size:16px">delete</span>
+                    Eliminar
+                </button>
+            </div>
+        </div>
+        
+        <div class="product-card">
+            <div class="product-header">
+                <div>
+                    <div class="product-name">🧴 Crema Peinar Suave</div>
+                    <div class="product-category">Cuidado Capilar</div>
+                </div>
+                <div class="product-stock">
+                    <span class="stock-badge empty">
+                        <span class="material-icons" style="font-size:12px">error</span>
+                        0 uds
+                    </span>
+                </div>
+            </div>
+            <div class="product-details">
+                <div class="detail-item">
+                    <div class="detail-label">Stock</div>
+                    <div class="detail-value">0</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Precio</div>
+                    <div class="detail-value price">$12.00</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Ganancia</div>
+                    <div class="detail-value">$6.00</div>
+                </div>
+            </div>
+            <div class="product-actions">
+                <button class="action-btn edit">
+                    <span class="material-icons" style="font-size:16px">edit</span>
+                    Editar
+                </button>
+                <button class="action-btn delete">
+                    <span class="material-icons" style="font-size:16px">delete</span>
+                    Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <nav class="bottom-nav">
+        <a href="#" class="nav-item">
+            <span class="material-icons">home</span>
+            <span>Inicio</span>
+        </a>
+        <a href="#" class="nav-item active">
+            <span class="material-icons">inventory_2</span>
+            <span>Inventario</span>
+        </a>
+        <a href="#" class="nav-item">
+            <span class="material-icons">point_of_sale</span>
+            <span>Ventas</span>
+        </a>
+        <a href="#" class="nav-item">
+            <span class="material-icons">more_horiz</span>
+            <span>Más</span>
+        </a>
+    </nav>
+</body>
+</html>

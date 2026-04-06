@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockFlow - Clientes</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #C1356F;
+            --primary-light: rgba(193, 53, 111, 0.1);
+            --secondary: #597FA9;
+            --bg: #FBF8F1;
+            --card-bg: #FFFFFF;
+            --text: #1A1A1A;
+            --text-secondary: #6B7280;
+            --success: #10B981;
+            --border: #E5E7EB;
+            --shadow: 0 2px 8px rgba(0,0,0,0.08);
+            --radius: 16px;
+            --radius-sm: 12px;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            max-width: 430px;
+            margin: 0 auto;
+            min-height: 100vh;
+            padding-bottom: 100px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 20px;
+            padding-top: 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .add-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .search-bar {
+            padding: 16px 20px;
+            background: var(--card-bg);
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 12px 16px;
+            padding-left: 44px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            background: var(--bg);
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24' viewBox='0 0 24 24' width='24'%3E%3Cpath d='M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: 12px center;
+        }
+        
+        .client-list {
+            padding: 16px 20px;
+        }
+        
+        .client-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow);
+        }
+        
+        .client-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .client-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-light), rgba(89,127,169,0.2));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        
+        .client-info {
+            flex: 1;
+        }
+        
+        .client-name {
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 2px;
+        }
+        
+        .client-contact {
+            font-size: 13px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .client-contact .material-icons {
+            font-size: 14px;
+        }
+        
+        .client-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-weight: 700;
+            font-size: 16px;
+            color: var(--primary);
+        }
+        
+        .stat-value.gastado {
+            color: var(--success);
+        }
+        
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+        
+        .client-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+        
+        .action-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        
+        .action-btn.primary {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .action-btn.secondary {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 430px;
+            background: var(--card-bg);
+            border-top: 1px solid var(--border);
+            display: flex;
+            padding: 8px 0;
+            padding-bottom: max(8px, env(safe-area-inset-bottom));
+        }
+        
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+        
+        .nav-item.active { color: var(--primary); }
+        
+        .nav-item .material-icons { font-size: 24px; margin-bottom: 4px; }
+        .nav-item span { font-size: 11px; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>Clientes</h1>
+        <button class="add-btn">
+            <span class="material-icons">add</span>
+        </button>
+    </header>
+    
+    <div class="search-bar">
+        <input type="text" class="search-input" placeholder="Buscar cliente...">
+    </div>
+    
+    <div class="client-list">
+        <div class="client-card">
+            <div class="client-header">
+                <div class="client-avatar">👤</div>
+                <div class="client-info">
+                    <div class="client-name">Juan Pérez</div>
+                    <div class="client-contact">
+                        <span class="material-icons">phone</span>
+                        099-123-4567
+                    </div>
+                </div>
+            </div>
+            <div class="client-stats">
+                <div class="stat-item">
+                    <div class="stat-value">15</div>
+                    <div class="stat-label">Compras</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value gastado">$245.50</div>
+                    <div class="stat-label">Gastado</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">8</div>
+                    <div class="stat-label">Productos</div>
+                </div>
+            </div>
+            <div class="client-actions">
+                <button class="action-btn primary">
+                    <span class="material-icons" style="font-size:16px">history</span>
+                    Ver historial
+                </button>
+                <button class="action-btn secondary">
+                    <span class="material-icons" style="font-size:16px">edit</span>
+                </button>
+            </div>
+        </div>
+        
+        <div class="client-card">
+            <div class="client-header">
+                <div class="client-avatar">👩</div>
+                <div class="client-info">
+                    <div class="client-name">María García</div>
+                    <div class="client-contact">
+                        <span class="material-icons">email</span>
+                        maria@email.com
+                    </div>
+                </div>
+            </div>
+            <div class="client-stats">
+                <div class="stat-item">
+                    <div class="stat-value">8</div>
+                    <div class="stat-label">Compras</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value gastado">$120.00</div>
+                    <div class="stat-label">Gastado</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">5</div>
+                    <div class="stat-label">Productos</div>
+                </div>
+            </div>
+            <div class="client-actions">
+                <button class="action-btn primary">
+                    <span class="material-icons" style="font-size:16px">history</span>
+                    Ver historial
+                </button>
+                <button class="action-btn secondary">
+                    <span class="material-icons" style="font-size:16px">edit</span>
+                </button>
+            </div>
+        </div>
+        
+        <div class="client-card">
+            <div class="client-header">
+                <div class="client-avatar">👨</div>
+                <div class="client-info">
+                    <div class="client-name">Pedro López</div>
+                    <div class="client-contact">
+                        <span class="material-icons">phone</span>
+                        097-111-2222
+                    </div>
+                </div>
+            </div>
+            <div class="client-stats">
+                <div class="stat-item">
+                    <div class="stat-value">3</div>
+                    <div class="stat-label">Compras</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value gastado">$45.00</div>
+                    <div class="stat-label">Gastado</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">2</div>
+                    <div class="stat-label">Productos</div>
+                </div>
+            </div>
+            <div class="client-actions">
+                <button class="action-btn primary">
+                    <span class="material-icons" style="font-size:16px">history</span>
+                    Ver historial
+                </button>
+                <button class="action-btn secondary">
+                    <span class="material-icons" style="font-size:16px">edit</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <nav class="bottom-nav">
+        <a href="#" class="nav-item">
+            <span class="material-icons">home</span>
+            <span>Inicio</span>
+        </a>
+        <a href="#" class="nav-item">
+            <span class="material-icons">inventory_2</span>
+            <span>Inventario</span>
+        </a>
+        <a href="#" class="nav-item">
+            <span class="material-icons">point_of_sale</span>
+            <span>Ventas</span>
+        </a>
+        <a href="#" class="nav-item active">
+            <span class="material-icons">more_horiz</span>
+            <span>Más</span>
+        </a>
+    </nav>
+</body>
+</html>

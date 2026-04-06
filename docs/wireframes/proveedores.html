@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockFlow - Proveedores</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #C1356F;
+            --primary-light: rgba(193, 53, 111, 0.1);
+            --secondary: #597FA9;
+            --bg: #FBF8F1;
+            --card-bg: #FFFFFF;
+            --text: #1A1A1A;
+            --text-secondary: #6B7280;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --border: #E5E7EB;
+            --shadow: 0 2px 8px rgba(0,0,0,0.08);
+            --radius: 16px;
+            --radius-sm: 12px;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            max-width: 430px;
+            margin: 0 auto;
+            min-height: 100vh;
+            padding-bottom: 100px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 20px;
+            padding-top: 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 { font-size: 20px; font-weight: 600; }
+        
+        .add-btn {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            border: none; color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .provider-list { padding: 16px 20px; }
+        
+        .provider-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow);
+        }
+        
+        .provider-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .provider-icon {
+            width: 48px; height: 48px;
+            border-radius: var(--radius-sm);
+            background: linear-gradient(135deg, rgba(89,127,169,0.2), rgba(193,53,111,0.1));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .provider-info { flex: 1; }
+        
+        .provider-name {
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 4px;
+        }
+        
+        .provider-contact {
+            font-size: 13px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .provider-contact .material-icons { font-size: 14px; }
+        
+        .provider-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+        
+        .action-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        
+        .action-btn.primary {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .action-btn.secondary {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        
+        .action-btn.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+        
+        .bottom-nav {
+            position: fixed;
+            bottom: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 100%; max-width: 430px;
+            background: var(--card-bg);
+            border-top: 1px solid var(--border);
+            display: flex;
+            padding: 8px 0;
+            padding-bottom: max(8px, env(safe-area-inset-bottom));
+        }
+        
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+        
+        .nav-item.active { color: var(--primary); }
+        .nav-item .material-icons { font-size: 24px; margin-bottom: 4px; }
+        .nav-item span { font-size: 11px; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>Proveedores</h1>
+        <button class="add-btn">
+            <span class="material-icons">add</span>
+        </button>
+    </header>
+    
+    <div class="provider-list">
+        <div class="provider-card">
+            <div class="provider-header">
+                <div class="provider-icon">🏢</div>
+                <div class="provider-info">
+                    <div class="provider-name">Distribuidora XYZ</div>
+                    <div class="provider-contact">
+                        <span class="material-icons">phone</span>
+                        099-888-7777
+                    </div>
+                    <div class="provider-contact">
+                        <span class="material-icons">location_on</span>
+                        Guayaquil, Ecuador
+                    </div>
+                </div>
+            </div>
+            <div class="provider-actions">
+                <button class="action-btn secondary">
+                    <span class="material-icons" style="font-size:16px">history</span>
+                    Historial
+                </button>
+                <button class="action-btn success">
+                    <span class="material-icons" style="font-size:16px">local_shipping</span>
+                    Nuevo Pedido
+                </button>
+            </div>
+        </div>
+        
+        <div class="provider-card">
+            <div class="provider-header">
+                <div class="provider-icon">🏭</div>
+                <div class="provider-info">
+                    <div class="provider-name">Proveedor ABC</div>
+                    <div class="provider-contact">
+                        <span class="material-icons">email</span>
+                        proveedor@email.com
+                    </div>
+                    <div class="provider-contact">
+                        <span class="material-icons">phone</span>
+                        098-777-6666
+                    </div>
+                </div>
+            </div>
+            <div class="provider-actions">
+                <button class="action-btn secondary">
+                    <span class="material-icons" style="font-size:16px">history</span>
+                    Historial
+                </button>
+                <button class="action-btn success">
+                    <span class="material-icons" style="font-size:16px">local_shipping</span>
+                    Nuevo Pedido
+                </button>
+            </div>
+        </div>
+        
+        <div class="provider-card">
+            <div class="provider-header">
+                <div class="provider-icon">📦</div>
+                <div class="provider-info">
+                    <div class="provider-name">Insumos Médicos S.A.</div>
+                    <div class="provider-contact">
+                        <span class="material-icons">phone</span>
+                        097-666-5555
+                    </div>
+                    <div class="provider-contact">
+                        <span class="material-icons">location_on</span>
+                        Quito, Ecuador
+                    </div>
+                </div>
+            </div>
+            <div class="provider-actions">
+                <button class="action-btn secondary">
+                    <span class="material-icons" style="font-size:16px">history</span>
+                    Historial
+                </button>
+                <button class="action-btn success">
+                    <span class="material-icons" style="font-size:16px">local_shipping</span>
+                    Nuevo Pedido
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <nav class="bottom-nav">
+        <a href="#" class="nav-item">
+            <span class="material-icons">home</span>
+            <span>Inicio</span>
+        </a>
+        <a href="#" class="nav-item">
+            <span class="material-icons">inventory_2</span>
+            <span>Inventario</span>
+        </a>
+        <a href="#" class="nav-item">
+            <span class="material-icons">point_of_sale</span>
+            <span>Ventas</span>
+        </a>
+        <a href="#" class="nav-item active">
+            <span class="material-icons">more_horiz</span>
+            <span>Más</span>
+        </a>
+    </nav>
+</body>
+</html>
