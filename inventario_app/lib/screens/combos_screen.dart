@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
+import '../services/subscription_service.dart';
 import '../config/app_config.dart';
 import '../config/app_theme.dart';
+import '../utils/plan_upgrade_helper.dart';
 
 class CombosScreen extends StatefulWidget {
   const CombosScreen({super.key});
@@ -141,7 +143,17 @@ class _CombosScreenState extends State<CombosScreen> {
     }).toList();
   }
 
-  void _showComboDialog([Producto? combo]) {
+  Future<void> _showComboDialog([Producto? combo]) async {
+    final hasAccess = await SubscriptionService.hasFeature('combos');
+    if (!hasAccess) {
+      PlanUpgradeHelper.showUpgradeDialog(
+        context,
+        'crear y editar Combos',
+        planRequired: 'Básico',
+      );
+      return;
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -292,7 +304,8 @@ class _CombosScreenState extends State<CombosScreen> {
                             fontSize: 16,
                           ),
                         ),
-                        if (combo.descripcion != null && combo.descripcion!.isNotEmpty) ...[
+                        if (combo.descripcion != null &&
+                            combo.descripcion!.isNotEmpty) ...[
                           const SizedBox(height: 2),
                           Text(
                             combo.descripcion!,
@@ -339,7 +352,9 @@ class _CombosScreenState extends State<CombosScreen> {
                               width: 28,
                               height: 28,
                               decoration: BoxDecoration(
-                                color: SubliriumColors.cyan.withValues(alpha: 0.1),
+                                color: SubliriumColors.cyan.withValues(
+                                  alpha: 0.1,
+                                ),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Icon(
@@ -377,7 +392,10 @@ class _CombosScreenState extends State<CombosScreen> {
               // Warning de productos sin stock (compacto)
               if (tieneProductosSinStock) ...[
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.orange[50],
                     borderRadius: BorderRadius.circular(6),
@@ -471,7 +489,9 @@ class _CombosScreenState extends State<CombosScreen> {
                                 style: TextStyle(
                                   fontSize: 10,
                                   color: entry.value
-                                      ? (isDark ? Colors.white70 : Colors.black87)
+                                      ? (isDark
+                                            ? Colors.white70
+                                            : Colors.black87)
                                       : Colors.red,
                                 ),
                               ),

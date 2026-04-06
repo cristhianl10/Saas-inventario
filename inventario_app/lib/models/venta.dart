@@ -5,6 +5,7 @@ class Venta {
   final double precioUnitario;
   final double total;
   final DateTime fechaVenta;
+  final int? clienteId;
   final String? vendidoA;
   final String? observaciones;
 
@@ -15,6 +16,7 @@ class Venta {
     required this.precioUnitario,
     required this.total,
     required this.fechaVenta,
+    this.clienteId,
     this.vendidoA,
     this.observaciones,
   });
@@ -29,6 +31,7 @@ class Venta {
       fechaVenta: json['fecha_venta'] != null
           ? DateTime.parse(json['fecha_venta'] as String)
           : DateTime.now(),
+      clienteId: (json['cliente_id'] as num?)?.toInt(),
       vendidoA: json['vendido_a'] as String?,
       observaciones: json['observaciones'] as String?,
     );
@@ -42,6 +45,7 @@ class Venta {
       'precio_unitario': precioUnitario,
       'total': total,
       'fecha_venta': fechaVenta.toIso8601String(),
+      if (clienteId != null) 'cliente_id': clienteId,
       'vendido_a': vendidoA,
       'observaciones': observaciones,
     };
@@ -54,6 +58,7 @@ class Venta {
     double? precioUnitario,
     double? total,
     DateTime? fechaVenta,
+    int? clienteId,
     String? vendidoA,
     String? observaciones,
   }) {
@@ -64,6 +69,7 @@ class Venta {
       precioUnitario: precioUnitario ?? this.precioUnitario,
       total: total ?? this.total,
       fechaVenta: fechaVenta ?? this.fechaVenta,
+      clienteId: clienteId ?? this.clienteId,
       vendidoA: vendidoA ?? this.vendidoA,
       observaciones: observaciones ?? this.observaciones,
     );

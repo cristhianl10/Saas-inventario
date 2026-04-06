@@ -506,4 +506,236 @@ class ApiService {
       }
     }
   }
+
+  // ==================== PURCHASE ORDERS ====================
+
+  Future<List<Map<String, dynamic>>> getPurchaseOrders({
+    int? providerId,
+  }) async {
+    _checkAuth();
+    var query = _client
+        .from('purchase_orders')
+        .select()
+        .eq('user_id', _userId!);
+    if (providerId != null) {
+      query = query.eq('provider_id', providerId);
+    }
+    final response = await query.order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  Future<Map<String, dynamic>> createPurchaseOrder(
+    Map<String, dynamic> order,
+  ) async {
+    _checkAuth();
+    final response = await _client
+        .from('purchase_orders')
+        .insert({...order, 'user_id': _userId})
+        .select()
+        .single();
+    return Map<String, dynamic>.from(response);
+  }
+
+  Future<Map<String, dynamic>> updatePurchaseOrder(
+    String id,
+    Map<String, dynamic> data,
+  ) async {
+    _checkAuth();
+    final response = await _client
+        .from('purchase_orders')
+        .update({...data, 'updated_at': DateTime.now().toIso8601String()})
+        .eq('id', id)
+        .eq('user_id', _userId!)
+        .select()
+        .single();
+    return Map<String, dynamic>.from(response);
+  }
+
+  Future<void> deletePurchaseOrder(String id) async {
+    _checkAuth();
+    await _client
+        .from('purchase_orders')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', _userId!);
+  }
+
+  // ==================== PURCHASE HISTORY ====================
+
+  Future<List<Map<String, dynamic>>> getPurchaseHistory({
+    int? providerId,
+  }) async {
+    _checkAuth();
+    var query = _client
+        .from('purchase_history')
+        .select()
+        .eq('user_id', _userId!);
+    if (providerId != null) {
+      query = query.eq('provider_id', providerId);
+    }
+    final response = await query.order('received_at', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  Future<Map<String, dynamic>> receivePurchaseOrder(
+    String orderId,
+    List<Map<String, dynamic>> items,
+  ) async {
+    _checkAuth();
+
+    // Update order status
+    await _client
+        .from('purchase_orders')
+        .update({
+          'status': 'received',
+          'received_at': DateTime.now().toIso8601String(),
+        })
+        .eq('id', orderId)
+        .eq('user_id', _userId!);
+
+    // Add items to history and update stock
+    for (final item in items) {
+      await _client.from('purchase_history').insert({
+        'purchase_order_id': orderId,
+        'user_id': _userId,
+        'product_id': item['product_id'],
+        'product_name': item['product_name'],
+        'quantity': item['quantity'],
+        'unit_cost': item['unit_cost'],
+        'total_cost': item['quantity'] * item['unit_cost'],
+      });
+
+      // Update product stock
+      if (item['product_id'] != null) {
+        final productos = await getProductos();
+        final producto = productos
+            .where((p) => p.id == item['product_id'])
+            .firstOrNull;
+        if (producto != null) {
+          final nuevaCantidad =
+              producto.cantidad + ((item['quantity'] as num?)?.toInt() ?? 0);
+          await updateProducto(producto.copyWith(cantidad: nuevaCantidad));
+        }
+      }
+    }
+
+    final response = await _client
+        .from('purchase_orders')
+        .select()
+        .eq('id', orderId)
+        .single();
+    return Map<String, dynamic>.from(response);
+  }
+
+  Future<Map<String, dynamic>> getProviderStats(int providerId) async {
+    _checkAuth();
+
+    final history = await getPurchaseHistory(providerId: providerId);
+    final orders = await getPurchaseOrders(providerId: providerId);
+
+    double totalComprado = 0;
+    int totalUnidades = 0;
+    int ordenesCompletadas = 0;
+
+    for (final h in history) {
+      totalComprado += (h['total_cost'] as num?)?.toDouble() ?? 0;
+      totalUnidades += (h['quantity'] as num?)?.toInt() ?? 0;
+    }
+
+    for (final o in orders) {
+      if (o['status'] == 'received') ordenesCompletadas++;
+    }
+
+    return {
+      'total_comprado': totalComprado,
+      'total_unidades': totalUnidades,
+      'ordenes_completadas': ordenesCompletadas,
+      'ultima_compra': history.isNotEmpty ? history.first['received_at'] : null,
+    };
+  }
+
+  // ==================== CLIENTES ====================
+
+  Future<List<Cliente>> getClientes() async {
+    _checkAuth();
+    final response = await _client
+        .from('clientes')
+        .select()
+        .eq('user_id', _userId!)
+        .order('nombre');
+    return response.map((json) => Cliente.fromJson(json)).toList();
+  }
+
+  Future<Cliente> createCliente(Cliente cliente) async {
+    _checkAuth();
+    final response = await _client
+        .from('clientes')
+        .insert({...cliente.toJson(), 'user_id': _userId})
+        .select()
+        .single();
+    return Cliente.fromJson(response);
+  }
+
+  Future<Cliente> updateCliente(Cliente cliente) async {
+    _checkAuth();
+    final response = await _client
+        .from('clientes')
+        .update({
+          'nombre': cliente.nombre,
+          'telefono': cliente.telefono,
+          'email': cliente.email,
+          'direccion': cliente.direccion,
+          'notas': cliente.notas,
+          'updated_at': DateTime.now().toIso8601String(),
+        })
+        .eq('id', cliente.id!)
+        .eq('user_id', _userId!)
+        .select()
+        .single();
+    return Cliente.fromJson(response);
+  }
+
+  Future<void> deleteCliente(int id) async {
+    _checkAuth();
+    await _client
+        .from('clientes')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', _userId!);
+  }
+
+  Future<List<Venta>> getVentasPorCliente(int clienteId) async {
+    _checkAuth();
+    final response = await _client
+        .from('ventas')
+        .select()
+        .eq('cliente_id', clienteId)
+        .eq('user_id', _userId!)
+        .order('fecha_venta', ascending: false);
+    return response.map((json) => Venta.fromJson(json)).toList();
+  }
+
+  Future<Map<String, dynamic>> getClienteStats(int clienteId) async {
+    _checkAuth();
+    final ventas = await getVentasPorCliente(clienteId);
+
+    double totalGastado = 0;
+    int totalProductos = 0;
+    DateTime? ultimaCompra;
+
+    for (final venta in ventas) {
+      totalGastado += venta.total;
+      totalProductos += venta.cantidad;
+      if (ultimaCompra == null || venta.fechaVenta.isAfter(ultimaCompra)) {
+        ultimaCompra = venta.fechaVenta;
+      }
+    }
+
+    return {
+      'total_compras': ventas.length,
+      'total_gastado': totalGastado,
+      'total_productos': totalProductos,
+      'ultima_compra': ultimaCompra?.toIso8601String(),
+    };
+  }
 }

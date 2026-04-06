@@ -6,6 +6,7 @@ import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
+import '../services/stock_alert_service.dart';
 import '../config/app_theme.dart';
 import '../config/app_config.dart';
 import '../utils/pdf_helper.dart';
@@ -75,6 +76,8 @@ class _ResumenScreenState extends State<ResumenScreen> {
       _productos.where((p) => p.cantidad > 0).toList();
   List<Producto> get _productosSinStock =>
       _productos.where((p) => p.cantidad == 0).toList();
+  List<Producto> get _productosConStockBajo =>
+      StockAlertService.getProductosConStockBajo(_productos);
   int get _totalUnidadesStock =>
       _productosEnStock.fold(0, (sum, p) => sum + p.cantidad);
   double get _totalAssetsValue => _productosEnStock.fold(
@@ -106,6 +109,125 @@ class _ResumenScreenState extends State<ResumenScreen> {
     return prod?.descripcion;
   }
 
+  void _showAlertasDialog(BuildContext context) {
+    final alertas = _productosConStockBajo;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.5,
+        minChildSize: 0.3,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (context, scrollController) => Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(20),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.warning_amber, color: Colors.orange),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Alertas de Stock',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '${alertas.length} producto(s) con stock bajo',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: alertas.isEmpty
+                  ? const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.check_circle,
+                            color: Colors.green,
+                            size: 48,
+                          ),
+                          SizedBox(height: 8),
+                          Text('¡Todo bien! No hay alertas.'),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: scrollController,
+                      itemCount: alertas.length,
+                      itemBuilder: (context, index) {
+                        final producto = alertas[index];
+                        final umbral = producto.umbralAlerta ?? 5;
+                        final esAgotado = producto.cantidad == 0;
+
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: esAgotado
+                                ? Colors.red.withValues(alpha: 0.1)
+                                : Colors.orange.withValues(alpha: 0.1),
+                            child: Icon(
+                              esAgotado ? Icons.error : Icons.warning_amber,
+                              color: esAgotado ? Colors.red : Colors.orange,
+                            ),
+                          ),
+                          title: Text(producto.nombre),
+                          subtitle: Text(
+                            esAgotado
+                                ? 'AGOTADO (Umbral: $umbral)'
+                                : '${producto.cantidad} unidades (Umbral: $umbral)',
+                            style: TextStyle(
+                              color: esAgotado
+                                  ? Colors.red
+                                  : Colors.orange[700],
+                            ),
+                          ),
+                          trailing: producto.precio != null
+                              ? Text(
+                                  '\$${producto.precio!.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                )
+                              : null,
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _deleteVenta(Venta venta) async {
     if (venta.id == null) return;
 
@@ -132,7 +254,8 @@ class _ResumenScreenState extends State<ResumenScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
           final isDark = Theme.of(context).brightness == Brightness.dark;
-          final cantidadDevolver = int.tryParse(cantidadController.text) ?? venta.cantidad;
+          final cantidadDevolver =
+              int.tryParse(cantidadController.text) ?? venta.cantidad;
           return AlertDialog(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
@@ -156,7 +279,9 @@ class _ResumenScreenState extends State<ResumenScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.grey[800] : const Color(0xFFF6F3EC),
+                      color: isDark
+                          ? Colors.grey[800]
+                          : const Color(0xFFF6F3EC),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -213,7 +338,8 @@ class _ResumenScreenState extends State<ResumenScreen> {
                       Switch(
                         value: devolverStock,
                         activeColor: SubliriumColors.stockOkText,
-                        onChanged: (v) => setDialogState(() => devolverStock = v),
+                        onChanged: (v) =>
+                            setDialogState(() => devolverStock = v),
                       ),
                     ],
                   ),
@@ -247,10 +373,14 @@ class _ResumenScreenState extends State<ResumenScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: isDark ? Colors.grey[850] : const Color(0xFFF0FDF4),
+                          color: isDark
+                              ? Colors.grey[850]
+                              : const Color(0xFFF0FDF4),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: isDark ? Colors.grey[700]! : const Color(0xFF86EFAC),
+                            color: isDark
+                                ? Colors.grey[700]!
+                                : const Color(0xFF86EFAC),
                           ),
                         ),
                         child: Column(
@@ -278,11 +408,14 @@ class _ResumenScreenState extends State<ResumenScreen> {
                             ),
                             const SizedBox(height: 8),
                             ...comboItems.map((item) {
-                              final cantidadADevolver = item.cantidad * cantidadDevolver;
+                              final cantidadADevolver =
+                                  item.cantidad * cantidadDevolver;
                               final productoItem = _productos
                                   .where((p) => p.id == item.productoId)
                                   .firstOrNull;
-                              final nombreItem = productoItem?.nombre ?? 'Producto #${item.productoId}';
+                              final nombreItem =
+                                  productoItem?.nombre ??
+                                  'Producto #${item.productoId}';
                               final stockActual = productoItem?.cantidad ?? 0;
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 6),
@@ -679,6 +812,18 @@ class _ResumenScreenState extends State<ResumenScreen> {
             surfaceTintColor: Colors.transparent,
             elevation: 0,
             actions: [
+              if (_productosSinStock.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Badge(
+                    label: Text('${_productosSinStock.length}'),
+                    child: IconButton(
+                      icon: Icon(Icons.warning_amber, color: Colors.orange),
+                      onPressed: () => _showAlertasDialog(context),
+                      tooltip: 'Productos sin stock',
+                    ),
+                  ),
+                ),
               IconButton(
                 icon: Icon(
                   Icons.refresh,

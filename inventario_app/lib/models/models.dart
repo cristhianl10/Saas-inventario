@@ -4,3 +4,4 @@ export 'venta.dart';
 export 'precio_tarifa.dart';
 export 'proveedor.dart';
 export 'combo.dart';
+export 'cliente.dart';

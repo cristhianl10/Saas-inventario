@@ -8,6 +8,7 @@ class Producto {
   final int? proveedorId;
   final double? costo;
   final bool esCombo;
+  final int? umbralAlerta;
   final DateTime? fechaActualizacion;
 
   Producto({
@@ -20,6 +21,7 @@ class Producto {
     this.proveedorId,
     this.costo,
     this.esCombo = false,
+    this.umbralAlerta,
     this.fechaActualizacion,
   });
 
@@ -38,6 +40,7 @@ class Producto {
           ? (json['costo'] as num?)?.toDouble() ?? 0.0
           : null,
       esCombo: json['es_combo'] as bool? ?? false,
+      umbralAlerta: json['umbral_alerta'] as int?,
       fechaActualizacion: json['fecha_actualizacion'] != null
           ? DateTime.parse(json['fecha_actualizacion'] as String)
           : null,
@@ -55,8 +58,14 @@ class Producto {
       'proveedor_id': proveedorId,
       'costo': costo,
       'es_combo': esCombo,
+      if (umbralAlerta != null) 'umbral_alerta': umbralAlerta,
       'fecha_actualizacion': fechaActualizacion?.toIso8601String(),
     };
+  }
+
+  bool get tieneStockBajo {
+    if (umbralAlerta == null) return false;
+    return cantidad <= umbralAlerta!;
   }
 
   Producto copyWith({
@@ -69,6 +78,7 @@ class Producto {
     int? proveedorId,
     double? costo,
     bool? esCombo,
+    int? umbralAlerta,
     DateTime? fechaActualizacion,
   }) {
     return Producto(
@@ -81,6 +91,7 @@ class Producto {
       proveedorId: proveedorId ?? this.proveedorId,
       costo: costo ?? this.costo,
       esCombo: esCombo ?? this.esCombo,
+      umbralAlerta: umbralAlerta ?? this.umbralAlerta,
       fechaActualizacion: fechaActualizacion ?? this.fechaActualizacion,
     );
   }

@@ -4,6 +4,9 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
+import 'package:excel/excel.dart' hide Border;
+import 'package:flutter/foundation.dart';
+import 'dart:io';
 import '../models/models.dart';
 import '../services/api_service.dart';
 import '../config/app_theme.dart';
@@ -19,7 +22,7 @@ String _parsePrice(String value) {
   return parsed;
 }
 
-enum FiltroStock { todos, enStock, sinStock }
+enum FiltroStock { todos, enStock, sinStock, stockBajo }
 
 class ProductosScreen extends StatefulWidget {
   final Categoria? categoria;
@@ -38,7 +41,8 @@ class _ProductosScreenState extends State<ProductosScreen> {
   List<Proveedor> _proveedores = [];
   List<PrecioTarifa> _tarifas = [];
   List<ComboItem> _comboItems = []; // Agregar carga de combo items
-  Map<int, List<ComboItem>> _comboItemsMap = {}; // Mapa para almacenar los items de cada combo (comboId -> items)
+  Map<int, List<ComboItem>> _comboItemsMap =
+      {}; // Mapa para almacenar los items de cada combo (comboId -> items)
   bool _isLoading = true;
   String? _error;
   FiltroStock _filtroActual = FiltroStock.todos;
@@ -85,7 +89,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
       final categorias = await _apiService.getCategorias();
       final proveedores = await _apiService.getProveedores();
       final tarifas = await _apiService.getTodasTarifas();
-      
+
       // Cargar items de los combos para calcular stock dinámico
       final combos = productos.where((p) => p.esCombo).toList();
       final itemsMap = <int, List<ComboItem>>{};
@@ -95,7 +99,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
           itemsMap[combo.id!] = items;
         }
       }
-      
+
       setState(() {
         _productos = productos;
         _allProductos = allProductos;
@@ -121,10 +125,20 @@ class _ProductosScreenState extends State<ProductosScreen> {
       case FiltroStock.todos:
         break;
       case FiltroStock.enStock:
-        productosFiltrados = _productos.where((p) => _getStockProducto(p) > 0).toList();
+        productosFiltrados = _productos
+            .where((p) => _getStockProducto(p) > 0)
+            .toList();
         break;
       case FiltroStock.sinStock:
-        productosFiltrados = _productos.where((p) => _getStockProducto(p) == 0).toList();
+        productosFiltrados = _productos
+            .where((p) => _getStockProducto(p) == 0)
+            .toList();
+        break;
+      case FiltroStock.stockBajo:
+        productosFiltrados = _productos.where((p) {
+          final umbral = p.umbralAlerta ?? 5;
+          return _getStockProducto(p) > 0 && _getStockProducto(p) <= umbral;
+        }).toList();
         break;
     }
 
@@ -260,11 +274,46 @@ class _ProductosScreenState extends State<ProductosScreen> {
       text: producto.precio?.toStringAsFixed(2) ?? '',
     );
     final cantidadController = TextEditingController(text: '1');
-    final vendedorController = TextEditingController();
     final observacionesController = TextEditingController();
     DateTime fechaSeleccionada = DateTime.now();
     bool precioPorUnidad = true;
 
+    List<Cliente> _clientes = [];
+    Cliente? _clienteSeleccionado;
+    bool _loadingClientes = true;
+    bool _mostrarCrearCliente = false;
+    final _nombreClienteController = TextEditingController();
+    final _telefonoClienteController = TextEditingController();
+
+    Future<void> _cargarClientes() async {
+      try {
+        final clientes = await _apiService.getClientes();
+        if (mounted) {
+          setState(() {
+            _clientes = clientes;
+            _loadingClientes = false;
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _loadingClientes = false);
+        }
+      }
+    }
+
+    Future<Cliente?> _crearCliente(String nombre, String? telefono) async {
+      try {
+        final cliente = await _apiService.createCliente(
+          Cliente(nombre: nombre, telefono: telefono),
+        );
+        await _cargarClientes();
+        return cliente;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    _cargarClientes();
     showDialog(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
@@ -427,13 +476,107 @@ class _ProductosScreenState extends State<ProductosScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  TextField(
-                    controller: vendedorController,
-                    decoration: const InputDecoration(
-                      labelText: 'Vendido a (cliente)',
-                      border: OutlineInputBorder(),
+                  if (_loadingClientes)
+                    const Center(child: CircularProgressIndicator())
+                  else if (_mostrarCrearCliente)
+                    Column(
+                      children: [
+                        TextField(
+                          controller: _nombreClienteController,
+                          decoration: const InputDecoration(
+                            labelText: 'Nombre del cliente',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _telefonoClienteController,
+                          decoration: const InputDecoration(
+                            labelText: 'Teléfono (opcional)',
+                            border: OutlineInputBorder(),
+                          ),
+                          keyboardType: TextInputType.phone,
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            TextButton(
+                              onPressed: () {
+                                setDialogState(() {
+                                  _mostrarCrearCliente = false;
+                                  _nombreClienteController.clear();
+                                  _telefonoClienteController.clear();
+                                });
+                              },
+                              child: const Text('Cancelar'),
+                            ),
+                            const Spacer(),
+                            ElevatedButton(
+                              onPressed: () async {
+                                final nombre = _nombreClienteController.text
+                                    .trim();
+                                if (nombre.isEmpty) return;
+                                final telefono = _telefonoClienteController.text
+                                    .trim();
+                                final nuevoCliente = await _crearCliente(
+                                  nombre,
+                                  telefono.isEmpty ? null : telefono,
+                                );
+                                if (nuevoCliente != null && mounted) {
+                                  setDialogState(() {
+                                    _clienteSeleccionado = nuevoCliente;
+                                    _mostrarCrearCliente = false;
+                                    _nombreClienteController.clear();
+                                    _telefonoClienteController.clear();
+                                  });
+                                }
+                              },
+                              child: const Text('Crear'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    )
+                  else
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<Cliente>(
+                            value: _clienteSeleccionado,
+                            decoration: const InputDecoration(
+                              labelText: 'Cliente',
+                              border: OutlineInputBorder(),
+                            ),
+                            isExpanded: true,
+                            items: [
+                              const DropdownMenuItem<Cliente>(
+                                value: null,
+                                child: Text('Sin cliente'),
+                              ),
+                              ..._clientes.map(
+                                (c) => DropdownMenuItem(
+                                  value: c,
+                                  child: Text(c.nombre),
+                                ),
+                              ),
+                            ],
+                            onChanged: (cliente) {
+                              setDialogState(
+                                () => _clienteSeleccionado = cliente,
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(Icons.add_circle_outline),
+                          tooltip: 'Nuevo cliente',
+                          onPressed: () {
+                            setDialogState(() => _mostrarCrearCliente = true);
+                          },
+                        ),
+                      ],
                     ),
-                  ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: observacionesController,
@@ -476,11 +619,12 @@ class _ProductosScreenState extends State<ProductosScreen> {
                       );
                       return;
                     }
-                    
+
                     // Validar stock para combos usando stock calculado
                     if (producto.esCombo) {
                       final stockCalculado = _getStockProducto(producto);
-                      if (cantidadVenta <= 0 || cantidadVenta > stockCalculado) {
+                      if (cantidadVenta <= 0 ||
+                          cantidadVenta > stockCalculado) {
                         ScaffoldMessenger.of(dialogContext).showSnackBar(
                           SnackBar(
                             content: Text(
@@ -540,9 +684,8 @@ class _ProductosScreenState extends State<ProductosScreen> {
                       precioUnitario: precioUnit,
                       total: total,
                       fechaVenta: fechaSeleccionada,
-                      vendidoA: vendedorController.text.trim().isEmpty
-                          ? null
-                          : vendedorController.text.trim(),
+                      clienteId: _clienteSeleccionado?.id,
+                      vendidoA: _clienteSeleccionado?.nombre,
                       observaciones: observacionesController.text.trim().isEmpty
                           ? null
                           : observacionesController.text.trim(),
@@ -616,6 +759,9 @@ class _ProductosScreenState extends State<ProductosScreen> {
     );
     final costoController = TextEditingController(
       text: producto?.costo?.toStringAsFixed(2) ?? '',
+    );
+    final umbralController = TextEditingController(
+      text: (producto?.umbralAlerta ?? 5).toString(),
     );
     final isEditing = producto != null;
     Proveedor? proveedorSeleccionado;
@@ -806,6 +952,21 @@ class _ProductosScreenState extends State<ProductosScreen> {
                         FilteringTextInputFormatter.allow(RegExp(r'[\d,.]')),
                       ],
                     ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: umbralController,
+                      decoration: const InputDecoration(
+                        labelText: 'Alerta stock bajo (umbral)',
+                        border: OutlineInputBorder(),
+                        helperText: 'Cantidad mínima antes de alertar',
+                        prefixIcon: Icon(
+                          Icons.warning_amber_outlined,
+                          size: 20,
+                        ),
+                      ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    ),
                   ],
                 ),
               ),
@@ -854,6 +1015,8 @@ class _ProductosScreenState extends State<ProductosScreen> {
                           _parsePrice(costoController.text.trim()),
                         ) ??
                         0.0;
+                    final umbralAlerta =
+                        int.tryParse(umbralController.text.trim()) ?? 5;
                     final nuevoProducto = Producto(
                       id: producto?.id,
                       categoriaId:
@@ -866,6 +1029,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
                       precio: precio,
                       proveedorId: proveedorSeleccionado?.id,
                       costo: costo,
+                      umbralAlerta: umbralAlerta,
                       fechaActualizacion: DateTime.now(),
                     );
                     try {
@@ -1010,10 +1174,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
               background: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [
-                      AppConfig.secondaryColor,
-                      AppConfig.primaryColor,
-                    ],
+                    colors: [AppConfig.secondaryColor, AppConfig.primaryColor],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -1030,6 +1191,11 @@ class _ProductosScreenState extends State<ProductosScreen> {
                 icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
                 onPressed: _generarPdfProductos,
                 tooltip: 'Descargar PDF',
+              ),
+              IconButton(
+                icon: const Icon(Icons.table_chart, color: Colors.white),
+                onPressed: _exportarExcelProductos,
+                tooltip: 'Exportar Excel',
               ),
               if (!esVistaGlobal) ...[
                 Container(
@@ -1064,9 +1230,8 @@ class _ProductosScreenState extends State<ProductosScreen> {
                         esVistaGlobal
                             ? 'Total productos:'
                             : 'Total en inventario:',
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
                       ),
                       Text(
                         '$_totalInventario unidades',
@@ -1096,18 +1261,24 @@ class _ProductosScreenState extends State<ProductosScreen> {
                           color: isDark ? Colors.white70 : SubliriumColors.cyan,
                         ),
                         filled: true,
-                        fillColor: isDark ? const Color(0xFF3A3A3A) : Colors.white,
+                        fillColor: isDark
+                            ? const Color(0xFF3A3A3A)
+                            : Colors.white,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(
-                            color: isDark ? Colors.grey[600]! : SubliriumColors.border,
+                            color: isDark
+                                ? Colors.grey[600]!
+                                : SubliriumColors.border,
                             width: 1.5,
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(
-                            color: isDark ? Colors.grey[600]! : SubliriumColors.border,
+                            color: isDark
+                                ? Colors.grey[600]!
+                                : SubliriumColors.border,
                             width: 1.5,
                           ),
                         ),
@@ -1132,6 +1303,8 @@ class _ProductosScreenState extends State<ProductosScreen> {
                         _buildFiltroChip('En stock', FiltroStock.enStock),
                         const SizedBox(width: 8),
                         _buildFiltroChip('Sin stock', FiltroStock.sinStock),
+                        const SizedBox(width: 8),
+                        _buildFiltroChip('Stock bajo', FiltroStock.stockBajo),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -1140,7 +1313,9 @@ class _ProductosScreenState extends State<ProductosScreen> {
                       style: TextStyle(
                         color: isDark ? Colors.white : Colors.black,
                       ),
-                      dropdownColor: isDark ? const Color(0xFF1A1A1A) : Theme.of(context).cardColor,
+                      dropdownColor: isDark
+                          ? const Color(0xFF1A1A1A)
+                          : Theme.of(context).cardColor,
                       iconEnabledColor: isDark ? Colors.white : Colors.black54,
                       decoration: InputDecoration(
                         labelText: 'Filtrar por proveedor',
@@ -1150,13 +1325,17 @@ class _ProductosScreenState extends State<ProductosScreen> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: BorderSide(
-                            color: isDark ? Colors.grey[600]! : Colors.grey[400]!,
+                            color: isDark
+                                ? Colors.grey[600]!
+                                : Colors.grey[400]!,
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: BorderSide(
-                            color: isDark ? Colors.grey[600]! : Colors.grey[400]!,
+                            color: isDark
+                                ? Colors.grey[600]!
+                                : Colors.grey[400]!,
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
@@ -1170,7 +1349,9 @@ class _ProductosScreenState extends State<ProductosScreen> {
                           vertical: 8,
                         ),
                         filled: true,
-                        fillColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+                        fillColor: isDark
+                            ? const Color(0xFF1A1A1A)
+                            : Colors.white,
                       ),
                       items: [
                         DropdownMenuItem<Proveedor?>(
@@ -1374,10 +1555,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        producto.nombre,
-                        style: theme.textTheme.titleMedium,
-                      ),
+                      Text(producto.nombre, style: theme.textTheme.titleMedium),
                       const SizedBox(height: 4),
                       if (producto.descripcion != null)
                         Text(
@@ -1419,7 +1597,9 @@ class _ProductosScreenState extends State<ProductosScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: SubliriumColors.naranja.withValues(alpha: 0.15),
+                          color: SubliriumColors.naranja.withValues(
+                            alpha: 0.15,
+                          ),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -1439,7 +1619,11 @@ class _ProductosScreenState extends State<ProductosScreen> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Icon(Icons.business_outlined, size: 14, color: theme.iconTheme.color?.withValues(alpha: 0.6)),
+                  Icon(
+                    Icons.business_outlined,
+                    size: 14,
+                    color: theme.iconTheme.color?.withValues(alpha: 0.6),
+                  ),
                   const SizedBox(width: 6),
                   Text(
                     _getNombreProveedor(producto.proveedorId),
@@ -1451,7 +1635,10 @@ class _ProductosScreenState extends State<ProductosScreen> {
             const SizedBox(height: 16),
             Row(
               children: [
-                _buildStockBadge(stockReal),
+                _buildStockBadge(
+                  stockReal,
+                  umbralAlerta: producto.umbralAlerta,
+                ),
                 const SizedBox(width: 8),
                 // Para combos: mostrar solo el número de stock calculado (sin botones +/-)
                 // Para productos normales: mostrar controles de cantidad
@@ -1463,7 +1650,10 @@ class _ProductosScreenState extends State<ProductosScreen> {
                           : SubliriumColors.stockZeroBg,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     child: Text(
                       stockReal > 0 ? 'Stock: $stockReal' : 'Sin stock',
                       style: TextStyle(
@@ -1483,7 +1673,10 @@ class _ProductosScreenState extends State<ProductosScreen> {
                           : SubliriumColors.stockZeroBg,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 2,
+                      vertical: 2,
+                    ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -1593,25 +1786,51 @@ class _ProductosScreenState extends State<ProductosScreen> {
     );
   }
 
-  Widget _buildStockBadge(int cantidad) {
+  Widget _buildStockBadge(int cantidad, {int? umbralAlerta}) {
     final bool hayStock = cantidad > 0;
+    final umbral = umbralAlerta ?? 5;
+    final bool stockBajo = hayStock && cantidad <= umbral;
+
+    String texto;
+    Color bgColor;
+    Color textColor;
+
+    if (!hayStock) {
+      texto = 'Sin stock';
+      bgColor = SubliriumColors.stockLowBg;
+      textColor = SubliriumColors.deleteText;
+    } else if (stockBajo) {
+      texto = 'Stock bajo';
+      bgColor = SubliriumColors.naranja.withValues(alpha: 0.2);
+      textColor = SubliriumColors.naranja;
+    } else {
+      texto = 'En stock';
+      bgColor = SubliriumColors.stockOkBg;
+      textColor = SubliriumColors.stockOkText;
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: hayStock
-            ? SubliriumColors.stockOkBg
-            : SubliriumColors.stockLowBg,
+        color: bgColor,
         borderRadius: BorderRadius.circular(6),
       ),
-      child: Text(
-        hayStock ? 'En stock' : 'Sin stock',
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          color: hayStock
-              ? SubliriumColors.stockOkText
-              : SubliriumColors.deleteText,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (stockBajo) ...[
+            Icon(Icons.warning_amber, size: 12, color: textColor),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            texto,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: textColor,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1634,11 +1853,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
             color: bgColor,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            icon,
-            size: 16,
-            color: color,
-          ),
+          child: Icon(icon, size: 16, color: color),
         ),
       ),
     );
@@ -1689,6 +1904,143 @@ class _ProductosScreenState extends State<ProductosScreen> {
         .where((t) => t.productoId == productoId && t.cantidadMin == 1)
         .firstOrNull;
     return tarifa?.precioUnitario ?? 0;
+  }
+
+  Future<void> _exportarExcelProductos() async {
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Generando archivo Excel...')),
+      );
+
+      final excel = Excel.createExcel();
+      final sheet = excel['Inventario'];
+      final dateStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final productosAExportar = widget.categoria != null
+          ? _productos
+          : _productosFiltrados;
+
+      sheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: 0))
+          .value = TextCellValue(
+        'Inventario de Productos',
+      );
+      sheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: 1))
+          .value = TextCellValue(
+        'Generado: ${dateStr}',
+      );
+
+      sheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: 3))
+          .value = TextCellValue(
+        'Producto',
+      );
+      sheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: 3))
+          .value = TextCellValue(
+        'Categoría',
+      );
+      sheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: 3))
+          .value = TextCellValue(
+        'Stock',
+      );
+      sheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: 3))
+          .value = TextCellValue(
+        'Precio',
+      );
+      sheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: 3))
+          .value = TextCellValue(
+        'Costo',
+      );
+      sheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: 3))
+          .value = TextCellValue(
+        'Proveedor',
+      );
+      sheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: 3))
+          .value = TextCellValue(
+        'Umbral Alerta',
+      );
+
+      int row = 4;
+      for (final producto in productosAExportar) {
+        final categoria = _categorias
+            .where((c) => c.id == producto.categoriaId)
+            .firstOrNull;
+        final proveedor = _proveedores
+            .where((p) => p.id == producto.proveedorId)
+            .firstOrNull;
+        final precioBase = _getPrecioBaseProducto(producto.id!);
+
+        sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row))
+            .value = TextCellValue(
+          producto.nombre,
+        );
+        sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row))
+            .value = TextCellValue(
+          categoria?.nombre ?? 'Sin categoría',
+        );
+        sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: row))
+            .value = IntCellValue(
+          producto.cantidad,
+        );
+        sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row))
+            .value = DoubleCellValue(
+          precioBase,
+        );
+        sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: row))
+            .value = DoubleCellValue(
+          producto.costo ?? 0.0,
+        );
+        sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row))
+            .value = TextCellValue(
+          proveedor?.nombre ?? '-',
+        );
+        sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: row))
+            .value = IntCellValue(
+          producto.umbralAlerta ?? 5,
+        );
+        row++;
+      }
+
+      final bytes = excel.encode();
+      if (bytes != null) {
+        if (kIsWeb) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Excel generado (usa la función de compartir para guardarlo)',
+              ),
+            ),
+          );
+        } else {
+          final dir = Directory.systemTemp;
+          final file = File('${dir.path}/inventario_$dateStr.xlsx');
+          await file.writeAsBytes(bytes);
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Guardado: ${file.path}')));
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al exportar: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Future<void> _generarPdfProductos() async {

@@ -6,15 +6,21 @@ import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
+import '../services/subscription_service.dart';
 import '../config/app_config.dart';
 import '../config/app_theme.dart';
 import '../utils/pdf_helper.dart';
+import '../utils/plan_upgrade_helper.dart';
 
 class TablaPreciosScreen extends StatefulWidget {
   final int? productoIdInicial;
   final int? categoriaIdInicial;
 
-  const TablaPreciosScreen({super.key, this.productoIdInicial, this.categoriaIdInicial});
+  const TablaPreciosScreen({
+    super.key,
+    this.productoIdInicial,
+    this.categoriaIdInicial,
+  });
 
   @override
   State<TablaPreciosScreen> createState() => _TablaPreciosScreenState();
@@ -38,7 +44,10 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
   void initState() {
     super.initState();
     if (widget.productoIdInicial != null || widget.categoriaIdInicial != null) {
-      _categoriaSeleccionada = Categoria(id: widget.categoriaIdInicial, nombre: '');
+      _categoriaSeleccionada = Categoria(
+        id: widget.categoriaIdInicial,
+        nombre: '',
+      );
     }
     _loadData();
     _scrollController.addListener(() {
@@ -75,13 +84,17 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
       // Buscar objetos seleccionados por ID (ya que son nuevas instancias)
       Categoria? categoriaSeleccionadaTemp;
       Producto? productoSeleccionadoTemp;
-      
+
       if (_categoriaSeleccionada != null) {
-        categoriaSeleccionadaTemp = categorias.where((c) => c.id == _categoriaSeleccionada!.id).firstOrNull;
+        categoriaSeleccionadaTemp = categorias
+            .where((c) => c.id == _categoriaSeleccionada!.id)
+            .firstOrNull;
       }
-      
+
       if (_productoSeleccionado != null) {
-        productoSeleccionadoTemp = productos.where((p) => p.id == _productoSeleccionado!.id).firstOrNull;
+        productoSeleccionadoTemp = productos
+            .where((p) => p.id == _productoSeleccionado!.id)
+            .firstOrNull;
       }
 
       setState(() {
@@ -98,27 +111,35 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
         _isLoading = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
 
   List<Producto> get _productosFiltrados {
     var productos = _productos;
-    
+
     if (_categoriaSeleccionada != null) {
-      productos = productos.where((p) => p.categoriaId == _categoriaSeleccionada!.id).toList();
+      productos = productos
+          .where((p) => p.categoriaId == _categoriaSeleccionada!.id)
+          .toList();
     }
-    
+
     if (_searchQuery.isNotEmpty) {
-      productos = productos.where((p) => 
-        p.nombre.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-        (p.descripcion?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false)
-      ).toList();
+      productos = productos
+          .where(
+            (p) =>
+                p.nombre.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                (p.descripcion?.toLowerCase().contains(
+                      _searchQuery.toLowerCase(),
+                    ) ??
+                    false),
+          )
+          .toList();
     }
-    
+
     return productos;
   }
 
@@ -126,19 +147,25 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
     if (_productoSeleccionado != null) {
       return [_productoSeleccionado!];
     }
-    
+
     var productos = _productosFiltrados;
-    
+
     if (_categoriaSeleccionada != null) {
-      productos = productos.where((p) => p.categoriaId == _categoriaSeleccionada!.id).toList();
+      productos = productos
+          .where((p) => p.categoriaId == _categoriaSeleccionada!.id)
+          .toList();
     }
-    
+
     productos.sort((a, b) {
-      final catA = _categorias.where((c) => c.id == a.categoriaId).firstOrNull?.nombre ?? '';
-      final catB = _categorias.where((c) => c.id == b.categoriaId).firstOrNull?.nombre ?? '';
+      final catA =
+          _categorias.where((c) => c.id == a.categoriaId).firstOrNull?.nombre ??
+          '';
+      final catB =
+          _categorias.where((c) => c.id == b.categoriaId).firstOrNull?.nombre ??
+          '';
       return catA.compareTo(catB);
     });
-    
+
     return productos;
   }
 
@@ -165,7 +192,12 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
     return max == 0 ? null : max;
   }
 
-  String _validarNuevaTarifa(int cantidadMin, int? cantidadMax, double precio, {int? tarifaIdExcluir}) {
+  String _validarNuevaTarifa(
+    int cantidadMin,
+    int? cantidadMax,
+    double precio, {
+    int? tarifaIdExcluir,
+  }) {
     if (cantidadMin < 1) {
       return 'La cantidad mínima debe ser al menos 1';
     }
@@ -187,7 +219,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
       for (final tarifa in _tarifasDelProducto) {
         final existingMin = tarifa.cantidadMin;
         final existingMax = tarifa.cantidadMax ?? 999999;
-        
+
         if (cantidadMax != null) {
           if (!(cantidadMax < existingMin || cantidadMin > existingMax)) {
             return 'Este rango se cruza con uno existente';
@@ -203,23 +235,37 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
     return '';
   }
 
-  void _showAgregarTarifaDialog({PrecioTarifa? tarifaEditar}) {
+  Future<void> _showAgregarTarifaDialog({PrecioTarifa? tarifaEditar}) async {
+    final hasAccess = await SubscriptionService.hasFeature('volume_pricing');
+    if (!hasAccess) {
+      PlanUpgradeHelper.showUpgradeDialog(
+        context,
+        'agregar Precios por Volumen',
+        planRequired: 'Básico',
+      );
+      return;
+    }
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Verificar si ya tiene precio ilimitado (solo al crear nuevo)
-    final esIlimitado = _tarifasDelProducto.isEmpty 
-        ? false 
+    final esIlimitado = _tarifasDelProducto.isEmpty
+        ? false
         : (_ultimaCantidadMax != null && _tarifasDelProducto.last.esIlimitado);
-    
+
     if (tarifaEditar == null && esIlimitado) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Este producto ya tiene precio ilimitado. Elimínalo primero para agregar más.')),
+        const SnackBar(
+          content: Text(
+            'Este producto ya tiene precio ilimitado. Elimínalo primero para agregar más.',
+          ),
+        ),
       );
       return;
     }
 
     final cantidadMinController = TextEditingController(
-      text: tarifaEditar != null 
+      text: tarifaEditar != null
           ? tarifaEditar.cantidadMin.toString()
           : ((_ultimaCantidadMax ?? 0) + 1).toString(),
     );
@@ -227,7 +273,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
       text: tarifaEditar?.cantidadMax?.toString() ?? '',
     );
     final precioController = TextEditingController(
-      text: tarifaEditar != null 
+      text: tarifaEditar != null
           ? tarifaEditar.precioUnitario.toStringAsFixed(2)
           : '',
     );
@@ -238,18 +284,27 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   _productoSeleccionado?.nombre ?? 'Producto',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   tarifaEditar != null ? 'Editar precio' : 'Agregar precio',
-                  style: TextStyle(fontSize: 14, color: isDark ? Colors.grey[400] : Colors.grey[600], fontWeight: FontWeight.normal),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                    fontWeight: FontWeight.normal,
+                  ),
                 ),
               ],
             ),
@@ -261,12 +316,18 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: isDark ? SubliriumColors.cyan.withValues(alpha: 0.2) : SubliriumColors.cyan.withValues(alpha: 0.1),
+                      color: isDark
+                          ? SubliriumColors.cyan.withValues(alpha: 0.2)
+                          : SubliriumColors.cyan.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.info_outline, size: 16, color: SubliriumColors.cyan),
+                        const Icon(
+                          Icons.info_outline,
+                          size: 16,
+                          color: SubliriumColors.cyan,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -284,21 +345,30 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                     controller: cantidadMinController,
                     decoration: InputDecoration(
                       labelText: 'Cantidad mínima',
-                      labelStyle: TextStyle(color: isDark ? Colors.white : Colors.black),
+                      labelStyle: TextStyle(
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
                       border: const OutlineInputBorder(),
                       filled: true,
                       fillColor: isDark ? Colors.grey[800] : Colors.grey[100],
                       helperText: 'Cantidad predefinida por el sistema',
-                      helperStyle: TextStyle(color: isDark ? Colors.white : Colors.black),
+                      helperStyle: TextStyle(
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
                     ),
                     keyboardType: TextInputType.number,
                     enabled: false,
-                    style: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                    style: TextStyle(
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Text('Último rango', style: TextStyle(fontSize: 13)),
+                      const Text(
+                        'Último rango',
+                        style: TextStyle(fontSize: 13),
+                      ),
                       const Spacer(),
                       Switch(
                         value: esIlimitadoActual,
@@ -335,7 +405,9 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                       prefixText: '\$ ',
                       border: OutlineInputBorder(),
                     ),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                   ),
                 ],
               ),
@@ -347,7 +419,8 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
               ),
               ElevatedButton(
                 onPressed: () async {
-                  final cantidadMin = int.tryParse(cantidadMinController.text) ?? 0;
+                  final cantidadMin =
+                      int.tryParse(cantidadMinController.text) ?? 0;
                   final cantidadMax = cantidadMaxController.text.isEmpty
                       ? null
                       : int.tryParse(cantidadMaxController.text);
@@ -355,7 +428,9 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
 
                   if (precio <= 0) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('El precio debe ser mayor a 0')),
+                      const SnackBar(
+                        content: Text('El precio debe ser mayor a 0'),
+                      ),
                     );
                     return;
                   }
@@ -370,9 +445,8 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
 
                       // Si edita precio con cantidad minima = 1, actualizar el precio del producto
                       if (tarifaEditar.cantidadMin == 1) {
-                        final productoActualizado = _productoSeleccionado!.copyWith(
-                          precio: precio,
-                        );
+                        final productoActualizado = _productoSeleccionado!
+                            .copyWith(precio: precio);
                         await _apiService.updateProducto(productoActualizado);
                       }
                     } else {
@@ -386,28 +460,31 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
 
                       // Si crea precio con cantidad minima = 1, actualizar el precio del producto
                       if (cantidadMin == 1) {
-                        final productoActualizado = _productoSeleccionado!.copyWith(
-                          precio: precio,
-                        );
+                        final productoActualizado = _productoSeleccionado!
+                            .copyWith(precio: precio);
                         await _apiService.updateProducto(productoActualizado);
                       }
                     }
-                    
+
                     Navigator.pop(context);
                     _loadData();
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(tarifaEditar != null ? 'Precio actualizado' : 'Precio agregado'),
+                          content: Text(
+                            tarifaEditar != null
+                                ? 'Precio actualizado'
+                                : 'Precio agregado',
+                          ),
                           backgroundColor: SubliriumColors.stockOkText,
                         ),
                       );
                     }
                   } catch (e) {
                     if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error: $e')),
-                      );
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text('Error: $e')));
                     }
                   }
                 },
@@ -426,9 +503,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('¿Eliminar precio?'),
-        content: Text(
-          'Eliminar precio para ${tarifa.rangoCantidad} unidades',
-        ),
+        content: Text('Eliminar precio para ${tarifa.rangoCantidad} unidades'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -448,15 +523,15 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
         await _apiService.deleteTarifa(tarifa.id!);
         _loadData();
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Precio eliminado')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Precio eliminado')));
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error: $e')));
         }
       }
     }
@@ -510,19 +585,31 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.wifi_off, size: 48, color: Theme.of(context).iconTheme.color),
-                      const SizedBox(height: 8),
-                      Text('Error de conexión', style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color)),
-                      const SizedBox(height: 8),
-                      ElevatedButton(onPressed: _loadData, child: const Text('Reintentar')),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.wifi_off,
+                    size: 48,
+                    color: Theme.of(context).iconTheme.color,
                   ),
-                )
-              : Column(
+                  const SizedBox(height: 8),
+                  Text(
+                    'Error de conexión',
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodyMedium?.color,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed: _loadData,
+                    child: const Text('Reintentar'),
+                  ),
+                ],
+              ),
+            )
+          : Column(
               children: [
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -541,7 +628,8 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                     children: [
                       TextField(
                         controller: _searchController,
-                        onChanged: (value) => setState(() => _searchQuery = value),
+                        onChanged: (value) =>
+                            setState(() => _searchQuery = value),
                         style: TextStyle(
                           color: isDark ? Colors.white : Colors.black,
                         ),
@@ -552,22 +640,30 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                             fontWeight: FontWeight.w500,
                           ),
                           prefixIcon: Icon(
-                            Icons.search, 
-                            color: isDark ? Colors.white70 : SubliriumColors.cyan,
+                            Icons.search,
+                            color: isDark
+                                ? Colors.white70
+                                : SubliriumColors.cyan,
                           ),
                           filled: true,
-                          fillColor: isDark ? const Color(0xFF3A3A3A) : Colors.white,
+                          fillColor: isDark
+                              ? const Color(0xFF3A3A3A)
+                              : Colors.white,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide(
-                              color: isDark ? Colors.grey[600]! : SubliriumColors.border,
+                              color: isDark
+                                  ? Colors.grey[600]!
+                                  : SubliriumColors.border,
                               width: 1.5,
                             ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide(
-                              color: isDark ? Colors.grey[600]! : SubliriumColors.border,
+                              color: isDark
+                                  ? Colors.grey[600]!
+                                  : SubliriumColors.border,
                               width: 1.5,
                             ),
                           ),
@@ -578,7 +674,10 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                               width: 2,
                             ),
                           ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -596,52 +695,77 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                           Expanded(
                             child: DropdownButtonFormField<Categoria>(
                               value: _categoriaSeleccionada,
-                              dropdownColor: isDark ? const Color(0xFF1A1A1A) : Theme.of(context).cardColor,
+                              dropdownColor: isDark
+                                  ? const Color(0xFF1A1A1A)
+                                  : Theme.of(context).cardColor,
                               style: TextStyle(
                                 color: isDark ? Colors.white : Colors.black,
                               ),
-                              iconEnabledColor: isDark ? Colors.white : Colors.black54,
+                              iconEnabledColor: isDark
+                                  ? Colors.white
+                                  : Colors.black54,
                               decoration: InputDecoration(
                                 labelText: 'Categoría',
                                 labelStyle: TextStyle(
-                                  color: isDark ? Colors.white70 : Colors.black54,
+                                  color: isDark
+                                      ? Colors.white70
+                                      : Colors.black54,
                                 ),
                                 border: OutlineInputBorder(
                                   borderSide: BorderSide(
-                                    color: isDark ? Colors.grey[600]! : Colors.grey[400]!,
+                                    color: isDark
+                                        ? Colors.grey[600]!
+                                        : Colors.grey[400]!,
                                   ),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderSide: BorderSide(
-                                    color: isDark ? Colors.grey[600]! : Colors.grey[400]!,
+                                    color: isDark
+                                        ? Colors.grey[600]!
+                                        : Colors.grey[400]!,
                                   ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderSide: BorderSide(
-                                    color: isDark ? Colors.white : SubliriumColors.cyan,
+                                    color: isDark
+                                        ? Colors.white
+                                        : SubliriumColors.cyan,
                                   ),
                                 ),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
                                 filled: true,
-                                fillColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+                                fillColor: isDark
+                                    ? const Color(0xFF1A1A1A)
+                                    : Colors.white,
                               ),
                               items: [
                                 DropdownMenuItem(
                                   value: null,
-                                  child: Text('Todas', 
+                                  child: Text(
+                                    'Todas',
                                     style: TextStyle(
-                                      color: isDark ? Colors.white : Colors.black,
+                                      color: isDark
+                                          ? Colors.white
+                                          : Colors.black,
                                     ),
                                   ),
                                 ),
-                                ..._categorias.map((c) => DropdownMenuItem(
-                                      value: c,
-                                      child: Text(c.nombre, 
-                                        style: TextStyle(
-                                          color: isDark ? Colors.white : Colors.black,
-                                        ),
+                                ..._categorias.map(
+                                  (c) => DropdownMenuItem(
+                                    value: c,
+                                    child: Text(
+                                      c.nombre,
+                                      style: TextStyle(
+                                        color: isDark
+                                            ? Colors.white
+                                            : Colors.black,
                                       ),
-                                    )),
+                                    ),
+                                  ),
+                                ),
                               ],
                               onChanged: (value) {
                                 setState(() {
@@ -659,54 +783,78 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                           Expanded(
                             child: DropdownButtonFormField<Producto>(
                               value: _productoSeleccionado,
-                              dropdownColor: isDark ? const Color(0xFF1A1A1A) : Theme.of(context).cardColor,
+                              dropdownColor: isDark
+                                  ? const Color(0xFF1A1A1A)
+                                  : Theme.of(context).cardColor,
                               style: TextStyle(
                                 color: isDark ? Colors.white : Colors.black,
                               ),
-                              iconEnabledColor: isDark ? Colors.white : Colors.black54,
+                              iconEnabledColor: isDark
+                                  ? Colors.white
+                                  : Colors.black54,
                               decoration: InputDecoration(
                                 labelText: 'Producto',
                                 labelStyle: TextStyle(
-                                  color: isDark ? Colors.white70 : Colors.black54,
+                                  color: isDark
+                                      ? Colors.white70
+                                      : Colors.black54,
                                 ),
                                 border: OutlineInputBorder(
                                   borderSide: BorderSide(
-                                    color: isDark ? Colors.grey[600]! : Colors.grey[400]!,
+                                    color: isDark
+                                        ? Colors.grey[600]!
+                                        : Colors.grey[400]!,
                                   ),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderSide: BorderSide(
-                                    color: isDark ? Colors.grey[600]! : Colors.grey[400]!,
+                                    color: isDark
+                                        ? Colors.grey[600]!
+                                        : Colors.grey[400]!,
                                   ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderSide: BorderSide(
-                                    color: isDark ? Colors.white : SubliriumColors.cyan,
+                                    color: isDark
+                                        ? Colors.white
+                                        : SubliriumColors.cyan,
                                   ),
                                 ),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
                                 filled: true,
-                                fillColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+                                fillColor: isDark
+                                    ? const Color(0xFF1A1A1A)
+                                    : Colors.white,
                               ),
                               items: [
                                 DropdownMenuItem(
                                   value: null,
-                                  child: Text('Todos', 
+                                  child: Text(
+                                    'Todos',
                                     style: TextStyle(
-                                      color: isDark ? Colors.white : Colors.black,
+                                      color: isDark
+                                          ? Colors.white
+                                          : Colors.black,
                                     ),
                                   ),
                                 ),
-                                ..._productosFiltrados.map((p) => DropdownMenuItem(
-                                      value: p,
-                                      child: Text(
-                                        p.nombre,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          color: isDark ? Colors.white : Colors.black,
-                                        ),
+                                ..._productosFiltrados.map(
+                                  (p) => DropdownMenuItem(
+                                    value: p,
+                                    child: Text(
+                                      p.nombre,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: isDark
+                                            ? Colors.white
+                                            : Colors.black,
                                       ),
-                                    )),
+                                    ),
+                                  ),
+                                ),
                               ],
                               onChanged: (value) {
                                 setState(() {
@@ -743,16 +891,16 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                           ),
                         )
                       : _productoSeleccionado == null
-                          ? _buildTodosLosProductos()
-                          : ListView(
-                              controller: _scrollController,
-                              padding: const EdgeInsets.fromLTRB(12, 12, 12, 100),
-                              children: [
-                                _buildProductoCard(_productoSeleccionado!),
-                                const SizedBox(height: 12),
-                                _buildTablaPrecios(),
-                              ],
-                            ),
+                      ? _buildTodosLosProductos()
+                      : ListView(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.fromLTRB(12, 12, 12, 100),
+                          children: [
+                            _buildProductoCard(_productoSeleccionado!),
+                            const SizedBox(height: 12),
+                            _buildTablaPrecios(),
+                          ],
+                        ),
                 ),
               ],
             ),
@@ -762,7 +910,11 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
           if (_showScrollToTop) ...[
             FloatingActionButton.small(
               heroTag: 'scroll_to_top_tabla_btn',
-              onPressed: () => _scrollController.animateTo(0, duration: const Duration(milliseconds: 500), curve: Curves.easeInOut),
+              onPressed: () => _scrollController.animateTo(
+                0,
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeInOut,
+              ),
               backgroundColor: SubliriumColors.cyan.withValues(alpha: 0.8),
               child: const Icon(Icons.arrow_upward, color: Colors.white),
             ),
@@ -782,7 +934,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
 
   Widget _buildProductoCard(Producto producto) {
     final tieneTarifaIlimitada = _tarifasDelProducto.any((t) => t.esIlimitado);
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -863,9 +1015,13 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A1A1A) : SubliriumColors.cardBackground,
+        color: isDark
+            ? const Color(0xFF1A1A1A)
+            : SubliriumColors.cardBackground,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isDark ? Colors.grey[700]! : SubliriumColors.border),
+        border: Border.all(
+          color: isDark ? Colors.grey[700]! : SubliriumColors.border,
+        ),
       ),
       child: Column(
         children: [
@@ -873,7 +1029,9 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: SubliriumColors.cyan,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(11),
+              ),
             ),
             child: Row(
               children: [
@@ -907,9 +1065,14 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF252525) : SubliriumColors.cyan.withValues(alpha: 0.08),
+              color: isDark
+                  ? const Color(0xFF252525)
+                  : SubliriumColors.cyan.withValues(alpha: 0.08),
               border: Border(
-                bottom: BorderSide(color: isDark ? Colors.grey[800]! : SubliriumColors.border, width: 0.5),
+                bottom: BorderSide(
+                  color: isDark ? Colors.grey[800]! : SubliriumColors.border,
+                  width: 0.5,
+                ),
               ),
             ),
             child: Row(
@@ -918,17 +1081,20 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                   flex: 2,
                   child: Row(
                     children: [
-                        Text(
-                          '1',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
-                            color: isDark ? Colors.white : Colors.black,
-                          ),
+                      Text(
+                        '1',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                          color: isDark ? Colors.white : Colors.black,
                         ),
+                      ),
                       const SizedBox(width: 4),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: isDark ? Colors.grey[700] : Colors.grey[200],
                           borderRadius: BorderRadius.circular(4),
@@ -959,7 +1125,11 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                 ),
                 SizedBox(
                   width: 80,
-                  child: Icon(Icons.lock_outline, size: 18, color: isDark ? Colors.white38 : Colors.grey),
+                  child: Icon(
+                    Icons.lock_outline,
+                    size: 18,
+                    color: isDark ? Colors.white38 : Colors.grey,
+                  ),
                 ),
               ],
             ),
@@ -969,7 +1139,9 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
             final tarifa = entry.value;
             final isLast = index == tarifasAdicionales.length - 1;
             final precio = tarifa.precioUnitario;
-            final descuento = precioBase > 0 ? ((precioBase - precio) / precioBase * 100).round() : 0;
+            final descuento = precioBase > 0
+                ? ((precioBase - precio) / precioBase * 100).round()
+                : 0;
 
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
@@ -980,7 +1152,10 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                 border: isLast
                     ? null
                     : const Border(
-                        bottom: BorderSide(color: SubliriumColors.border, width: 0.5),
+                        bottom: BorderSide(
+                          color: SubliriumColors.border,
+                          width: 0.5,
+                        ),
                       ),
               ),
               child: Row(
@@ -1000,7 +1175,10 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                         if (descuento > 0) ...[
                           const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: SubliriumColors.stockOkBg,
                               borderRadius: BorderRadius.circular(4),
@@ -1036,11 +1214,20 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.edit_outlined, size: 20, color: SubliriumColors.cyan),
-                          onPressed: () => _showAgregarTarifaDialog(tarifaEditar: tarifa),
+                          icon: const Icon(
+                            Icons.edit_outlined,
+                            size: 20,
+                            color: SubliriumColors.cyan,
+                          ),
+                          onPressed: () =>
+                              _showAgregarTarifaDialog(tarifaEditar: tarifa),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            size: 20,
+                            color: Colors.red,
+                          ),
                           onPressed: () => _eliminarTarifa(tarifa),
                         ),
                       ],
@@ -1084,7 +1271,9 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
         footer: (context) => PdfHelper.buildFooter(),
         build: (context) => [
           pw.SizedBox(height: 20),
-          for (final categoria in _categorias.where((c) => _productosAgrupados.any((p) => p.categoriaId == c.id)))
+          for (final categoria in _categorias.where(
+            (c) => _productosAgrupados.any((p) => p.categoriaId == c.id),
+          ))
             pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
@@ -1100,7 +1289,9 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                   ),
                 ),
                 pw.SizedBox(height: 8),
-                for (final producto in _productosAgrupados.where((p) => p.categoriaId == categoria.id))
+                for (final producto in _productosAgrupados.where(
+                  (p) => p.categoriaId == categoria.id,
+                ))
                   pw.Container(
                     margin: const pw.EdgeInsets.only(bottom: 12),
                     child: pw.Column(
@@ -1127,14 +1318,20 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                                   pw.Expanded(
                                     child: pw.Text(
                                       'Rango de cantidad',
-                                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+                                      style: pw.TextStyle(
+                                        fontWeight: pw.FontWeight.bold,
+                                        fontSize: 10,
+                                      ),
                                     ),
                                   ),
                                   pw.Expanded(
                                     child: pw.Text(
                                       'Precio c/u',
                                       textAlign: pw.TextAlign.right,
-                                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+                                      style: pw.TextStyle(
+                                        fontWeight: pw.FontWeight.bold,
+                                        fontSize: 10,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -1152,31 +1349,41 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                                     child: pw.Text(
                                       '\$${(producto.precio ?? 0).toStringAsFixed(2)}',
                                       textAlign: pw.TextAlign.right,
-                                      style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+                                      style: pw.TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: pw.FontWeight.bold,
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
-                              for (final tarifa in _tarifasPorProducto[producto.id] ?? [])
+                              for (final tarifa
+                                  in _tarifasPorProducto[producto.id] ?? [])
                                 if (tarifa.cantidadMin > 1)
                                   pw.Padding(
                                     padding: const pw.EdgeInsets.only(top: 4),
                                     child: pw.Row(
                                       children: [
                                         pw.Expanded(
-                                          child: pw.Text(tarifa.rangoCantidad, style: const pw.TextStyle(fontSize: 9)),
+                                          child: pw.Text(
+                                            tarifa.rangoCantidad,
+                                            style: const pw.TextStyle(
+                                              fontSize: 9,
+                                            ),
+                                          ),
                                         ),
                                         pw.Expanded(
                                           child: pw.Text(
                                             '\$${tarifa.precioUnitario.toStringAsFixed(2)}',
                                             textAlign: pw.TextAlign.right,
-                                            style: const pw.TextStyle(fontSize: 9),
+                                            style: const pw.TextStyle(
+                                              fontSize: 9,
+                                            ),
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-
                             ],
                           ),
                         ),
@@ -1191,14 +1398,17 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
     );
 
     final filtros = <String>[];
-    if (_productoSeleccionado != null) filtros.add(_productoSeleccionado!.nombre.replaceAll(' ', '_'));
-    if (_categoriaSeleccionada != null) filtros.add(_categoriaSeleccionada!.nombre.replaceAll(' ', '_'));
-    if (_searchQuery.isNotEmpty) filtros.add('busq_${_searchQuery.replaceAll(' ', '_')}');
-    
+    if (_productoSeleccionado != null)
+      filtros.add(_productoSeleccionado!.nombre.replaceAll(' ', '_'));
+    if (_categoriaSeleccionada != null)
+      filtros.add(_categoriaSeleccionada!.nombre.replaceAll(' ', '_'));
+    if (_searchQuery.isNotEmpty)
+      filtros.add('busq_${_searchQuery.replaceAll(' ', '_')}');
+
     final fechaArchivo = DateFormat('yyyy-MM-dd').format(DateTime.now());
     final sufijo = filtros.isEmpty ? '' : '_${filtros.join('_')}';
     final nombreArchivo = 'tarifas$sufijo\_$fechaArchivo';
-    
+
     await Printing.layoutPdf(
       onLayout: (format) async => pdf.save(),
       name: '$nombreArchivo.pdf',
@@ -1239,15 +1449,17 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
 
   Widget _buildTodosLosProductos() {
     final Map<int, List<Producto>> productosPorCategoria = {};
-    
+
     for (final producto in _productosAgrupados) {
-      productosPorCategoria.putIfAbsent(producto.categoriaId, () => []).add(producto);
+      productosPorCategoria
+          .putIfAbsent(producto.categoriaId, () => [])
+          .add(producto);
     }
-    
+
     final categoriasOrdenadas = _categorias
         .where((c) => productosPorCategoria.containsKey(c.id))
         .toList();
-    
+
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 100),
@@ -1255,7 +1467,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
       itemBuilder: (context, index) {
         final categoria = categoriasOrdenadas[index];
         final productos = productosPorCategoria[categoria.id]!;
-        
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1287,7 +1499,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final precioBase = producto.precio ?? 0;
     final tarifas = _tarifasPorProducto[producto.id] ?? [];
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
@@ -1310,10 +1522,7 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
           ),
           subtitle: Text(
             'Base: \$${precioBase.toStringAsFixed(2)} | ${tarifas.length} rango(s)',
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 11, color: Colors.grey[600]),
           ),
           trailing: Icon(Icons.expand_more, color: Colors.grey[600]),
           children: [
@@ -1328,7 +1537,8 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
             else
               ...tarifas.map((tarifa) {
                 final descuento = precioBase > 0
-                    ? ((precioBase - tarifa.precioUnitario) / precioBase * 100).round()
+                    ? ((precioBase - tarifa.precioUnitario) / precioBase * 100)
+                          .round()
                     : 0;
                 return Container(
                   padding: const EdgeInsets.symmetric(vertical: 6),
@@ -1360,7 +1570,10 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
                       if (descuento > 0) ...[
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: SubliriumColors.stockOkBg,
                             borderRadius: BorderRadius.circular(4),
@@ -1383,28 +1596,47 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
               padding: const EdgeInsets.only(top: 12),
               child: GestureDetector(
                 onTap: () {
-                  final productoMatch = _productosFiltrados.where((p) => p.id == producto.id).firstOrNull ?? producto;
+                  final productoMatch =
+                      _productosFiltrados
+                          .where((p) => p.id == producto.id)
+                          .firstOrNull ??
+                      producto;
                   setState(() {
                     _productoSeleccionado = productoMatch;
-                    _categoriaSeleccionada = _categorias.where((c) => c.id == producto.categoriaId).firstOrNull;
+                    _categoriaSeleccionada = _categorias
+                        .where((c) => c.id == producto.categoriaId)
+                        .firstOrNull;
                   });
                   _showAgregarTarifaDialog();
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: SubliriumColors.naranja.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: SubliriumColors.naranja.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: SubliriumColors.naranja.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.add_circle_outline, size: 16, color: SubliriumColors.naranja),
+                      Icon(
+                        Icons.add_circle_outline,
+                        size: 16,
+                        color: SubliriumColors.naranja,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         'Configurar tarifa',
-                        style: TextStyle(color: SubliriumColors.naranja, fontSize: 12, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          color: SubliriumColors.naranja,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ],
                   ),

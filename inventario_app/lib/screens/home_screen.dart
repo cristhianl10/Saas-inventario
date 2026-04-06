@@ -6,12 +6,15 @@ import '../services/api_service.dart';
 import '../config/app_theme.dart';
 import '../config/app_config.dart';
 import 'productos_screen.dart';
+import 'reportes_screen.dart';
 import 'resumen_screen.dart';
 import 'tabla_precios_screen.dart';
 import 'combos_screen.dart';
 import 'configuracion_screen.dart';
+import 'clientes_screen.dart';
 import 'auth_screen.dart';
 import 'planes_screen.dart';
+import 'suscripcion_screen.dart';
 import '../main.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -273,6 +276,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const ResumenScreen(), // index 2 – Resumen
               const TablaPreciosScreen(), // index 3 – Precios
               CombosScreen(), // index 4 – Combos
+              const ReportesScreen(), // index 5 – Reportes
             ],
           ),
           bottomNavigationBar: _buildBottomNav(),
@@ -410,6 +414,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     context,
                     MaterialPageRoute(builder: (_) => const PlanesScreen()),
                   );
+                } else if (value == 'suscripcion') {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const SuscripcionScreen(),
+                    ),
+                  );
+                } else if (value == 'clientes') {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ClientesScreen()),
+                  );
                 } else if (value == 'logout') {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -469,7 +485,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Icon(Icons.workspace_premium, size: 20),
                       SizedBox(width: 8),
-                      Text('Planes'),
+                      Text('Cambiar Plan'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'suscripcion',
+                  child: Row(
+                    children: [
+                      Icon(Icons.card_membership, size: 20),
+                      SizedBox(width: 8),
+                      Text('Mi Plan'),
                     ],
                   ),
                 ),
@@ -480,6 +506,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       Icon(Icons.settings, size: 20),
                       SizedBox(width: 8),
                       Text('Configurar marca'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'clientes',
+                  child: Row(
+                    children: [
+                      Icon(Icons.people, size: 20),
+                      SizedBox(width: 8),
+                      Text('Clientes'),
                     ],
                   ),
                 ),
@@ -799,6 +835,13 @@ class _HomeScreenState extends State<HomeScreen> {
               label: 'Combos',
               isActive: _currentIndex == 4,
               onTap: () => setState(() => _currentIndex = 4),
+            ),
+            _buildNavItem(
+              index: 5,
+              iconPath: 'assets/icons/stats.svg',
+              label: 'Reportes',
+              isActive: _currentIndex == 5,
+              onTap: () => setState(() => _currentIndex = 5),
             ),
           ],
         ),

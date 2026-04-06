@@ -3,7 +3,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/app_config.dart';
 import '../config/tenant_service.dart';
 import '../services/user_status_service.dart';
+import '../services/subscription_service.dart';
 import '../utils/dialog_utils.dart';
+import '../utils/plan_upgrade_helper.dart';
 import '../screens/auth_screen.dart';
 
 class ConfiguracionScreen extends StatefulWidget {
@@ -17,22 +19,52 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
   final _formKey = GlobalKey<FormState>();
   final _appNameController = TextEditingController();
   final _brandNameController = TextEditingController();
-  
+
   String _primaryColor = '#C1356F';
   String _secondaryColor = '#597FA9';
   String _accentColor = '#E57836';
   String _backgroundColor = '#FBF8F1';
-  
+
   bool _isLoading = true;
   bool _isSaving = false;
 
   final List<Map<String, String>> _colorPresets = [
-    {'primary': '#C1356F', 'secondary': '#597FA9', 'accent': '#E57836', 'name': 'Rosa/Púrpura'},
-    {'primary': '#2563EB', 'secondary': '#3B82F6', 'accent': '#F59E0B', 'name': 'Azul/Naranja'},
-    {'primary': '#059669', 'secondary': '#10B981', 'accent': '#FCD34D', 'name': 'Verde/Amarillo'},
-    {'primary': '#7C3AED', 'secondary': '#8B5CF6', 'accent': '#EC4899', 'name': 'Violeta/Rosa'},
-    {'primary': '#DC2626', 'secondary': '#EF4444', 'accent': '#FCD34D', 'name': 'Rojo/Amarillo'},
-    {'primary': '#0F172A', 'secondary': '#1E293B', 'accent': '#F97316', 'name': 'Gris Oscuro/Naranja'},
+    {
+      'primary': '#C1356F',
+      'secondary': '#597FA9',
+      'accent': '#E57836',
+      'name': 'Rosa/Púrpura',
+    },
+    {
+      'primary': '#2563EB',
+      'secondary': '#3B82F6',
+      'accent': '#F59E0B',
+      'name': 'Azul/Naranja',
+    },
+    {
+      'primary': '#059669',
+      'secondary': '#10B981',
+      'accent': '#FCD34D',
+      'name': 'Verde/Amarillo',
+    },
+    {
+      'primary': '#7C3AED',
+      'secondary': '#8B5CF6',
+      'accent': '#EC4899',
+      'name': 'Violeta/Rosa',
+    },
+    {
+      'primary': '#DC2626',
+      'secondary': '#EF4444',
+      'accent': '#FCD34D',
+      'name': 'Rojo/Amarillo',
+    },
+    {
+      'primary': '#0F172A',
+      'secondary': '#1E293B',
+      'accent': '#F97316',
+      'name': 'Gris Oscuro/Naranja',
+    },
   ];
 
   @override
@@ -43,13 +75,13 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
 
   Future<void> _loadConfig() async {
     setState(() => _isLoading = true);
-    
+
     try {
       final user = Supabase.instance.client.auth.currentUser;
       if (user != null) {
         await TenantService.loadTenantConfig(user.id);
       }
-      
+
       setState(() {
         _appNameController.text = AppConfig.appName;
         _brandNameController.text = AppConfig.brandName;
@@ -77,7 +109,17 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
 
   Future<void> _saveConfig() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
+    final hasBrandConfig = await SubscriptionService.hasFeature('brand_config');
+    if (!hasBrandConfig) {
+      PlanUpgradeHelper.showUpgradeDialog(
+        context,
+        'la Configuración de Marca',
+        planRequired: 'Pro',
+      );
+      return;
+    }
+
     setState(() => _isSaving = true);
 
     final config = {
@@ -113,7 +155,11 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
     });
   }
 
-  Widget _colorPicker(String label, String currentColor, Function(String) onColorChanged) {
+  Widget _colorPicker(
+    String label,
+    String currentColor,
+    Function(String) onColorChanged,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -136,8 +182,8 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
               child: Text(
                 currentColor,
                 style: TextStyle(
-                  color: _hexToColor(currentColor).computeLuminance() > 0.5 
-                      ? Colors.black 
+                  color: _hexToColor(currentColor).computeLuminance() > 0.5
+                      ? Colors.black
                       : Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
@@ -149,9 +195,12 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
     );
   }
 
-  void _showColorPickerDialog(String currentColor, Function(String) onColorChanged) {
+  void _showColorPickerDialog(
+    String currentColor,
+    Function(String) onColorChanged,
+  ) {
     final controller = TextEditingController(text: currentColor);
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -171,24 +220,38 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: [
-                '#FF0000', '#00FF00', '#0000FF', '#FFFF00',
-                '#FF00FF', '#00FFFF', '#FFA500', '#800080',
-                '#C1356F', '#597FA9', '#E57836', '#F9C706',
-              ].map((color) => GestureDetector(
-                onTap: () {
-                  controller.text = color;
-                },
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: _hexToColor(color),
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: Colors.grey[300]!),
-                  ),
-                ),
-              )).toList(),
+              children:
+                  [
+                        '#FF0000',
+                        '#00FF00',
+                        '#0000FF',
+                        '#FFFF00',
+                        '#FF00FF',
+                        '#00FFFF',
+                        '#FFA500',
+                        '#800080',
+                        '#C1356F',
+                        '#597FA9',
+                        '#E57836',
+                        '#F9C706',
+                      ]
+                      .map(
+                        (color) => GestureDetector(
+                          onTap: () {
+                            controller.text = color;
+                          },
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: _hexToColor(color),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: Colors.grey[300]!),
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
             ),
           ],
         ),
@@ -245,10 +308,7 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
               ),
             )
           else
-            IconButton(
-              icon: const Icon(Icons.save),
-              onPressed: _saveConfig,
-            ),
+            IconButton(icon: const Icon(Icons.save), onPressed: _saveConfig),
         ],
       ),
       body: SingleChildScrollView(
@@ -260,7 +320,7 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
             children: [
               _buildSectionTitle('Información del Negocio'),
               const SizedBox(height: 16),
-              
+
               TextFormField(
                 controller: _appNameController,
                 decoration: const InputDecoration(
@@ -276,7 +336,7 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              
+
               TextFormField(
                 controller: _brandNameController,
                 decoration: const InputDecoration(
@@ -291,11 +351,11 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
                   return null;
                 },
               ),
-              
+
               const SizedBox(height: 32),
               _buildSectionTitle('Colores de Marca'),
               const SizedBox(height: 16),
-              
+
               const Text(
                 'Preajustes',
                 style: TextStyle(fontWeight: FontWeight.w600),
@@ -335,32 +395,32 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
                   );
                 }).toList(),
               ),
-              
+
               const SizedBox(height: 24),
               _colorPicker('Color Primario', _primaryColor, (color) {
                 setState(() => _primaryColor = color);
               }),
               const SizedBox(height: 16),
-              
+
               _colorPicker('Color Secundario', _secondaryColor, (color) {
                 setState(() => _secondaryColor = color);
               }),
               const SizedBox(height: 16),
-              
+
               _colorPicker('Color Acento', _accentColor, (color) {
                 setState(() => _accentColor = color);
               }),
               const SizedBox(height: 16),
-              
+
               _colorPicker('Color de Fondo', _backgroundColor, (color) {
                 setState(() => _backgroundColor = color);
               }),
-              
+
               const SizedBox(height: 32),
               _buildSectionTitle('Vista Previa'),
               const SizedBox(height: 16),
               _buildPreview(),
-              
+
               const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,
@@ -378,11 +438,11 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               // Sección de gestión de cuenta
               _buildSectionTitle('Cuenta de Usuario'),
               const SizedBox(height: 16),
-              
+
               Card(
                 color: Colors.red[50],
                 shape: RoundedRectangleBorder(
@@ -410,10 +470,7 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
                       const SizedBox(height: 8),
                       Text(
                         'Al desactivar tu cuenta, no podrás iniciar sesión hasta que sea reactivada por un administrador. Tus datos no se eliminarán.',
-                        style: TextStyle(
-                          color: Colors.red[600],
-                          fontSize: 13,
-                        ),
+                        style: TextStyle(color: Colors.red[600], fontSize: 13),
                       ),
                       const SizedBox(height: 16),
                       SizedBox(
@@ -443,9 +500,9 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-        fontWeight: FontWeight.w900,
-      ),
+      style: Theme.of(
+        context,
+      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
     );
   }
 
@@ -473,7 +530,9 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              _appNameController.text.isEmpty ? 'StockFlow' : _appNameController.text,
+              _appNameController.text.isEmpty
+                  ? 'StockFlow'
+                  : _appNameController.text,
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,
@@ -493,7 +552,9 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
             child: Column(
               children: [
                 Text(
-                  _brandNameController.text.isEmpty ? 'Mi Negocio' : _brandNameController.text,
+                  _brandNameController.text.isEmpty
+                      ? 'Mi Negocio'
+                      : _brandNameController.text,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: _hexToColor(_primaryColor),
@@ -581,22 +642,21 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
     try {
       await UserStatusService.deactivateAccount(user.id);
       await Supabase.instance.client.auth.signOut();
-      
+
       if (mounted) {
         await showMessageDialog(
           context: context,
           title: 'Cuenta Desactivada',
-          message: 'Tu cuenta ha sido desactivada. Contacta al administrador si deseas reactivarla.',
+          message:
+              'Tu cuenta ha sido desactivada. Contacta al administrador si deseas reactivarla.',
           type: MessageType.warning,
         );
-        
+
         // Navegar a pantalla de login
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
-            builder: (_) => AuthScreen(
-              onAuthSuccess: () {},
-              onEmailVerified: (_) {},
-            ),
+            builder: (_) =>
+                AuthScreen(onAuthSuccess: () {}, onEmailVerified: (_) {}),
           ),
           (route) => false,
         );

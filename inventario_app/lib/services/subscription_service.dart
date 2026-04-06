@@ -34,9 +34,9 @@ class SubscriptionService {
     planPro: [
       'Todo lo de Básico',
       'Configuración de marca',
-      'Soporte prioritario',
-      'IA: análisis de stock (próximo)',
-      'Reportes históricos (próximo)',
+      'Reportes avanzados',
+      'Exportar a Excel',
+      'Alertas stock bajo',
     ],
   };
 
@@ -78,7 +78,7 @@ class SubscriptionService {
   static Future<bool> hasFeature(String feature) async {
     final planName = await getCurrentPlanName();
 
-    const proFeatures = ['brand_config', 'ai_analysis', 'historical_reports'];
+    const proFeatures = ['brand_config', 'reportes_avanzados', 'excel_export'];
 
     const basicoFeatures = [
       'unlimited_products',
@@ -160,5 +160,65 @@ class SubscriptionService {
     } catch (e) {
       // Ignore
     }
+  }
+
+  static Future<Map<String, dynamic>?> getSubscription() async {
+    try {
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId == null) return null;
+
+      final response = await Supabase.instance.client
+          .from('subscriptions')
+          .select('*')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+      return response;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  static Future<bool> cancelSubscription() async {
+    try {
+      final response = await Supabase.instance.client.functions.invoke(
+        'cancel-subscription',
+      );
+
+      if (response.data != null) {
+        final data = response.data as Map<String, dynamic>;
+        return data['success'] == true;
+      }
+
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static String formatDate(DateTime? date) {
+    if (date == null) return 'N/A';
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  static String getStatusLabel(String? status) {
+    switch (status) {
+      case 'active':
+        return 'Activo';
+      case 'canceled':
+        return 'Cancelado';
+      case 'expired':
+        return 'Expirado';
+      case 'pending':
+        return 'Pendiente';
+      default:
+        return 'Desconocido';
+    }
+  }
+
+  static String getPlanPrice(String plan) {
+    final price = planPrices[plan] ?? 0;
+    if (price == 0) return 'Gratis';
+    return '\$${(price / 100).toStringAsFixed(2)}/mes';
   }
 }
