@@ -531,9 +531,12 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Tabla de Precios'),
-        automaticallyImplyLeading: false,
         backgroundColor: AppConfig.secondaryColor,
         foregroundColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -1267,12 +1270,13 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
               children: [
                 pw.Container(
                   padding: const pw.EdgeInsets.all(8),
-                  color: PdfColors.cyan100,
+                  color: PdfHelper.primaryLight,
                   child: pw.Text(
                     categoria.nombre,
                     style: pw.TextStyle(
                       fontSize: 16,
                       fontWeight: pw.FontWeight.bold,
+                      color: PdfHelper.primaryColor,
                     ),
                   ),
                 ),

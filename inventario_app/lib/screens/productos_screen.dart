@@ -39,11 +39,10 @@ class _ProductosScreenState extends State<ProductosScreen> {
   final LiveSyncService _liveSyncService = LiveSyncService();
   List<Producto> _productos = [];
   List<Producto> _productosFiltrados = [];
-  List<Producto> _allProductos = []; // Para validación de duplicados global
+  List<Producto> _allProductos = [];
   List<Categoria> _categorias = [];
   List<Proveedor> _proveedores = [];
   List<PrecioTarifa> _tarifas = [];
-  List<ComboItem> _comboItems = [];
   Map<int, List<ComboItem>> _comboItemsMap = {};
   bool _isLoading = true;
   String? _error;
@@ -1324,16 +1323,19 @@ class _ProductosScreenState extends State<ProductosScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        _buildFiltroChip('Todos', FiltroStock.todos),
-                        const SizedBox(width: 8),
-                        _buildFiltroChip('En stock', FiltroStock.enStock),
-                        const SizedBox(width: 8),
-                        _buildFiltroChip('Sin stock', FiltroStock.sinStock),
-                        const SizedBox(width: 8),
-                        _buildFiltroChip('Stock bajo', FiltroStock.stockBajo),
-                      ],
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _buildFiltroChip('Todos', FiltroStock.todos),
+                          const SizedBox(width: 8),
+                          _buildFiltroChip('En stock', FiltroStock.enStock),
+                          const SizedBox(width: 8),
+                          _buildFiltroChip('Sin stock', FiltroStock.sinStock),
+                          const SizedBox(width: 8),
+                          _buildFiltroChip('Stock bajo', FiltroStock.stockBajo),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<Proveedor?>(
@@ -2133,14 +2135,13 @@ class _ProductosScreenState extends State<ProductosScreen> {
                   pw.Container(
                     width: double.infinity,
                     padding: const pw.EdgeInsets.all(8),
-                    decoration: const pw.BoxDecoration(
-                      color: PdfColors.cyan100,
-                    ),
+                    decoration: pw.BoxDecoration(color: PdfHelper.primaryLight),
                     child: pw.Text(
                       categoria.nombre,
                       style: pw.TextStyle(
                         fontSize: 14,
                         fontWeight: pw.FontWeight.bold,
+                        color: PdfHelper.primaryColor,
                       ),
                     ),
                   ),
@@ -2166,7 +2167,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
               ),
             pw.Container(
               padding: const pw.EdgeInsets.all(12),
-              color: PdfColors.cyan200,
+              color: PdfHelper.primaryLight,
               child: pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
@@ -2192,7 +2193,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
             pw.SizedBox(height: 8),
             pw.Container(
               padding: const pw.EdgeInsets.all(12),
-              color: PdfColors.cyan200,
+              color: PdfHelper.primaryLight,
               child: pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [

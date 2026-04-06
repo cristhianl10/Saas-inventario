@@ -362,6 +362,7 @@ class _HistorialClienteScreen extends StatefulWidget {
 
 class _HistorialClienteScreenState extends State<_HistorialClienteScreen> {
   List<Venta> _ventas = [];
+  List<Producto> _productos = [];
   Map<String, dynamic>? _stats;
   bool _isLoading = true;
 
@@ -377,10 +378,12 @@ class _HistorialClienteScreenState extends State<_HistorialClienteScreen> {
       final ventas = await widget.apiService.getVentasPorCliente(
         widget.cliente.id!,
       );
+      final productos = await widget.apiService.getProductos();
       final stats = await widget.apiService.getClienteStats(widget.cliente.id!);
       if (!mounted) return;
       setState(() {
         _ventas = ventas;
+        _productos = productos;
         _stats = stats;
         _isLoading = false;
       });
@@ -388,6 +391,11 @@ class _HistorialClienteScreenState extends State<_HistorialClienteScreen> {
       if (!mounted) return;
       setState(() => _isLoading = false);
     }
+  }
+
+  String _getNombreProducto(int productoId) {
+    final producto = _productos.where((p) => p.id == productoId).firstOrNull;
+    return producto?.nombre ?? 'Producto eliminado';
   }
 
   @override
@@ -527,19 +535,74 @@ class _HistorialClienteScreenState extends State<_HistorialClienteScreen> {
   }
 
   Widget _buildVentaCard(Venta venta) {
-    return Card(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Colors.green.withValues(alpha: 0.1),
-          child: const Icon(Icons.receipt, color: Colors.green),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? Colors.grey[700]! : Colors.grey[200]!,
         ),
-        title: Text(widget.dateFormat.format(venta.fechaVenta)),
-        subtitle: Text('${venta.cantidad} unidad(es)'),
-        trailing: Text(
-          '\$${venta.total.toStringAsFixed(2)}',
-          style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Center(
+                child: Icon(Icons.receipt, color: Colors.green, size: 22),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _getNombreProducto(venta.productoId),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${widget.dateFormat.format(venta.fechaVenta)} • ${venta.cantidad} unidad(es)',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? Colors.white60 : Colors.grey[600],
+                    ),
+                  ),
+                  if (venta.observaciones != null &&
+                      venta.observaciones!.isNotEmpty)
+                    Text(
+                      venta.observaciones!,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDark ? Colors.white38 : Colors.grey[500],
+                        fontStyle: FontStyle.italic,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '\$${venta.total.toStringAsFixed(2)}',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            ),
+          ],
         ),
       ),
     );

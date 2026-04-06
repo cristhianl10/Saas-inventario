@@ -1297,7 +1297,7 @@ class _ResumenScreenState extends State<ResumenScreen> {
                 const SizedBox(width: 8),
                 IconButton(
                   onPressed: () => _showEditarVentaDialog(venta),
-                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  icon: const Icon(Icons.edit_outlined, size: 14),
                   color: AppConfig.primaryColor,
                   tooltip: 'Editar venta',
                   style: IconButton.styleFrom(
@@ -1305,9 +1305,9 @@ class _ResumenScreenState extends State<ResumenScreen> {
                       alpha: 0.1,
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(6),
                     ),
-                    padding: const EdgeInsets.all(6),
+                    padding: const EdgeInsets.all(4),
                   ),
                 ),
                 IconButton(
@@ -1381,7 +1381,7 @@ class _ResumenScreenState extends State<ResumenScreen> {
           pw.SizedBox(height: 8),
           pw.Container(
             padding: const pw.EdgeInsets.all(12),
-            color: PdfColors.cyan200,
+            color: PdfHelper.primaryLight,
             child: pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [

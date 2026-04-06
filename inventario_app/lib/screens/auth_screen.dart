@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/app_config.dart';
 import '../services/user_status_service.dart';
-import 'email_verified_screen.dart';
 import 'legal_screen.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -31,12 +30,14 @@ class _AuthScreenState extends State<AuthScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   final _businessNameController = TextEditingController();
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _businessNameController.dispose();
     super.dispose();
   }
@@ -56,33 +57,26 @@ class _AuthScreenState extends State<AuthScreen> {
       final brandName = _sanitizeInput(_businessNameController.text.trim());
 
       if (_isLogin) {
+        debugPrint('Intentando login con email: $email');
         final response = await Supabase.instance.client.auth.signInWithPassword(
           email: email,
           password: password,
         );
-
-        // Verificar si el usuario está activo
-        if (response.user != null) {
-          final isActive = await UserStatusService.isUserActive(
-            response.user!.id,
-          );
-          if (!isActive) {
-            await Supabase.instance.client.auth.signOut();
-            setState(() {
-              _errorMessage =
-                  'Tu cuenta ha sido desactivada. Contacta al administrador para reactivarla.';
-              _isLoading = false;
-            });
-            return;
-          }
-        }
-
+        debugPrint('Login exitoso, user: ${response.user?.email}');
         widget.onAuthSuccess();
       } else {
         final passwordError = _validatePasswordStrength(password);
         if (passwordError.isNotEmpty) {
           setState(() {
             _errorMessage = passwordError;
+            _isLoading = false;
+          });
+          return;
+        }
+
+        if (_passwordController.text != _confirmPasswordController.text) {
+          setState(() {
+            _errorMessage = 'Las contraseñas no coinciden';
             _isLoading = false;
           });
           return;
@@ -580,6 +574,40 @@ class _AuthScreenState extends State<AuthScreen> {
                             return null;
                           },
                         ),
+
+                        if (!_isLogin) ...[
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _confirmPasswordController,
+                            decoration: InputDecoration(
+                              labelText: 'Confirmar contraseña',
+                              prefixIcon: const Icon(
+                                Icons.lock_outlined,
+                                size: 20,
+                              ),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                  size: 20,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _obscurePassword = !_obscurePassword;
+                                  });
+                                },
+                              ),
+                            ),
+                            obscureText: _obscurePassword,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Confirma tu contraseña';
+                              }
+                              return null;
+                            },
+                          ),
+                        ],
 
                         if (_isLogin) ...[
                           const SizedBox(height: 8),

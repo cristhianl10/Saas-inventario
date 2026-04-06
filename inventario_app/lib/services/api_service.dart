@@ -71,8 +71,9 @@ class ApiService {
     final productos = await getProductos();
     final counts = <int, int>{};
     for (final p in productos) {
-      if (p.categoriaId != null) {
-        counts[p.categoriaId!] = (counts[p.categoriaId!] ?? 0) + 1;
+      final catId = p.categoriaId;
+      if (catId != null) {
+        counts[catId] = (counts[catId] ?? 0) + 1;
       }
     }
     return counts;
@@ -165,6 +166,7 @@ class ApiService {
           'precio_unitario': venta.precioUnitario,
           'total': venta.total,
           'fecha_venta': venta.fechaVenta.toIso8601String(),
+          'cliente_id': venta.clienteId,
           'vendido_a': venta.vendidoA,
           'observaciones': venta.observaciones,
           'user_id': _userId!,
@@ -184,6 +186,7 @@ class ApiService {
           'precio_unitario': venta.precioUnitario,
           'total': venta.total,
           'fecha_venta': venta.fechaVenta.toIso8601String(),
+          'cliente_id': venta.clienteId,
           'vendido_a': venta.vendidoA,
           'observaciones': venta.observaciones,
         })
@@ -577,6 +580,42 @@ class ApiService {
     return List<Map<String, dynamic>>.from(response);
   }
 
+  Future<void> deletePurchaseHistory(
+    String id, {
+    required bool removeFromStock,
+  }) async {
+    _checkAuth();
+
+    if (removeFromStock) {
+      final item = await _client
+          .from('purchase_history')
+          .select()
+          .eq('id', id)
+          .eq('user_id', _userId!)
+          .maybeSingle();
+
+      if (item != null && item['product_id'] != null) {
+        final productos = await getProductos();
+        final producto = productos
+            .where((p) => p.id == item['product_id'])
+            .firstOrNull;
+        if (producto != null) {
+          final nuevaCantidad =
+              producto.cantidad - ((item['quantity'] as num?)?.toInt() ?? 0);
+          await updateProducto(
+            producto.copyWith(cantidad: nuevaCantidad < 0 ? 0 : nuevaCantidad),
+          );
+        }
+      }
+    }
+
+    await _client
+        .from('purchase_history')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', _userId!);
+  }
+
   Future<Map<String, dynamic>> receivePurchaseOrder(
     String orderId,
     List<Map<String, dynamic>> items,
@@ -629,6 +668,7 @@ class ApiService {
 
   Future<Map<String, dynamic>> receivePurchaseOrderSimple({
     required String orderId,
+    required int providerId,
     required int productId,
     required String productName,
     required int quantity,
@@ -636,6 +676,17 @@ class ApiService {
     required bool updateStock,
   }) async {
     _checkAuth();
+
+    final orderResponse = await _client
+        .from('purchase_orders')
+        .select()
+        .eq('id', orderId)
+        .eq('user_id', _userId!)
+        .maybeSingle();
+
+    if (orderResponse == null) {
+      throw Exception('Orden no encontrada');
+    }
 
     await _client
         .from('purchase_orders')
@@ -649,7 +700,8 @@ class ApiService {
     await _client.from('purchase_history').insert({
       'purchase_order_id': orderId,
       'user_id': _userId,
-      'product_id': productId,
+      'provider_id': providerId,
+      'product_id': productId > 0 ? productId : null,
       'product_name': productName,
       'quantity': quantity,
       'unit_cost': unitCost,
@@ -665,12 +717,7 @@ class ApiService {
       }
     }
 
-    final response = await _client
-        .from('purchase_orders')
-        .select()
-        .eq('id', orderId)
-        .single();
-    return Map<String, dynamic>.from(response);
+    return Map<String, dynamic>.from(orderResponse);
   }
 
   Future<Map<String, dynamic>> getProviderStats(int providerId) async {

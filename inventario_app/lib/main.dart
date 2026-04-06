@@ -1,12 +1,15 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'screens/screens.dart';
-import 'config/app_theme.dart';
 import 'config/app_config.dart';
+import 'config/app_theme.dart';
 import 'config/tenant_service.dart';
 import 'services/terms_service.dart';
+import 'screens/home_screen.dart';
+import 'screens/auth_screen.dart';
+import 'providers/data_providers.dart';
 
 Future<void> _ensureTenantExists(String userId) async {
   try {
@@ -54,7 +57,7 @@ void main() async {
     anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
   );
 
-  runApp(const InventarioApp());
+  runApp(const ProviderScope(child: InventarioApp()));
 }
 
 class InventarioApp extends StatefulWidget {
@@ -65,10 +68,8 @@ class InventarioApp extends StatefulWidget {
 }
 
 class _InventarioAppState extends State<InventarioApp> {
-  bool _isAuthenticated = false;
   bool _isLoading = true;
-  bool _emailVerified = false;
-  bool _needsNewTerms = false;
+  bool _isAuthenticated = false;
   String? _verifiedEmail;
   StreamSubscription<AuthState>? _authSubscription;
 
@@ -86,58 +87,26 @@ class _InventarioAppState extends State<InventarioApp> {
   void _listenAuthChanges() {
     _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((
       data,
-    ) async {
-      if (!mounted) return;
-
+    ) {
+      debugPrint('Auth state changed: ${data.event}');
       final event = data.event;
       final session = data.session;
-      final user = session?.user;
 
       if (event == AuthChangeEvent.signedOut || session == null) {
+        debugPrint('User signed out');
         TenantService.clearTenant();
         setState(() {
           _isAuthenticated = false;
-          _emailVerified = false;
-          _needsNewTerms = false;
           _verifiedEmail = null;
           _isLoading = false;
         });
         return;
       }
 
-      if (event == AuthChangeEvent.userUpdated && user != null) {
-        if (user.emailConfirmedAt != null) {
-          await _ensureTenantExists(user.id);
-          await TenantService.loadTenantConfig(user.id);
-          final needsNew = await TermsService.needsToAcceptNewTerms(user.id);
-          if (!mounted) return;
-          setState(() {
-            _emailVerified = true;
-            _verifiedEmail = user.email;
-            _isAuthenticated = true;
-            _needsNewTerms = needsNew;
-          });
-        }
-      }
-
-      if (user != null && user.emailConfirmedAt != null) {
-        await _ensureTenantExists(user.id);
-        await TenantService.loadTenantConfig(user.id);
-        final needsNew = await TermsService.needsToAcceptNewTerms(user.id);
-        if (!mounted) return;
-        setState(() {
-          _isAuthenticated = true;
-          _emailVerified = true;
-          _verifiedEmail = user.email;
-          _needsNewTerms = needsNew;
-          _isLoading = false;
-        });
-      } else if (user != null && user.emailConfirmedAt == null) {
-        if (!mounted) return;
-        setState(() {
-          _emailVerified = false;
-          _isLoading = false;
-        });
+      final user = session.user;
+      if (user != null) {
+        debugPrint('User signed in: ${user.email}');
+        _onUserLoggedIn(user);
       }
     });
   }
@@ -145,70 +114,39 @@ class _InventarioAppState extends State<InventarioApp> {
   Future<void> _checkAuth() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
-      if (user.emailConfirmedAt != null) {
-        await _ensureTenantExists(user.id);
-        await TenantService.loadTenantConfig(user.id);
-        final needsNew = await TermsService.needsToAcceptNewTerms(user.id);
-        setState(() {
-          _isAuthenticated = true;
-          _emailVerified = true;
-          _verifiedEmail = user.email;
-          _needsNewTerms = needsNew;
-        });
-      } else {
-        setState(() {
-          _isAuthenticated = true;
-          _emailVerified = false;
-          _verifiedEmail = user.email;
-        });
-      }
+      await _onUserLoggedIn(user);
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
     }
-    setState(() {
-      _isLoading = false;
-    });
   }
 
-  void _onAuthSuccess() async {
+  Future<void> _onUserLoggedIn(User user) async {
+    debugPrint('_onUserLoggedIn called for: ${user.email}');
+    try {
+      await _ensureTenantExists(user.id);
+      await TenantService.loadTenantConfig(user.id);
+      await TermsService.needsToAcceptNewTerms(user.id);
+    } catch (e) {
+      debugPrint('Error loading user config: $e');
+    }
+
+    if (mounted) {
+      debugPrint('Setting _isAuthenticated = true');
+      setState(() {
+        _isAuthenticated = true;
+        _verifiedEmail = user.email;
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _onAuthSuccess() {
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
-      if (user.emailConfirmedAt != null) {
-        await _ensureTenantExists(user.id);
-        await TenantService.loadTenantConfig(user.id);
-        final needsNew = await TermsService.needsToAcceptNewTerms(user.id);
-        if (mounted) {
-          setState(() {
-            _isAuthenticated = true;
-            _emailVerified = true;
-            _verifiedEmail = user.email;
-            _needsNewTerms = needsNew;
-            _isLoading = false;
-          });
-        }
-      } else {
-        if (mounted) {
-          setState(() {
-            _isAuthenticated = true;
-            _emailVerified = false;
-            _verifiedEmail = user.email;
-            _isLoading = false;
-          });
-        }
-      }
+      _onUserLoggedIn(user);
     }
-  }
-
-  void _onEmailVerified(String email) {
-    setState(() {
-      _emailVerified = true;
-      _verifiedEmail = email;
-      _isAuthenticated = true;
-    });
-  }
-
-  void _onTermsAccepted() {
-    setState(() {
-      _needsNewTerms = false;
-    });
   }
 
   @override
@@ -236,32 +174,20 @@ class _InventarioAppState extends State<InventarioApp> {
 
   Widget _buildHome() {
     if (_isLoading) {
-      return const Scaffold(
+      return Scaffold(
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('Cargando...'),
+              CircularProgressIndicator(color: AppConfig.primaryColor),
+              const SizedBox(height: 16),
+              Text(
+                'Cargando...',
+                style: TextStyle(color: AppConfig.primaryColor),
+              ),
             ],
           ),
         ),
-      );
-    }
-
-    if (_needsNewTerms) {
-      return NewTermsScreen(onAccepted: _onTermsAccepted);
-    }
-
-    if (_emailVerified && _verifiedEmail != null) {
-      return EmailVerifiedScreen(
-        email: _verifiedEmail!,
-        onContinue: () {
-          setState(() {
-            _emailVerified = false;
-          });
-        },
       );
     }
 
@@ -269,9 +195,6 @@ class _InventarioAppState extends State<InventarioApp> {
       return const HomeScreen();
     }
 
-    return AuthScreen(
-      onAuthSuccess: _onAuthSuccess,
-      onEmailVerified: _onEmailVerified,
-    );
+    return AuthScreen(onAuthSuccess: _onAuthSuccess, onEmailVerified: (_) {});
   }
 }

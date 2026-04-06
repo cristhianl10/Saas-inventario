@@ -3,7 +3,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/app_config.dart';
 import '../config/tenant_service.dart';
 import '../services/user_status_service.dart';
-import '../services/subscription_service.dart';
 import '../services/backup_service.dart';
 import '../utils/dialog_utils.dart';
 import '../screens/auth_screen.dart';

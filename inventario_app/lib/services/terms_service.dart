@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class TermsService {
@@ -12,12 +13,13 @@ class TermsService {
           .maybeSingle();
 
       if (response == null) {
-        return true;
+        return false;
       }
 
       final acceptedVersion = response['terms_version'] as String? ?? '0';
       return acceptedVersion != currentVersion;
     } catch (e) {
+      debugPrint('Error checking terms: $e');
       return false;
     }
   }
@@ -46,7 +48,7 @@ class TermsService {
         });
       }
     } catch (e) {
-      rethrow;
+      debugPrint('Error accepting terms: $e');
     }
   }
 

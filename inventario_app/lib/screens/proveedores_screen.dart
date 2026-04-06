@@ -68,6 +68,7 @@ class _ProveedoresTab extends StatefulWidget {
 
 class _ProveedoresTabState extends State<_ProveedoresTab> {
   List<Proveedor> _proveedores = [];
+  List<Producto> _productos = [];
   bool _isLoading = true;
 
   @override
@@ -79,9 +80,11 @@ class _ProveedoresTabState extends State<_ProveedoresTab> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     final proveedores = await widget.apiService.getProveedores();
+    final productos = await widget.apiService.getProductos();
     if (!mounted) return;
     setState(() {
       _proveedores = proveedores;
+      _productos = productos;
       _isLoading = false;
     });
   }
@@ -378,6 +381,7 @@ class _ProveedoresTabState extends State<_ProveedoresTab> {
     }
 
     Map<String, dynamic>? ordenSeleccionada;
+    Producto? productoSeleccionado;
     bool actualizarStock = true;
 
     showDialog(
@@ -420,7 +424,37 @@ class _ProveedoresTabState extends State<_ProveedoresTab> {
                         ),
                       )
                       .toList(),
-                  onChanged: (o) => setDialogState(() => ordenSeleccionada = o),
+                  onChanged: (o) => setDialogState(() {
+                    ordenSeleccionada = o;
+                    productoSeleccionado = null;
+                  }),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Selecciona el producto a actualizar:',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<Producto>(
+                  value: productoSeleccionado,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    hintText: 'Ninguno (solo registrar)',
+                  ),
+                  isExpanded: true,
+                  items: _productos
+                      .map(
+                        (p) => DropdownMenuItem(
+                          value: p,
+                          child: Text(
+                            '${p.nombre} (Stock: ${p.cantidad})',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (p) =>
+                      setDialogState(() => productoSeleccionado = p),
                 ),
                 const SizedBox(height: 16),
                 SwitchListTile(
@@ -451,17 +485,26 @@ class _ProveedoresTabState extends State<_ProveedoresTab> {
                             0;
                         await widget.apiService.receivePurchaseOrderSimple(
                           orderId: ordenSeleccionada!['id'],
-                          productId: 0,
-                          productName: ordenSeleccionada!['details'] ?? 'Orden',
+                          providerId: proveedor.id!,
+                          productId: productoSeleccionado?.id ?? 0,
+                          productName:
+                              productoSeleccionado?.nombre ??
+                              ordenSeleccionada!['details'] ??
+                              'Orden',
                           quantity: cantidad,
                           unitCost: cantidad > 0 ? amount / cantidad : 0,
-                          updateStock: actualizarStock,
+                          updateStock:
+                              actualizarStock && productoSeleccionado != null,
                         );
                         if (!mounted) return;
                         Navigator.pop(dialogContext);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Pedido recibido'),
+                          SnackBar(
+                            content: Text(
+                              actualizarStock && productoSeleccionado != null
+                                  ? 'Pedido recibido y stock actualizado'
+                                  : 'Pedido recibido',
+                            ),
                             backgroundColor: Colors.green,
                           ),
                         );
@@ -818,6 +861,7 @@ class _HistorialProveedorScreenState extends State<_HistorialProveedorScreen> {
 
   Widget _ordenCard(Map<String, dynamic> orden) {
     final status = orden['status'] as String? ?? 'draft';
+    final isPending = status == 'draft' || status == 'requested';
     final color = status == 'requested'
         ? Colors.orange
         : status == 'received'
@@ -830,11 +874,172 @@ class _HistorialProveedorScreenState extends State<_HistorialProveedorScreen> {
         leading: Icon(Icons.pending, color: color),
         title: Text(orden['title'] ?? 'Orden'),
         subtitle: Text(_dateFormat.format(DateTime.parse(orden['created_at']))),
-        trailing: Text(
-          '\$${((orden['amount'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)}',
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '\$${((orden['amount'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)}',
+            ),
+            if (isPending) ...[
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.edit, size: 20),
+                onPressed: () => _editOrdenDialog(orden),
+                tooltip: 'Editar',
+              ),
+              IconButton(
+                icon: const Icon(Icons.cancel, size: 20, color: Colors.red),
+                onPressed: () => _cancelOrdenDialog(orden),
+                tooltip: 'Cancelar',
+              ),
+            ],
+          ],
         ),
       ),
     );
+  }
+
+  Future<void> _editOrdenDialog(Map<String, dynamic> orden) async {
+    final titleController = TextEditingController(text: orden['title'] ?? '');
+    final detailsController = TextEditingController(
+      text: orden['details'] ?? '',
+    );
+    final unitsController = TextEditingController(
+      text: (orden['units'] as num?)?.toString() ?? '0',
+    );
+    final amountController = TextEditingController(
+      text: ((orden['amount'] as num?)?.toDouble() ?? 0).toStringAsFixed(2),
+    );
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Editar Orden'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(labelText: 'Título'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: detailsController,
+                decoration: const InputDecoration(labelText: 'Detalles'),
+                maxLines: 2,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: unitsController,
+                      decoration: const InputDecoration(labelText: 'Cantidad'),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: amountController,
+                      decoration: const InputDecoration(labelText: 'Monto'),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                await widget.apiService.updatePurchaseOrder(orden['id'], {
+                  'title': titleController.text.trim(),
+                  'details': detailsController.text.trim(),
+                  'units': int.tryParse(unitsController.text) ?? 0,
+                  'amount': double.tryParse(amountController.text) ?? 0,
+                });
+                if (!mounted) return;
+                Navigator.pop(dialogContext);
+                _loadData();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Orden actualizada'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _cancelOrdenDialog(Map<String, dynamic> orden) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('Cancelar Orden'),
+          ],
+        ),
+        content: Text('¿Cancelar la orden "${orden['title']}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('No'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Sí, cancelar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await widget.apiService.updatePurchaseOrder(orden['id'], {
+          'status': 'cancelled',
+        });
+        _loadData();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Orden cancelada'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   Widget _historialCard(Map<String, dynamic> item) => Card(
@@ -847,22 +1052,98 @@ class _HistorialProveedorScreenState extends State<_HistorialProveedorScreen> {
       ),
       title: Text(item['product_name'] ?? 'Producto'),
       subtitle: Text(_dateFormat.format(DateTime.parse(item['received_at']))),
-      trailing: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            '\$${((item['total_cost'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)}',
-            style: const TextStyle(fontWeight: FontWeight.bold),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '\$${((item['total_cost'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                '${item['quantity']} uds',
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+            ],
           ),
-          Text(
-            '${item['quantity']} uds',
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          IconButton(
+            icon: const Icon(Icons.delete, size: 20, color: Colors.red),
+            onPressed: () => _deleteHistorialDialog(item),
+            tooltip: 'Eliminar',
           ),
         ],
       ),
     ),
   );
+
+  Future<void> _deleteHistorialDialog(Map<String, dynamic> item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Eliminar Recepción'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('¿Eliminar la recepción de "${item['product_name']}"?'),
+            const SizedBox(height: 16),
+            const Text(
+              '¿Deseas restar la cantidad del stock?',
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Solo eliminar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Quitar del stock'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != null) {
+      try {
+        await widget.apiService.deletePurchaseHistory(
+          item['id'],
+          removeFromStock: confirmed,
+        );
+        _loadData();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              confirmed ? 'Eliminado y stock actualizado' : 'Eliminado',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
 
   Widget _emptyState(String msg) => Container(
     padding: const EdgeInsets.all(32),
