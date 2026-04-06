@@ -4,8 +4,10 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
+import '../services/live_sync_service.dart';
 import '../services/stock_alert_service.dart';
 import '../config/app_theme.dart';
 import '../config/app_config.dart';
@@ -30,6 +32,7 @@ class ResumenScreen extends StatefulWidget {
 
 class _ResumenScreenState extends State<ResumenScreen> {
   final ApiService _apiService = ApiService();
+  final LiveSyncService _liveSyncService = LiveSyncService();
   List<Producto> _productos = [];
   List<Categoria> _categorias = [];
   List<Venta> _ventas = [];
@@ -41,6 +44,7 @@ class _ResumenScreenState extends State<ResumenScreen> {
   void initState() {
     super.initState();
     _loadData();
+    _setupLiveUpdates();
     _scrollController.addListener(() {
       final show = _scrollController.offset > 300;
       if (show != _showScrollToTop) {
@@ -51,16 +55,31 @@ class _ResumenScreenState extends State<ResumenScreen> {
 
   @override
   void dispose() {
+    _liveSyncService.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
+  void _setupLiveUpdates() {
+    _liveSyncService.watchTables(
+      tables: const ['productos', 'categorias', 'ventas', 'combo_items'],
+      onChange: () {
+        if (mounted) {
+          _loadData(showLoader: false);
+        }
+      },
+    );
+  }
+
+  Future<void> _loadData({bool showLoader = true}) async {
+    if (showLoader) {
+      setState(() => _isLoading = true);
+    }
     try {
       final productos = await _apiService.getProductos();
       final categorias = await _apiService.getCategorias();
       final ventas = await _apiService.getVentas();
+      if (!mounted) return;
       setState(() {
         _productos = productos;
         _categorias = categorias;
@@ -68,6 +87,7 @@ class _ResumenScreenState extends State<ResumenScreen> {
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isLoading = false);
     }
   }
@@ -1210,18 +1230,42 @@ class _ResumenScreenState extends State<ResumenScreen> {
                         _getNombreProducto(venta.productoId),
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: 14,
                           color: isDark ? Colors.white : Colors.black,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
+                      if (venta.vendidoA != null)
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.person,
+                              size: 12,
+                              color: isDark ? Colors.white60 : Colors.grey[600],
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                venta.vendidoA!,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isDark
+                                      ? Colors.white60
+                                      : Colors.grey[600],
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                       Text(
                         DateFormat('dd MMM, HH:mm').format(venta.fechaVenta),
                         style: TextStyle(
                           color: isDark
-                              ? Colors.white70
+                              ? Colors.white54
                               : SubliriumColors.textSecondary,
-                          fontSize: 12,
+                          fontSize: 11,
                         ),
                       ),
                     ],
@@ -1234,37 +1278,50 @@ class _ResumenScreenState extends State<ResumenScreen> {
                       '\$${venta.total.toStringAsFixed(2)}',
                       style: TextStyle(
                         fontWeight: FontWeight.w900,
-                        color: isDark
-                            ? AppConfig.primaryColor
-                            : AppConfig.primaryColor,
-                        fontSize: 16,
+                        color: AppConfig.primaryColor,
+                        fontSize: 14,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
                       '${venta.cantidad} uds',
                       style: TextStyle(
                         color: isDark
-                            ? Colors.white70
+                            ? Colors.white54
                             : SubliriumColors.textSecondary,
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    IconButton(
-                      onPressed: () => _deleteVenta(venta),
-                      icon: const Icon(Icons.delete_outline, size: 20),
-                      color: SubliriumColors.deleteText,
-                      tooltip: 'Eliminar venta',
-                      style: IconButton.styleFrom(
-                        backgroundColor: SubliriumColors.stockLowBg,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.all(6),
+                        fontSize: 11,
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: () => _showEditarVentaDialog(venta),
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  color: AppConfig.primaryColor,
+                  tooltip: 'Editar venta',
+                  style: IconButton.styleFrom(
+                    backgroundColor: AppConfig.primaryColor.withValues(
+                      alpha: 0.1,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.all(6),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => _deleteVenta(venta),
+                  icon: const Icon(Icons.delete_outline, size: 18),
+                  color: SubliriumColors.deleteText,
+                  tooltip: 'Eliminar venta',
+                  style: IconButton.styleFrom(
+                    backgroundColor: SubliriumColors.stockLowBg,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.all(6),
+                  ),
                 ),
               ],
             ),

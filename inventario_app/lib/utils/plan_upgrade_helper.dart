@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../config/app_config.dart';
+import '../services/subscription_service.dart';
 
 class PlanUpgradeHelper {
   static void showUpgradeDialog(
@@ -15,39 +16,55 @@ class PlanUpgradeHelper {
           children: [
             Icon(Icons.workspace_premium, color: AppConfig.primaryColor),
             const SizedBox(width: 8),
-            const Expanded(child: Text('Función Premium')),
+            Expanded(child: Text('Función: $feature')),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Esta función está disponible en el plan $planRequired.',
-              style: const TextStyle(fontSize: 15),
-            ),
-            const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppConfig.primaryColor.withValues(alpha: 0.1),
+                color: Colors.orange.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.lightbulb_outline,
-                    color: AppConfig.primaryColor,
+                  const Icon(
+                    Icons.info_outline,
+                    color: Colors.orange,
                     size: 20,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Upgrade tu plan para desbloquear $feature y más funciones.',
+                      'Requiere plan $planRequired o superior.',
                       style: const TextStyle(fontSize: 13),
                     ),
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Tu plan incluye:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            ...SubscriptionService.planFeatures['gratis']!.map(
+              (f) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  children: [
+                    const Icon(Icons.check, color: Colors.green, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(f, style: const TextStyle(fontSize: 13)),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -55,7 +72,7 @@ class PlanUpgradeHelper {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Ahora no'),
+            child: const Text('Entendido'),
           ),
           ElevatedButton(
             onPressed: () {

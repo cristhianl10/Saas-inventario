@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
+import '../services/live_sync_service.dart';
 import '../config/app_theme.dart';
 import '../config/app_config.dart';
 import 'productos_screen.dart';
@@ -12,6 +13,7 @@ import 'tabla_precios_screen.dart';
 import 'combos_screen.dart';
 import 'configuracion_screen.dart';
 import 'clientes_screen.dart';
+import 'proveedores_screen.dart';
 import 'auth_screen.dart';
 import 'planes_screen.dart';
 import 'suscripcion_screen.dart';
@@ -26,6 +28,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final ApiService _apiService = ApiService();
+  final LiveSyncService _liveSyncService = LiveSyncService();
   final TextEditingController _searchController = TextEditingController();
   List<Categoria> _categorias = [];
   Map<int, int> _productosCount = {};
@@ -40,6 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadCategorias();
+    _setupLiveUpdates();
     _showWelcomeMessage();
     _searchController.addListener(() {
       setState(() {
@@ -83,9 +87,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _liveSyncService.dispose();
     _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _setupLiveUpdates() {
+    _liveSyncService.watchTables(
+      tables: const ['categorias', 'productos'],
+      onChange: () {
+        if (mounted) {
+          _loadCategorias(showLoader: false);
+        }
+      },
+    );
   }
 
   List<Categoria> get _categoriasFiltradas {
@@ -97,20 +113,25 @@ class _HomeScreenState extends State<HomeScreen> {
     }).toList();
   }
 
-  Future<void> _loadCategorias() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+  Future<void> _loadCategorias({bool showLoader = true}) async {
+    if (showLoader) {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+    }
     try {
       final categorias = await _apiService.getCategorias();
       final counts = await _apiService.getProductosCountPorCategoria();
+      if (!mounted) return;
       setState(() {
         _categorias = categorias;
         _productosCount = counts;
         _isLoading = false;
+        _error = null;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _isLoading = false;
@@ -273,10 +294,8 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               _buildCategorias(), // index 0 – Inicio
               const ProductosScreen(), // index 1 – Inventario
-              const ResumenScreen(), // index 2 – Resumen
-              const TablaPreciosScreen(), // index 3 – Precios
-              CombosScreen(), // index 4 – Combos
-              const ReportesScreen(), // index 5 – Reportes
+              const ResumenScreen(), // index 2 – Ventas
+              _buildMasMenu(), // index 3 – Más
             ],
           ),
           bottomNavigationBar: _buildBottomNav(),
@@ -818,33 +837,138 @@ class _HomeScreenState extends State<HomeScreen> {
             _buildNavItem(
               index: 2,
               iconPath: 'assets/icons/stats.svg',
-              label: 'Resumen',
+              label: 'Ventas',
               isActive: _currentIndex == 2,
               onTap: () => setState(() => _currentIndex = 2),
             ),
             _buildNavItem(
               index: 3,
-              iconPath: 'assets/icons/price.svg',
-              label: 'Precios',
+              iconPath: 'assets/icons/settings.svg',
+              label: 'Más',
               isActive: _currentIndex == 3,
               onTap: () => setState(() => _currentIndex = 3),
             ),
-            _buildNavItem(
-              index: 4,
-              iconPath: 'assets/icons/inventory.svg',
-              label: 'Combos',
-              isActive: _currentIndex == 4,
-              onTap: () => setState(() => _currentIndex = 4),
-            ),
-            _buildNavItem(
-              index: 5,
-              iconPath: 'assets/icons/stats.svg',
-              label: 'Reportes',
-              isActive: _currentIndex == 5,
-              onTap: () => setState(() => _currentIndex = 5),
-            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildMasMenu() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: const Text('Más opciones'),
+        backgroundColor: AppConfig.primaryColor,
+        foregroundColor: Colors.white,
+        automaticallyImplyLeading: false,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _buildMenuCard(
+            icon: Icons.table_chart,
+            title: 'Tabla de Precios',
+            subtitle: 'Precios por cantidad',
+            color: Colors.blue,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TablaPreciosScreen()),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          _buildMenuCard(
+            icon: Icons.inventory_2,
+            title: 'Combos',
+            subtitle: 'Crear paquetes de productos',
+            color: Colors.purple,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => CombosScreen()),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          _buildMenuCard(
+            icon: Icons.analytics,
+            title: 'Reportes',
+            subtitle: 'Ventas, ranking y utilidad',
+            color: Colors.orange,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ReportesScreen()),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          _buildMenuCard(
+            icon: Icons.business,
+            title: 'Proveedores',
+            subtitle: 'Gestionar proveedores',
+            color: Colors.green,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProveedoresScreen()),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          _buildMenuCard(
+            icon: Icons.people,
+            title: 'Clientes',
+            subtitle: 'Historial de clientes',
+            color: Colors.teal,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ClientesScreen()),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          _buildMenuCard(
+            icon: Icons.settings,
+            title: 'Configuración',
+            subtitle: 'Marca y cuenta',
+            color: Colors.grey,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ConfiguracionScreen()),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMenuCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: color.withValues(alpha: 0.1),
+          child: Icon(icon, color: color),
+        ),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text(subtitle),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: onTap,
       ),
     );
   }

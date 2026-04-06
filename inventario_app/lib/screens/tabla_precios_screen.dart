@@ -6,11 +6,9 @@ import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
-import '../services/subscription_service.dart';
 import '../config/app_config.dart';
 import '../config/app_theme.dart';
 import '../utils/pdf_helper.dart';
-import '../utils/plan_upgrade_helper.dart';
 
 class TablaPreciosScreen extends StatefulWidget {
   final int? productoIdInicial;
@@ -236,16 +234,6 @@ class _TablaPreciosScreenState extends State<TablaPreciosScreen> {
   }
 
   Future<void> _showAgregarTarifaDialog({PrecioTarifa? tarifaEditar}) async {
-    final hasAccess = await SubscriptionService.hasFeature('volume_pricing');
-    if (!hasAccess) {
-      PlanUpgradeHelper.showUpgradeDialog(
-        context,
-        'agregar Precios por Volumen',
-        planRequired: 'Básico',
-      );
-      return;
-    }
-
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Verificar si ya tiene precio ilimitado (solo al crear nuevo)

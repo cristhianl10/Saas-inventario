@@ -5,10 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:excel/excel.dart' hide Border;
 import '../models/models.dart';
 import '../services/api_service.dart';
-import '../services/subscription_service.dart';
 import '../config/app_theme.dart';
 import '../config/app_config.dart';
-import '../utils/plan_upgrade_helper.dart';
 
 enum TipoReporte { ventas, productosMasVendidos, utilidad }
 
@@ -30,25 +28,11 @@ class _ReportesScreenState extends State<ReportesScreen> {
   DateTime _fechaInicio = DateTime.now().subtract(const Duration(days: 30));
   DateTime _fechaFin = DateTime.now();
   TipoReporte _tipoReporte = TipoReporte.ventas;
-  bool _isProUser = false;
 
   @override
   void initState() {
     super.initState();
-    _checkAccessAndLoad();
-  }
-
-  Future<void> _checkAccessAndLoad() async {
-    final isPro = await SubscriptionService.hasFeature('historical_reports');
-    if (!isPro) {
-      setState(() {
-        _isProUser = false;
-        _isLoading = false;
-      });
-      return;
-    }
-    setState(() => _isProUser = true);
-    await _loadData();
+    _loadData();
   }
 
   Future<void> _loadData() async {
@@ -181,10 +165,6 @@ class _ReportesScreenState extends State<ReportesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_isProUser) {
-      return _buildAccessDenied();
-    }
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Reportes'),
@@ -550,96 +530,6 @@ class _ReportesScreenState extends State<ReportesScreen> {
   }
 
   DateFormat get _dateFormat => DateFormat('dd/MM/yyyy');
-
-  Widget _buildAccessDenied() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        PlanUpgradeHelper.showUpgradeDialog(
-          context,
-          'Reportes Avanzados',
-          planRequired: 'Pro',
-        );
-      }
-    });
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Reportes'),
-        backgroundColor: AppConfig.secondaryColor,
-        foregroundColor: Colors.white,
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.analytics_outlined,
-                size: 80,
-                color: AppConfig.primaryColor.withValues(alpha: 0.5),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Reportes Avanzados',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Accede a reportes históricos de ventas,\nproductos más vendidos y utilidad.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: Colors.grey),
-              ),
-              const SizedBox(height: 32),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppConfig.primaryColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.workspace_premium,
-                      color: AppConfig.primaryColor,
-                    ),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'Disponible en plan Pro',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const _PlanesScreen()),
-                  );
-                },
-                icon: const Icon(Icons.upgrade),
-                label: const Text('Ver Planes'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppConfig.primaryColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 16,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _buildDateRangeSelector() {
     final isDark = Theme.of(context).brightness == Brightness.dark;

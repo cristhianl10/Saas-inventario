@@ -4,8 +4,8 @@ import '../config/app_config.dart';
 import '../config/tenant_service.dart';
 import '../services/user_status_service.dart';
 import '../services/subscription_service.dart';
+import '../services/backup_service.dart';
 import '../utils/dialog_utils.dart';
-import '../utils/plan_upgrade_helper.dart';
 import '../screens/auth_screen.dart';
 
 class ConfiguracionScreen extends StatefulWidget {
@@ -109,16 +109,6 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
 
   Future<void> _saveConfig() async {
     if (!_formKey.currentState!.validate()) return;
-
-    final hasBrandConfig = await SubscriptionService.hasFeature('brand_config');
-    if (!hasBrandConfig) {
-      PlanUpgradeHelper.showUpgradeDialog(
-        context,
-        'la Configuración de Marca',
-        planRequired: 'Pro',
-      );
-      return;
-    }
 
     setState(() => _isSaving = true);
 
@@ -439,6 +429,12 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
               ),
               const SizedBox(height: 16),
 
+              // Sección de backup
+              _buildSectionTitle('Respaldo de Datos'),
+              const SizedBox(height: 16),
+              _buildBackupSection(),
+              const SizedBox(height: 16),
+
               // Sección de gestión de cuenta
               _buildSectionTitle('Cuenta de Usuario'),
               const SizedBox(height: 16),
@@ -596,6 +592,152 @@ class _ConfiguracionScreenState extends State<ConfiguracionScreen> {
     _appNameController.dispose();
     _brandNameController.dispose();
     super.dispose();
+  }
+
+  Widget _buildBackupSection() {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.backup, color: AppConfig.primaryColor),
+                const SizedBox(width: 8),
+                const Text(
+                  'Respaldo Automático',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Descarga una copia de seguridad de todos tus datos: productos, ventas, clientes, proveedores y más.',
+              style: TextStyle(color: Colors.grey[600], fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _createBackup,
+                icon: const Icon(Icons.download),
+                label: const Text('Descargar Respaldo'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppConfig.primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.all(16),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _createBackup() async {
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              SizedBox(width: 12),
+              Text('Generando respaldo...'),
+            ],
+          ),
+          duration: Duration(seconds: 30),
+        ),
+      );
+
+      final backupService = BackupService();
+      final summary = await backupService.getBackupSummary(
+        await backupService.generateBackup(),
+      );
+
+      final filePath = await backupService.saveBackupToFile();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          icon: Icon(Icons.check_circle, color: Colors.green, size: 48),
+          title: const Text('Respaldo Creado', textAlign: TextAlign.center),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Tu respaldo ha sido generado exitosamente.'),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildBackupStat('Categorías', summary.categorias),
+                    _buildBackupStat('Productos', summary.productos),
+                    _buildBackupStat('Clientes', summary.clientes),
+                    _buildBackupStat('Ventas', summary.ventas),
+                    _buildBackupStat('Proveedores', summary.proveedores),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Guardado en:\n$filePath',
+                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cerrar'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al crear respaldo: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Widget _buildBackupStat(String label, int value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 13)),
+          Text(
+            '$value',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showDeactivateAccountDialog() {

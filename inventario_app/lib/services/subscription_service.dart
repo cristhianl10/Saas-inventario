@@ -21,22 +21,21 @@ class SubscriptionService {
   static const Map<String, List<String>> planFeatures = {
     planGratis: [
       'Hasta 30 productos',
-      'Registro de ventas',
-      'Dashboard básico',
+      'Registro de ventas básico',
+      'Gestión de inventario',
     ],
     planBasico: [
       'Productos ilimitados',
-      'Combos',
+      'Combos de productos',
       'Precios por volumen',
       'Exportar PDF',
       'Gestión de proveedores',
     ],
     planPro: [
-      'Todo lo de Básico',
-      'Configuración de marca',
       'Reportes avanzados',
       'Exportar a Excel',
-      'Alertas stock bajo',
+      'Alertas de stock bajo',
+      'Configuración de marca',
     ],
   };
 

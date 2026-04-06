@@ -3,8 +3,6 @@ import 'package:intl/intl.dart';
 import '../config/app_config.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
-import '../services/subscription_service.dart';
-import '../utils/plan_upgrade_helper.dart';
 
 class ProveedoresScreen extends StatefulWidget {
   const ProveedoresScreen({super.key});
@@ -62,7 +60,6 @@ class _ProveedoresScreenState extends State<ProveedoresScreen>
 
 class _ProveedoresTab extends StatefulWidget {
   final ApiService apiService;
-
   const _ProveedoresTab({required this.apiService});
 
   @override
@@ -90,23 +87,12 @@ class _ProveedoresTabState extends State<_ProveedoresTab> {
   }
 
   Future<void> _showProveedorDialog([Proveedor? proveedor]) async {
-    final hasAccess = await SubscriptionService.hasFeature('suppliers');
-    if (!hasAccess) {
-      PlanUpgradeHelper.showUpgradeDialog(
-        context,
-        'Gestionar Proveedores',
-        planRequired: 'Básico',
-      );
-      return;
-    }
-
     final nombreController = TextEditingController(
       text: proveedor?.nombre ?? '',
     );
     final telefonoController = TextEditingController(
       text: proveedor?.telefono ?? '',
     );
-    final notasController = TextEditingController();
     final isEditing = proveedor != null;
 
     showDialog(
@@ -128,12 +114,6 @@ class _ProveedoresTabState extends State<_ProveedoresTab> {
                 decoration: const InputDecoration(labelText: 'Teléfono'),
                 keyboardType: TextInputType.phone,
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: notasController,
-                decoration: const InputDecoration(labelText: 'Notas'),
-                maxLines: 3,
-              ),
             ],
           ),
         ),
@@ -144,13 +124,11 @@ class _ProveedoresTabState extends State<_ProveedoresTab> {
           ),
           ElevatedButton(
             onPressed: () async {
-              final nombre = nombreController.text.trim();
-              if (nombre.isEmpty) return;
-
+              if (nombreController.text.trim().isEmpty) return;
               if (isEditing) {
                 await widget.apiService.updateProveedor(
-                  proveedor.copyWith(
-                    nombre: nombre,
+                  proveedor!.copyWith(
+                    nombre: nombreController.text.trim(),
                     telefono: telefonoController.text.trim().isEmpty
                         ? null
                         : telefonoController.text.trim(),
@@ -159,17 +137,16 @@ class _ProveedoresTabState extends State<_ProveedoresTab> {
               } else {
                 await widget.apiService.createProveedor(
                   Proveedor(
-                    nombre: nombre,
+                    nombre: nombreController.text.trim(),
                     telefono: telefonoController.text.trim().isEmpty
                         ? null
                         : telefonoController.text.trim(),
                   ),
                 );
               }
-
               if (!mounted) return;
               Navigator.pop(dialogContext);
-              await _loadData();
+              _loadData();
             },
             child: Text(isEditing ? 'Guardar' : 'Crear'),
           ),
@@ -198,122 +175,295 @@ class _ProveedoresTabState extends State<_ProveedoresTab> {
         ],
       ),
     );
-
     if (confirm == true) {
       await widget.apiService.deleteProveedor(proveedor.id!);
-      await _loadData();
+      _loadData();
     }
   }
 
   Future<void> _showOrdenDialog(Proveedor proveedor) async {
-    final titleController = TextEditingController(text: 'Orden de compra');
-    final detailsController = TextEditingController();
-    final unitsController = TextEditingController(text: '1');
-    final amountController = TextEditingController(text: '0');
-    final items = <Map<String, dynamic>>[];
+    final productos = await widget.apiService.getProductos();
+    final categorias = await widget.apiService.getCategorias();
+    if (!mounted) return;
 
-    await showModalBottomSheet(
+    Categoria? categoriaSeleccionada;
+    Producto? productoSeleccionado;
+    final cantidadController = TextEditingController(text: '1');
+    final costoController = TextEditingController(text: '0');
+
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final productosFiltrados = categoriaSeleccionada == null
+              ? productos
+              : productos
+                    .where((p) => p.categoriaId == categoriaSeleccionada!.id)
+                    .toList();
+
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Row(
+              children: [
+                const Icon(Icons.shopping_cart),
+                const SizedBox(width: 8),
+                Expanded(child: Text('Orden a ${proveedor.nombre}')),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Categoría:',
+                    style: TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<Categoria?>(
+                    value: categoriaSeleccionada,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      hintText: 'Todas',
+                    ),
+                    isExpanded: true,
+                    items: [
+                      const DropdownMenuItem(
+                        value: null,
+                        child: Text('Todas las categorías'),
+                      ),
+                      ...categorias.map(
+                        (c) =>
+                            DropdownMenuItem(value: c, child: Text(c.nombre)),
+                      ),
+                    ],
+                    onChanged: (c) => setDialogState(() {
+                      categoriaSeleccionada = c;
+                      productoSeleccionado = null;
+                    }),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Producto:',
+                    style: TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<Producto?>(
+                    value: productoSeleccionado,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      hintText: 'Seleccionar',
+                    ),
+                    isExpanded: true,
+                    items: productosFiltrados.isEmpty
+                        ? [
+                            const DropdownMenuItem(
+                              value: null,
+                              child: Text('Sin productos'),
+                            ),
+                          ]
+                        : productosFiltrados
+                              .map(
+                                (p) => DropdownMenuItem(
+                                  value: p,
+                                  child: Text(
+                                    '${p.nombre} (Stock: ${p.cantidad})',
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                    onChanged: (p) => setDialogState(() {
+                      productoSeleccionado = p;
+                      if (p?.costo != null)
+                        costoController.text = p!.costo!.toStringAsFixed(2);
+                    }),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: cantidadController,
+                          decoration: const InputDecoration(
+                            labelText: 'Cantidad',
+                          ),
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: costoController,
+                          decoration: const InputDecoration(
+                            labelText: 'Costo unit.',
+                            prefixText: '\$ ',
+                          ),
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: productoSeleccionado == null
+                    ? null
+                    : () async {
+                        final cantidad =
+                            int.tryParse(cantidadController.text) ?? 0;
+                        final costo =
+                            double.tryParse(costoController.text) ?? 0;
+                        if (cantidad <= 0) return;
+                        try {
+                          await widget.apiService.createPurchaseOrder({
+                            'provider_id': proveedor.id,
+                            'title': 'Compra a ${proveedor.nombre}',
+                            'details': productoSeleccionado!.nombre,
+                            'units': cantidad,
+                            'amount': cantidad * costo,
+                            'status': 'requested',
+                          });
+                          if (!mounted) return;
+                          Navigator.pop(dialogContext);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Orden creada: $cantidad x ${productoSeleccionado!.nombre}',
+                              ),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      },
+                child: const Text('Crear Orden'),
+              ),
+            ],
+          );
+        },
       ),
-      builder: (sheetContext) => StatefulBuilder(
-        builder: (ctx, setSheetState) => Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom,
-            left: 16,
-            right: 16,
-            top: 16,
+    );
+  }
+
+  Future<void> _showReceiveDialog(Proveedor proveedor) async {
+    final ordenes = await widget.apiService.getPurchaseOrders(
+      providerId: proveedor.id,
+    );
+    if (!mounted) return;
+
+    final pendientes = ordenes
+        .where((o) => o['status'] == 'requested')
+        .toList();
+    if (pendientes.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No hay órdenes pendientes')),
+      );
+      return;
+    }
+
+    Map<String, dynamic>? ordenSeleccionada;
+    bool actualizarStock = true;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
-          child: SingleChildScrollView(
+          title: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.green),
+              const SizedBox(width: 8),
+              Expanded(child: Text('Recibir de ${proveedor.nombre}')),
+            ],
+          ),
+          content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.shopping_cart),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Nueva orden para ${proveedor.nombre}',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+                const Text(
+                  'Selecciona la orden:',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<Map<String, dynamic>>(
+                  value: ordenSeleccionada,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                  ),
+                  isExpanded: true,
+                  items: pendientes
+                      .map(
+                        (o) => DropdownMenuItem(
+                          value: o,
+                          child: Text(
+                            '${o['title']} - ${o['units']} uds - \$${((o['amount'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)}',
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (o) => setDialogState(() => ordenSeleccionada = o),
                 ),
                 const SizedBox(height: 16),
-                TextField(
-                  controller: titleController,
-                  decoration: const InputDecoration(
-                    labelText: 'Referencia/Pedido',
-                  ),
+                SwitchListTile(
+                  title: const Text('Actualizar stock'),
+                  subtitle: const Text('Añadir cantidad al inventario'),
+                  value: actualizarStock,
+                  onChanged: (v) => setDialogState(() => actualizarStock = v),
+                  contentPadding: EdgeInsets.zero,
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: unitsController,
-                        decoration: const InputDecoration(
-                          labelText: 'Unidades',
-                        ),
-                        keyboardType: TextInputType.number,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextField(
-                        controller: amountController,
-                        decoration: const InputDecoration(
-                          labelText: 'Monto estimado',
-                          prefixText: '\$ ',
-                        ),
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: detailsController,
-                  decoration: const InputDecoration(
-                    labelText: 'Detalles (opcional)',
-                  ),
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () async {
-                      final title = titleController.text.trim().isEmpty
-                          ? 'Orden de compra'
-                          : titleController.text.trim();
-                      final units = int.tryParse(unitsController.text) ?? 0;
-                      final amount =
-                          double.tryParse(amountController.text) ?? 0;
-
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: ordenSeleccionada == null
+                  ? null
+                  : () async {
                       try {
-                        await widget.apiService.createPurchaseOrder({
-                          'provider_id': proveedor.id,
-                          'title': title,
-                          'details': detailsController.text.trim().isEmpty
-                              ? null
-                              : detailsController.text.trim(),
-                          'units': units,
-                          'amount': amount,
-                          'status': 'requested',
-                        });
-
+                        final cantidad =
+                            (ordenSeleccionada!['units'] as num?)?.toInt() ?? 0;
+                        final amount =
+                            (ordenSeleccionada!['amount'] as num?)
+                                ?.toDouble() ??
+                            0;
+                        await widget.apiService.receivePurchaseOrderSimple(
+                          orderId: ordenSeleccionada!['id'],
+                          productId: 0,
+                          productName: ordenSeleccionada!['details'] ?? 'Orden',
+                          quantity: cantidad,
+                          unitCost: cantidad > 0 ? amount / cantidad : 0,
+                          updateStock: actualizarStock,
+                        );
                         if (!mounted) return;
-                        Navigator.pop(sheetContext);
+                        Navigator.pop(dialogContext);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Orden creada')),
+                          const SnackBar(
+                            content: Text('Pedido recibido'),
+                            backgroundColor: Colors.green,
+                          ),
                         );
                       } catch (e) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -324,19 +474,10 @@ class _ProveedoresTabState extends State<_ProveedoresTab> {
                         );
                       }
                     },
-                    icon: const Icon(Icons.add),
-                    label: const Text('Crear Orden'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppConfig.primaryColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.all(16),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              child: const Text('Confirmar'),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -454,15 +595,16 @@ class _ProveedoresTabState extends State<_ProveedoresTab> {
                           ),
                           PopupMenuButton<String>(
                             onSelected: (value) {
-                              if (value == 'edit') {
-                                _showProveedorDialog(proveedor);
-                              } else if (value == 'order') {
+                              if (value == 'order')
                                 _showOrdenDialog(proveedor);
-                              } else if (value == 'history') {
+                              else if (value == 'receive')
+                                _showReceiveDialog(proveedor);
+                              else if (value == 'history')
                                 _showHistorialProveedor(proveedor);
-                              } else if (value == 'delete') {
+                              else if (value == 'edit')
+                                _showProveedorDialog(proveedor);
+                              else if (value == 'delete')
                                 _deleteProveedor(proveedor);
-                              }
                             },
                             itemBuilder: (context) => [
                               const PopupMenuItem(
@@ -472,6 +614,20 @@ class _ProveedoresTabState extends State<_ProveedoresTab> {
                                     Icon(Icons.add_shopping_cart, size: 20),
                                     SizedBox(width: 8),
                                     Text('Nueva orden'),
+                                  ],
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: 'receive',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.check_circle,
+                                      size: 20,
+                                      color: Colors.green,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text('Recibir pedido'),
                                   ],
                                 ),
                               ),
@@ -495,7 +651,7 @@ class _ProveedoresTabState extends State<_ProveedoresTab> {
                                   ],
                                 ),
                               ),
-                              PopupMenuItem(
+                              const PopupMenuItem(
                                 value: 'delete',
                                 child: Row(
                                   children: [
@@ -504,11 +660,8 @@ class _ProveedoresTabState extends State<_ProveedoresTab> {
                                       size: 20,
                                       color: Colors.red,
                                     ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Eliminar',
-                                      style: TextStyle(color: Colors.red),
-                                    ),
+                                    SizedBox(width: 8),
+                                    Text('Eliminar'),
                                   ],
                                 ),
                               ),
@@ -532,7 +685,6 @@ class _ProveedoresTabState extends State<_ProveedoresTab> {
 class _HistorialProveedorScreen extends StatefulWidget {
   final Proveedor proveedor;
   final ApiService apiService;
-
   const _HistorialProveedorScreen({
     required this.proveedor,
     required this.apiService,
@@ -548,6 +700,7 @@ class _HistorialProveedorScreenState extends State<_HistorialProveedorScreen> {
   List<Map<String, dynamic>> _historial = [];
   Map<String, dynamic>? _stats;
   bool _isLoading = true;
+  final _dateFormat = DateFormat('dd/MM/yyyy');
 
   @override
   void initState() {
@@ -582,8 +735,6 @@ class _HistorialProveedorScreenState extends State<_HistorialProveedorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.proveedor.nombre),
@@ -597,19 +748,44 @@ class _HistorialProveedorScreenState extends State<_HistorialProveedorScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (_stats != null) ...[
-                    _buildStatsCard(),
-                    const SizedBox(height: 24),
-                  ],
+                  if (_stats != null)
+                    Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            _statItem(
+                              'Total',
+                              '\$${((_stats!['total_comprado'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)}',
+                              Icons.attach_money,
+                            ),
+                            _statItem(
+                              'Unidades',
+                              '${_stats!['total_unidades'] ?? 0}',
+                              Icons.inventory_2,
+                            ),
+                            _statItem(
+                              'Órdenes',
+                              '${_stats!['ordenes_completadas'] ?? 0}',
+                              Icons.check_circle,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 24),
                   const Text(
                     'Órdenes',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
                   if (_ordenes.isEmpty)
-                    _buildEmptyState('Sin órdenes registradas')
+                    _emptyState('Sin órdenes registradas')
                   else
-                    ..._ordenes.map((o) => _buildOrdenCard(o)),
+                    ..._ordenes.map((o) => _ordenCard(o)),
                   const SizedBox(height: 24),
                   const Text(
                     'Historial de Recepciones',
@@ -617,181 +793,87 @@ class _HistorialProveedorScreenState extends State<_HistorialProveedorScreen> {
                   ),
                   const SizedBox(height: 12),
                   if (_historial.isEmpty)
-                    _buildEmptyState('Sin recepciones registradas')
+                    _emptyState('Sin recepciones')
                   else
-                    ..._historial.map((h) => _buildHistorialCard(h)),
+                    ..._historial.map((h) => _historialCard(h)),
                 ],
               ),
             ),
     );
   }
 
-  Widget _buildStatsCard() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatItem(
-                    'Total Comprado',
-                    '\$${((_stats!['total_comprado'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)}',
-                    Icons.attach_money,
-                  ),
-                ),
-                Expanded(
-                  child: _buildStatItem(
-                    'Unidades',
-                    '${_stats!['total_unidades'] ?? 0}',
-                    Icons.inventory_2,
-                  ),
-                ),
-                Expanded(
-                  child: _buildStatItem(
-                    'Órdenes',
-                    '${_stats!['ordenes_completadas'] ?? 0}',
-                    Icons.check_circle,
-                  ),
-                ),
-              ],
-            ),
-            if (_stats!['ultima_compra'] != null) ...[
-              const Divider(),
-              Text(
-                'Última compra: ${_dateFormat.format(DateTime.parse(_stats!['ultima_compra']))}',
-                style: TextStyle(
-                  color: isDark ? Colors.white70 : Colors.grey[600],
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatItem(String label, String value, IconData icon) {
-    return Column(
+  Widget _statItem(String label, String value, IconData icon) => Expanded(
+    child: Column(
       children: [
         Icon(icon, color: AppConfig.primaryColor),
         const SizedBox(height: 8),
         Text(
           value,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
-        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+        Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
       ],
-    );
-  }
+    ),
+  );
 
-  Widget _buildOrdenCard(Map<String, dynamic> orden) {
+  Widget _ordenCard(Map<String, dynamic> orden) {
     final status = orden['status'] as String? ?? 'draft';
-    Color statusColor;
-    IconData statusIcon;
-
-    switch (status) {
-      case 'requested':
-        statusColor = Colors.orange;
-        statusIcon = Icons.pending;
-        break;
-      case 'received':
-        statusColor = Colors.green;
-        statusIcon = Icons.check_circle;
-        break;
-      case 'cancelled':
-        statusColor = Colors.red;
-        statusIcon = Icons.cancel;
-        break;
-      default:
-        statusColor = Colors.grey;
-        statusIcon = Icons.edit_note;
-    }
-
+    final color = status == 'requested'
+        ? Colors.orange
+        : status == 'received'
+        ? Colors.green
+        : Colors.grey;
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: ListTile(
-        leading: Icon(statusIcon, color: statusColor),
+        leading: Icon(Icons.pending, color: color),
         title: Text(orden['title'] ?? 'Orden'),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(_dateFormat.format(DateTime.parse(orden['created_at']))),
-            if (orden['details'] != null)
-              Text(
-                orden['details'],
-                style: const TextStyle(fontSize: 12),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-          ],
-        ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              '\$${(orden['amount'] as num?)?.toDouble().toStringAsFixed(2) ?? '0.00'}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text(
-              '${orden['units'] ?? 0} uds',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
-          ],
+        subtitle: Text(_dateFormat.format(DateTime.parse(orden['created_at']))),
+        trailing: Text(
+          '\$${((orden['amount'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)}',
         ),
       ),
     );
   }
 
-  Widget _buildHistorialCard(Map<String, dynamic> item) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Colors.green.withValues(alpha: 0.1),
-          child: const Icon(Icons.inventory, color: Colors.green),
-        ),
-        title: Text(item['product_name'] ?? 'Producto'),
-        subtitle: Text(_dateFormat.format(DateTime.parse(item['received_at']))),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              '\$${(item['total_cost'] as num?)?.toDouble().toStringAsFixed(2) ?? '0.00'}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text(
-              '${item['quantity']} uds',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
-          ],
-        ),
+  Widget _historialCard(Map<String, dynamic> item) => Card(
+    margin: const EdgeInsets.only(bottom: 8),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    child: ListTile(
+      leading: CircleAvatar(
+        backgroundColor: Colors.green.withValues(alpha: 0.1),
+        child: const Icon(Icons.inventory, color: Colors.green),
       ),
-    );
-  }
+      title: Text(item['product_name'] ?? 'Producto'),
+      subtitle: Text(_dateFormat.format(DateTime.parse(item['received_at']))),
+      trailing: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(
+            '\$${((item['total_cost'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)}',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          Text(
+            '${item['quantity']} uds',
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          ),
+        ],
+      ),
+    ),
+  );
 
-  Widget _buildEmptyState(String message) {
-    return Container(
-      padding: const EdgeInsets.all(32),
-      alignment: Alignment.center,
-      child: Text(message, style: TextStyle(color: Colors.grey[600])),
-    );
-  }
-
-  DateFormat get _dateFormat => DateFormat('dd/MM/yyyy');
+  Widget _emptyState(String msg) => Container(
+    padding: const EdgeInsets.all(32),
+    alignment: Alignment.center,
+    child: Text(msg, style: TextStyle(color: Colors.grey[600])),
+  );
 }
 
 class _HistorialTab extends StatefulWidget {
   final ApiService apiService;
   final DateFormat dateFormat;
-
   const _HistorialTab({required this.apiService, required this.dateFormat});
 
   @override
@@ -825,11 +907,8 @@ class _HistorialTabState extends State<_HistorialTab> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_historial.isEmpty) {
+    if (_isLoading) return const Center(child: CircularProgressIndicator());
+    if (_historial.isEmpty)
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -843,51 +922,46 @@ class _HistorialTabState extends State<_HistorialTab> {
           ],
         ),
       );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadData,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _historial.length,
-        itemBuilder: (context, index) {
-          final item = _historial[index];
-          return Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _historial.length,
+      itemBuilder: (context, index) {
+        final item = _historial[index];
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: Colors.green.withValues(alpha: 0.1),
+              child: const Icon(Icons.inventory, color: Colors.green),
             ),
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: Colors.green.withValues(alpha: 0.1),
-                child: const Icon(Icons.inventory, color: Colors.green),
-              ),
-              title: Text(item['product_name'] ?? 'Producto'),
-              subtitle: Text(
-                widget.dateFormat.format(
-                  DateTime.parse(
-                    item['received_at'] ?? DateTime.now().toIso8601String(),
-                  ),
+            title: Text(item['product_name'] ?? 'Producto'),
+            subtitle: Text(
+              widget.dateFormat.format(
+                DateTime.parse(
+                  item['received_at'] ?? DateTime.now().toIso8601String(),
                 ),
               ),
-              trailing: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '\$${(item['total_cost'] as num?)?.toDouble().toStringAsFixed(2) ?? '0.00'}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    '${item['quantity']} uds',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                  ),
-                ],
-              ),
             ),
-          );
-        },
-      ),
+            trailing: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '\$${((item['total_cost'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  '${item['quantity']} uds',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

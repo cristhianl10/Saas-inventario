@@ -627,6 +627,52 @@ class ApiService {
     return Map<String, dynamic>.from(response);
   }
 
+  Future<Map<String, dynamic>> receivePurchaseOrderSimple({
+    required String orderId,
+    required int productId,
+    required String productName,
+    required int quantity,
+    required double unitCost,
+    required bool updateStock,
+  }) async {
+    _checkAuth();
+
+    await _client
+        .from('purchase_orders')
+        .update({
+          'status': 'received',
+          'received_at': DateTime.now().toIso8601String(),
+        })
+        .eq('id', orderId)
+        .eq('user_id', _userId!);
+
+    await _client.from('purchase_history').insert({
+      'purchase_order_id': orderId,
+      'user_id': _userId,
+      'product_id': productId,
+      'product_name': productName,
+      'quantity': quantity,
+      'unit_cost': unitCost,
+      'total_cost': quantity * unitCost,
+    });
+
+    if (updateStock && productId > 0) {
+      final productos = await getProductos();
+      final producto = productos.where((p) => p.id == productId).firstOrNull;
+      if (producto != null) {
+        final nuevaCantidad = producto.cantidad + quantity;
+        await updateProducto(producto.copyWith(cantidad: nuevaCantidad));
+      }
+    }
+
+    final response = await _client
+        .from('purchase_orders')
+        .select()
+        .eq('id', orderId)
+        .single();
+    return Map<String, dynamic>.from(response);
+  }
+
   Future<Map<String, dynamic>> getProviderStats(int providerId) async {
     _checkAuth();
 

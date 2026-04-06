@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
@@ -6,9 +7,10 @@ import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
 import 'package:excel/excel.dart' hide Border;
 import 'package:flutter/foundation.dart';
-import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
+import '../services/live_sync_service.dart';
 import '../config/app_theme.dart';
 import '../config/app_config.dart';
 import '../utils/pdf_helper.dart';
@@ -34,15 +36,15 @@ class ProductosScreen extends StatefulWidget {
 
 class _ProductosScreenState extends State<ProductosScreen> {
   final ApiService _apiService = ApiService();
+  final LiveSyncService _liveSyncService = LiveSyncService();
   List<Producto> _productos = [];
   List<Producto> _productosFiltrados = [];
   List<Producto> _allProductos = []; // Para validación de duplicados global
   List<Categoria> _categorias = [];
   List<Proveedor> _proveedores = [];
   List<PrecioTarifa> _tarifas = [];
-  List<ComboItem> _comboItems = []; // Agregar carga de combo items
-  Map<int, List<ComboItem>> _comboItemsMap =
-      {}; // Mapa para almacenar los items de cada combo (comboId -> items)
+  List<ComboItem> _comboItems = [];
+  Map<int, List<ComboItem>> _comboItemsMap = {};
   bool _isLoading = true;
   String? _error;
   FiltroStock _filtroActual = FiltroStock.todos;
@@ -51,11 +53,15 @@ class _ProductosScreenState extends State<ProductosScreen> {
   String _searchQuery = '';
   Proveedor? _proveedorSeleccionadoFiltro;
   bool _showScrollToTop = false;
+  List<Cliente> _clientes = [];
+  bool _clientesLoaded = false;
 
   @override
   void initState() {
     super.initState();
     _loadProductos();
+    _setupLiveUpdates();
+    _loadClientesIfNeeded();
     _scrollController.addListener(() {
       final show = _scrollController.offset > 300;
       if (show != _showScrollToTop) {
@@ -64,18 +70,54 @@ class _ProductosScreenState extends State<ProductosScreen> {
     });
   }
 
+  Future<void> _loadClientesIfNeeded() async {
+    if (_clientesLoaded) return;
+    try {
+      final clientes = await _apiService.getClientes();
+      if (mounted) {
+        setState(() {
+          _clientes = clientes;
+          _clientesLoaded = true;
+        });
+      }
+    } catch (e) {
+      // Silently fail
+    }
+  }
+
   @override
   void dispose() {
+    _liveSyncService.dispose();
     _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadProductos() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+  void _setupLiveUpdates() {
+    _liveSyncService.watchTables(
+      tables: const [
+        'productos',
+        'categorias',
+        'proveedores',
+        'tarifa_precios',
+        'combo_items',
+        'ventas',
+      ],
+      onChange: () {
+        if (mounted) {
+          _loadProductos(showLoader: false);
+        }
+      },
+    );
+  }
+
+  Future<void> _loadProductos({bool showLoader = true}) async {
+    if (showLoader) {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+    }
     try {
       final allProductos = await _apiService.getProductos();
       List<Producto> productos;
@@ -100,6 +142,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
         }
       }
 
+      if (!mounted) return;
       setState(() {
         _productos = productos;
         _allProductos = allProductos;
@@ -111,6 +154,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _isLoading = false;
@@ -277,43 +321,27 @@ class _ProductosScreenState extends State<ProductosScreen> {
     final observacionesController = TextEditingController();
     DateTime fechaSeleccionada = DateTime.now();
     bool precioPorUnidad = true;
-
-    List<Cliente> _clientes = [];
     Cliente? _clienteSeleccionado;
-    bool _loadingClientes = true;
     bool _mostrarCrearCliente = false;
     final _nombreClienteController = TextEditingController();
     final _telefonoClienteController = TextEditingController();
-
-    Future<void> _cargarClientes() async {
-      try {
-        final clientes = await _apiService.getClientes();
-        if (mounted) {
-          setState(() {
-            _clientes = clientes;
-            _loadingClientes = false;
-          });
-        }
-      } catch (e) {
-        if (mounted) {
-          setState(() => _loadingClientes = false);
-        }
-      }
-    }
 
     Future<Cliente?> _crearCliente(String nombre, String? telefono) async {
       try {
         final cliente = await _apiService.createCliente(
           Cliente(nombre: nombre, telefono: telefono),
         );
-        await _cargarClientes();
+        if (mounted) {
+          setState(() {
+            _clientes.add(cliente);
+          });
+        }
         return cliente;
       } catch (e) {
         return null;
       }
     }
 
-    _cargarClientes();
     showDialog(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
@@ -476,7 +504,7 @@ class _ProductosScreenState extends State<ProductosScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  if (_loadingClientes)
+                  if (!_clientesLoaded)
                     const Center(child: CircularProgressIndicator())
                   else if (_mostrarCrearCliente)
                     Column(
@@ -2025,12 +2053,33 @@ class _ProductosScreenState extends State<ProductosScreen> {
             ),
           );
         } else {
-          final dir = Directory.systemTemp;
-          final file = File('${dir.path}/inventario_$dateStr.xlsx');
-          await file.writeAsBytes(bytes);
+          String filePath;
+          try {
+            final dir = await getExternalStorageDirectory();
+            if (dir != null) {
+              final downloadsPath = dir.path.replaceAll(
+                '/Android/data/com.example.stockflow/files',
+                '/Download',
+              );
+              final downloadDir = Directory(downloadsPath);
+              if (!downloadDir.existsSync()) {
+                await downloadDir.create(recursive: true);
+              }
+              filePath = '$downloadsPath/inventario_$dateStr.xlsx';
+              await File(filePath).writeAsBytes(bytes);
+            } else {
+              final tempDir = Directory.systemTemp;
+              filePath = '${tempDir.path}/inventario_$dateStr.xlsx';
+              await File(filePath).writeAsBytes(bytes);
+            }
+          } catch (e) {
+            final tempDir = Directory.systemTemp;
+            filePath = '${tempDir.path}/inventario_$dateStr.xlsx';
+            await File(filePath).writeAsBytes(bytes);
+          }
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text('Guardado: ${file.path}')));
+          ).showSnackBar(SnackBar(content: Text('Guardado en: $filePath')));
         }
       }
     } catch (e) {

@@ -12,7 +12,6 @@ CREATE TABLE IF NOT EXISTS purchase_orders (
   expected_at TIMESTAMPTZ,
   received_at TIMESTAMPTZ,
   notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 

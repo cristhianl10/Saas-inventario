@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
-import '../services/subscription_service.dart';
 import '../config/app_config.dart';
 import '../config/app_theme.dart';
-import '../utils/plan_upgrade_helper.dart';
 
 class CombosScreen extends StatefulWidget {
   const CombosScreen({super.key});
@@ -144,16 +142,6 @@ class _CombosScreenState extends State<CombosScreen> {
   }
 
   Future<void> _showComboDialog([Producto? combo]) async {
-    final hasAccess = await SubscriptionService.hasFeature('combos');
-    if (!hasAccess) {
-      PlanUpgradeHelper.showUpgradeDialog(
-        context,
-        'crear y editar Combos',
-        planRequired: 'Básico',
-      );
-      return;
-    }
-
     Navigator.push(
       context,
       MaterialPageRoute(
