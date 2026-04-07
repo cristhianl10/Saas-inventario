@@ -1,15 +1,15 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'config/app_config.dart';
 import 'config/app_theme.dart';
 import 'config/tenant_service.dart';
 import 'services/terms_service.dart';
 import 'screens/home_screen.dart';
 import 'screens/auth_screen.dart';
-import 'providers/data_providers.dart';
+import 'screens/onboarding_screen.dart';
 
 Future<void> _ensureTenantExists(String userId) async {
   try {
@@ -57,7 +57,7 @@ void main() async {
     anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
   );
 
-  runApp(const ProviderScope(child: InventarioApp()));
+  runApp(const InventarioApp());
 }
 
 class InventarioApp extends StatefulWidget {
@@ -70,6 +70,7 @@ class InventarioApp extends StatefulWidget {
 class _InventarioAppState extends State<InventarioApp> {
   bool _isLoading = true;
   bool _isAuthenticated = false;
+  bool _showOnboarding = false;
   String? _verifiedEmail;
   StreamSubscription<AuthState>? _authSubscription;
 
@@ -128,6 +129,15 @@ class _InventarioAppState extends State<InventarioApp> {
       await _ensureTenantExists(user.id);
       await TenantService.loadTenantConfig(user.id);
       await TermsService.needsToAcceptNewTerms(user.id);
+
+      final prefs = await SharedPreferences.getInstance();
+      final onboardingShown = prefs.getBool('onboarding_shown') ?? false;
+
+      if (mounted) {
+        setState(() {
+          _showOnboarding = !onboardingShown;
+        });
+      }
     } catch (e) {
       debugPrint('Error loading user config: $e');
     }
@@ -138,6 +148,16 @@ class _InventarioAppState extends State<InventarioApp> {
         _isAuthenticated = true;
         _verifiedEmail = user.email;
         _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _completeOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('onboarding_shown', true);
+    if (mounted) {
+      setState(() {
+        _showOnboarding = false;
       });
     }
   }
@@ -192,6 +212,9 @@ class _InventarioAppState extends State<InventarioApp> {
     }
 
     if (_isAuthenticated) {
+      if (_showOnboarding) {
+        return OnboardingScreen(onComplete: _completeOnboarding);
+      }
       return const HomeScreen();
     }
 

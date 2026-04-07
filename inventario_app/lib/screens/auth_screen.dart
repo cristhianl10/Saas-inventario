@@ -90,26 +90,8 @@ class _AuthScreenState extends State<AuthScreen> {
           return;
         }
 
-        AuthResponse? existingUser;
-        try {
-          existingUser = await Supabase.instance.client.auth.signInWithPassword(
-            email: email,
-            password: password,
-          );
-        } catch (_) {
-          existingUser = null;
-        }
-
-        if (existingUser?.user != null && existingUser?.session == null) {
-          setState(() {
-            _errorMessage =
-                'Este correo ya tiene una cuenta. Confirma tu correo para iniciar.';
-            _isLoading = false;
-          });
-          return;
-        }
-
-        if (existingUser?.user != null && existingUser?.session != null) {
+        final emailExists = await _checkEmailExists(email);
+        if (emailExists == true) {
           setState(() {
             _errorMessage = 'Este correo ya está registrado. Inicia sesión.';
             _isLoading = false;
@@ -117,21 +99,13 @@ class _AuthScreenState extends State<AuthScreen> {
           return;
         }
 
-        try {
-          final existingEmail = await Supabase.instance.client
-              .from('users')
-              .select('email')
-              .eq('email', email)
-              .maybeSingle();
-
-          if (existingEmail != null) {
-            setState(() {
-              _errorMessage = 'Este correo ya está registrado. Inicia sesión.';
-              _isLoading = false;
-            });
-            return;
-          }
-        } catch (_) {}
+        if (emailExists == null) {
+          setState(() {
+            _errorMessage = 'Error al verificar el correo. Intenta de nuevo.';
+            _isLoading = false;
+          });
+          return;
+        }
 
         final response = await Supabase.instance.client.auth.signUp(
           email: email,
@@ -228,6 +202,16 @@ class _AuthScreenState extends State<AuthScreen> {
     if (!RegExp(r'[0-9]').hasMatch(password))
       return 'Debe incluir al menos un número';
     return '';
+  }
+
+  Future<bool?> _checkEmailExists(String email) async {
+    try {
+      final users = await Supabase.instance.client.auth.admin.listUsers();
+      return users.any((u) => u.email?.toLowerCase() == email.toLowerCase());
+    } catch (e) {
+      debugPrint('Error checking email: $e');
+      return null;
+    }
   }
 
   String _sanitizeInput(String input) {
