@@ -349,12 +349,29 @@ class ApiService {
       return Categoria.fromJson(response.first);
     }
 
-    final newResponse = await _client
-        .from('categorias')
-        .insert({'nombre': 'Combo', 'user_id': _userId!})
-        .select()
-        .single();
-    return Categoria.fromJson(newResponse);
+    try {
+      final newResponse = await _client
+          .from('categorias')
+          .insert({'nombre': 'Combo', 'user_id': _userId!})
+          .select()
+          .single();
+      return Categoria.fromJson(newResponse);
+    } catch (e) {
+      if (e.toString().contains('duplicate') ||
+          e.toString().contains('unique') ||
+          e.toString().contains('23505')) {
+        final retryResponse = await _client
+            .from('categorias')
+            .select()
+            .eq('nombre', 'Combo')
+            .eq('user_id', _userId!)
+            .limit(1);
+        if (retryResponse.isNotEmpty) {
+          return Categoria.fromJson(retryResponse.first);
+        }
+      }
+      rethrow;
+    }
   }
 
   Future<List<Producto>> getCombos() async {
