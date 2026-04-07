@@ -189,6 +189,16 @@ class _ProveedoresTabState extends State<_ProveedoresTab> {
     final categorias = await widget.apiService.getCategorias();
     if (!mounted) return;
 
+    // Filtrar categorías excluyendo "Combo"
+    final categoriasFiltradas = categorias
+        .where((c) => c.nombre.toLowerCase() != 'combo')
+        .toList();
+
+    // Filtrar productos excluyendo combos
+    final productosFiltrados = productos
+        .where((p) => !p.esCombo)
+        .toList();
+
     Categoria? categoriaSeleccionada;
     Producto? productoSeleccionado;
     final cantidadController = TextEditingController(text: '1');
@@ -198,9 +208,9 @@ class _ProveedoresTabState extends State<_ProveedoresTab> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (ctx, setDialogState) {
-          final productosFiltrados = categoriaSeleccionada == null
-              ? productos
-              : productos
+          final productosDropdown = categoriaSeleccionada == null
+              ? productosFiltrados
+              : productosFiltrados
                     .where((p) => p.categoriaId == categoriaSeleccionada!.id)
                     .toList();
 
@@ -237,7 +247,7 @@ class _ProveedoresTabState extends State<_ProveedoresTab> {
                         value: null,
                         child: Text('Todas las categorías'),
                       ),
-                      ...categorias.map(
+                      ...categoriasFiltradas.map(
                         (c) =>
                             DropdownMenuItem(value: c, child: Text(c.nombre)),
                       ),
@@ -260,14 +270,14 @@ class _ProveedoresTabState extends State<_ProveedoresTab> {
                       hintText: 'Seleccionar',
                     ),
                     isExpanded: true,
-                    items: productosFiltrados.isEmpty
+                    items: productosDropdown.isEmpty
                         ? [
                             const DropdownMenuItem(
                               value: null,
                               child: Text('Sin productos'),
                             ),
                           ]
-                        : productosFiltrados
+                        : productosDropdown
                               .map(
                                 (p) => DropdownMenuItem(
                                   value: p,
@@ -880,19 +890,18 @@ class _HistorialProveedorScreenState extends State<_HistorialProveedorScreen> {
             Text(
               '\$${((orden['amount'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)}',
             ),
-            if (isPending) ...[
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(Icons.edit, size: 20),
-                onPressed: () => _editOrdenDialog(orden),
-                tooltip: 'Editar',
-              ),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(Icons.edit, size: 20),
+              onPressed: () => _editOrdenDialog(orden),
+              tooltip: 'Editar',
+            ),
+            if (isPending)
               IconButton(
                 icon: const Icon(Icons.cancel, size: 20, color: Colors.red),
                 onPressed: () => _cancelOrdenDialog(orden),
                 tooltip: 'Cancelar',
               ),
-            ],
           ],
         ),
       ),
@@ -1070,6 +1079,11 @@ class _HistorialProveedorScreenState extends State<_HistorialProveedorScreen> {
             ],
           ),
           IconButton(
+            icon: const Icon(Icons.edit, size: 20),
+            onPressed: () => _editHistorialDialog(item),
+            tooltip: 'Editar',
+          ),
+          IconButton(
             icon: const Icon(Icons.delete, size: 20, color: Colors.red),
             onPressed: () => _deleteHistorialDialog(item),
             tooltip: 'Eliminar',
@@ -1078,6 +1092,59 @@ class _HistorialProveedorScreenState extends State<_HistorialProveedorScreen> {
       ),
     ),
   );
+
+  Future<void> _editHistorialDialog(Map<String, dynamic> item) async {
+    final cantidadController = TextEditingController(
+      text: (item['quantity'] as num?)?.toString() ?? '1',
+    );
+    final costoController = TextEditingController(
+      text: ((item['unit_cost'] as num?)?.toDouble() ?? 0).toStringAsFixed(2),
+    );
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Editar Recepción'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: cantidadController,
+              decoration: const InputDecoration(labelText: 'Cantidad'),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: costoController,
+              decoration: const InputDecoration(labelText: 'Costo unitario'),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              // Nota: Para editar recepciones se necesitaría agregar un método en ApiService
+              // Por ahora solo se puede eliminar y crear nueva
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Para cambiar datos, elimina y crea una nueva recepción'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            },
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+  }
 
   Future<void> _deleteHistorialDialog(Map<String, dynamic> item) async {
     final confirmed = await showDialog<bool>(
@@ -1186,6 +1253,53 @@ class _HistorialTabState extends State<_HistorialTab> {
     }
   }
 
+  Future<void> _deleteHistorialItem(Map<String, dynamic> item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Eliminar Recepción'),
+          ],
+        ),
+        content: Text('¿Eliminar la recepción de "${item['product_name']}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await widget.apiService.deletePurchaseHistory(
+          item['id'],
+          removeFromStock: false,
+        );
+        _loadData();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Recepción eliminada')),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) return const Center(child: CircularProgressIndicator());
@@ -1226,17 +1340,27 @@ class _HistorialTabState extends State<_HistorialTab> {
                 ),
               ),
             ),
-            trailing: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  '\$${((item['total_cost'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)}',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '\$${((item['total_cost'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      '${item['quantity']} uds',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                  ],
                 ),
-                Text(
-                  '${item['quantity']} uds',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                IconButton(
+                  icon: const Icon(Icons.delete, size: 20, color: Colors.red),
+                  onPressed: () => _deleteHistorialItem(item),
+                  tooltip: 'Eliminar',
                 ),
               ],
             ),

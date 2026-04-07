@@ -677,14 +677,14 @@ class _ProductosScreenState extends State<ProductosScreen> {
                         producto.id!,
                       );
                       for (final item in comboItems) {
-                        final prod = _productos
+                        final prod = _allProductos
                             .where((p) => p.id == item.productoId)
                             .firstOrNull;
                         if (prod == null) {
                           ScaffoldMessenger.of(dialogContext).showSnackBar(
                             SnackBar(
                               content: Text(
-                                'El producto #${item.productoId} del combo no está disponible en inventario',
+                                'El producto "${item.nombreProducto ?? 'ID: ${item.productoId}'}" del combo no está disponible',
                               ),
                               backgroundColor: Colors.orange,
                             ),
