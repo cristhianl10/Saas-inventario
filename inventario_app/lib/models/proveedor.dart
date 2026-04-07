@@ -2,18 +2,16 @@ class Proveedor {
   final int? id;
   final String nombre;
   final String? telefono;
+  final int version;
 
-  Proveedor({
-    this.id,
-    required this.nombre,
-    this.telefono,
-  });
+  Proveedor({this.id, required this.nombre, this.telefono, this.version = 1});
 
   factory Proveedor.fromJson(Map<String, dynamic> json) {
     return Proveedor(
       id: json['id'] as int?,
       nombre: json['nombre'] as String,
       telefono: json['telefono'] as String?,
+      version: (json['version'] as num?)?.toInt() ?? 1,
     );
   }
 
@@ -22,6 +20,7 @@ class Proveedor {
       if (id != null) 'id': id,
       'nombre': nombre,
       if (telefono != null) 'telefono': telefono,
+      'version': version,
     };
   }
 
@@ -29,11 +28,13 @@ class Proveedor {
     int? id,
     String? nombre,
     String? telefono,
+    int? version,
   }) {
     return Proveedor(
       id: id ?? this.id,
       nombre: nombre ?? this.nombre,
       telefono: telefono ?? this.telefono,
+      version: version ?? this.version,
     );
   }
 

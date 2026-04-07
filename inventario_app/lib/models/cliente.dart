@@ -6,6 +6,7 @@ class Cliente {
   final String? direccion;
   final String? notas;
   final DateTime createdAt;
+  final int version;
 
   Cliente({
     this.id,
@@ -15,6 +16,7 @@ class Cliente {
     this.direccion,
     this.notas,
     DateTime? createdAt,
+    this.version = 1,
   }) : createdAt = createdAt ?? DateTime.now();
 
   factory Cliente.fromJson(Map<String, dynamic> json) {
@@ -28,6 +30,7 @@ class Cliente {
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : DateTime.now(),
+      version: (json['version'] as num?)?.toInt() ?? 1,
     );
   }
 
@@ -40,6 +43,7 @@ class Cliente {
       if (direccion != null) 'direccion': direccion,
       if (notas != null) 'notas': notas,
       'created_at': createdAt.toIso8601String(),
+      'version': version,
     };
   }
 
@@ -51,6 +55,7 @@ class Cliente {
     String? direccion,
     String? notas,
     DateTime? createdAt,
+    int? version,
   }) {
     return Cliente(
       id: id ?? this.id,
@@ -60,6 +65,7 @@ class Cliente {
       direccion: direccion ?? this.direccion,
       notas: notas ?? this.notas,
       createdAt: createdAt ?? this.createdAt,
+      version: version ?? this.version,
     );
   }
 

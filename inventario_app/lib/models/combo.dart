@@ -28,7 +28,9 @@ class Combo {
           ? DateTime.parse(json['fecha_creacion'] as String)
           : null,
       items: json['items'] != null
-          ? (json['items'] as List).map((i) => ComboItem.fromJson(i as Map<String, dynamic>)).toList()
+          ? (json['items'] as List)
+                .map((i) => ComboItem.fromJson(i as Map<String, dynamic>))
+                .toList()
           : const [],
     );
   }
@@ -84,6 +86,7 @@ class ComboItem {
   final int cantidad;
   final String? nombreProducto;
   final double? precioUnitario;
+  final int version;
 
   ComboItem({
     this.id,
@@ -92,6 +95,7 @@ class ComboItem {
     required this.cantidad,
     this.nombreProducto,
     this.precioUnitario,
+    this.version = 1,
   });
 
   factory ComboItem.fromJson(Map<String, dynamic> json) {
@@ -104,6 +108,7 @@ class ComboItem {
       precioUnitario: json['precio_unitario'] != null
           ? (json['precio_unitario'] as num).toDouble()
           : null,
+      version: (json['version'] as num?)?.toInt() ?? 1,
     );
   }
 
@@ -113,6 +118,7 @@ class ComboItem {
       'combo_id': comboId,
       'producto_id': productoId,
       'cantidad': cantidad,
+      'version': version,
     };
   }
 
@@ -123,6 +129,7 @@ class ComboItem {
     int? cantidad,
     String? nombreProducto,
     double? precioUnitario,
+    int? version,
   }) {
     return ComboItem(
       id: id ?? this.id,
@@ -131,6 +138,7 @@ class ComboItem {
       cantidad: cantidad ?? this.cantidad,
       nombreProducto: nombreProducto ?? this.nombreProducto,
       precioUnitario: precioUnitario ?? this.precioUnitario,
+      version: version ?? this.version,
     );
   }
 

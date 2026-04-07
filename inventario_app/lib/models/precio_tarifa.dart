@@ -5,6 +5,7 @@ class PrecioTarifa {
   final int? cantidadMax;
   final double precioUnitario;
   final DateTime? fechaCreacion;
+  final int version;
 
   PrecioTarifa({
     this.id,
@@ -13,6 +14,7 @@ class PrecioTarifa {
     this.cantidadMax,
     required this.precioUnitario,
     this.fechaCreacion,
+    this.version = 1,
   });
 
   factory PrecioTarifa.fromJson(Map<String, dynamic> json) {
@@ -25,6 +27,7 @@ class PrecioTarifa {
       fechaCreacion: json['fecha_creacion'] != null
           ? DateTime.parse(json['fecha_creacion'] as String)
           : null,
+      version: (json['version'] as num?)?.toInt() ?? 1,
     );
   }
 
@@ -35,6 +38,7 @@ class PrecioTarifa {
       'cantidad_min': cantidadMin,
       if (cantidadMax != null) 'cantidad_max': cantidadMax,
       'precio_unitario': precioUnitario,
+      'version': version,
     };
   }
 
@@ -45,6 +49,7 @@ class PrecioTarifa {
     int? cantidadMax,
     double? precioUnitario,
     DateTime? fechaCreacion,
+    int? version,
   }) {
     return PrecioTarifa(
       id: id ?? this.id,
@@ -53,6 +58,7 @@ class PrecioTarifa {
       cantidadMax: cantidadMax ?? this.cantidadMax,
       precioUnitario: precioUnitario ?? this.precioUnitario,
       fechaCreacion: fechaCreacion ?? this.fechaCreacion,
+      version: version ?? this.version,
     );
   }
 

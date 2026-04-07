@@ -10,6 +10,7 @@ class Producto {
   final bool esCombo;
   final int? umbralAlerta;
   final DateTime? fechaActualizacion;
+  final int version;
 
   Producto({
     this.id,
@@ -23,6 +24,7 @@ class Producto {
     this.esCombo = false,
     this.umbralAlerta,
     this.fechaActualizacion,
+    this.version = 1,
   });
 
   factory Producto.fromJson(Map<String, dynamic> json) {
@@ -44,6 +46,7 @@ class Producto {
       fechaActualizacion: json['fecha_actualizacion'] != null
           ? DateTime.parse(json['fecha_actualizacion'] as String)
           : null,
+      version: (json['version'] as num?)?.toInt() ?? 1,
     );
   }
 
@@ -60,6 +63,7 @@ class Producto {
       'es_combo': esCombo,
       if (umbralAlerta != null) 'umbral_alerta': umbralAlerta,
       'fecha_actualizacion': fechaActualizacion?.toIso8601String(),
+      'version': version,
     };
   }
 
@@ -80,6 +84,7 @@ class Producto {
     bool? esCombo,
     int? umbralAlerta,
     DateTime? fechaActualizacion,
+    int? version,
   }) {
     return Producto(
       id: id ?? this.id,
@@ -93,6 +98,7 @@ class Producto {
       esCombo: esCombo ?? this.esCombo,
       umbralAlerta: umbralAlerta ?? this.umbralAlerta,
       fechaActualizacion: fechaActualizacion ?? this.fechaActualizacion,
+      version: version ?? this.version,
     );
   }
 

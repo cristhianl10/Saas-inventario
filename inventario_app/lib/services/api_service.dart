@@ -38,11 +38,19 @@ class ApiService {
     _checkAuth();
     final response = await _client
         .from('categorias')
-        .update({'nombre': categoria.nombre})
+        .update({'nombre': categoria.nombre, 'version': categoria.version + 1})
         .eq('id', categoria.id!)
         .eq('user_id', _userId!)
+        .eq('version', categoria.version)
         .select()
         .single();
+
+    if (response.isEmpty) {
+      throw Exception(
+        'Este registro fue modificado por otro dispositivo. Recarga e intenta de nuevo.',
+      );
+    }
+
     return Categoria.fromJson(response);
   }
 
@@ -114,8 +122,8 @@ class ApiService {
     if (producto.id == null) {
       throw Exception('ID del producto no válido');
     }
-    // Validar que la cantidad nunca sea negativa
     final cantidadValida = producto.cantidad < 0 ? 0 : producto.cantidad;
+
     final response = await _client
         .from('productos')
         .update({
@@ -130,8 +138,16 @@ class ApiService {
         })
         .eq('id', producto.id!)
         .eq('user_id', _userId!)
+        .eq('version', producto.version)
         .select()
         .single();
+
+    if (response.isEmpty) {
+      throw Exception(
+        'Este producto fue modificado por otro dispositivo. Recarga e intenta de nuevo.',
+      );
+    }
+
     return Producto.fromJson(response);
   }
 
@@ -194,6 +210,13 @@ class ApiService {
         .eq('user_id', _userId!)
         .select()
         .single();
+
+    if (response.isEmpty) {
+      throw Exception(
+        'Esta venta fue modificada por otro dispositivo. Recarga e intenta de nuevo.',
+      );
+    }
+
     return Venta.fromJson(response);
   }
 
@@ -254,8 +277,16 @@ class ApiService {
         })
         .eq('id', tarifa.id!)
         .eq('user_id', _userId!)
+        .eq('version', tarifa.version)
         .select()
         .single();
+
+    if (response.isEmpty) {
+      throw Exception(
+        'Esta tarifa fue modificada por otro dispositivo. Recarga e intenta de nuevo.',
+      );
+    }
+
     return PrecioTarifa.fromJson(response);
   }
 
@@ -310,8 +341,16 @@ class ApiService {
         .update({'nombre': proveedor.nombre, 'telefono': proveedor.telefono})
         .eq('id', proveedor.id!)
         .eq('user_id', _userId!)
+        .eq('version', proveedor.version)
         .select()
         .single();
+
+    if (response.isEmpty) {
+      throw Exception(
+        'Este proveedor fue modificado por otro dispositivo. Recarga e intenta de nuevo.',
+      );
+    }
+
     return Proveedor.fromJson(response);
   }
 
@@ -468,11 +507,18 @@ class ApiService {
 
   Future<void> updateComboItem(ComboItem item) async {
     _checkAuth();
-    await _client
+    final response = await _client
         .from('combo_items')
         .update({'cantidad': item.cantidad})
         .eq('id', item.id!)
-        .eq('user_id', _userId!);
+        .eq('user_id', _userId!)
+        .eq('version', item.version);
+
+    if (response.isEmpty) {
+      throw Exception(
+        'Este item fue modificado por otro dispositivo. Recarga e intenta de nuevo.',
+      );
+    }
   }
 
   Future<void> deleteComboItem(int id) async {
@@ -558,16 +604,29 @@ class ApiService {
 
   Future<Map<String, dynamic>> updatePurchaseOrder(
     String id,
-    Map<String, dynamic> data,
-  ) async {
+    Map<String, dynamic> data, {
+    int? version,
+  }) async {
     _checkAuth();
-    final response = await _client
+
+    var query = _client
         .from('purchase_orders')
         .update({...data, 'updated_at': DateTime.now().toIso8601String()})
         .eq('id', id)
-        .eq('user_id', _userId!)
-        .select()
-        .single();
+        .eq('user_id', _userId!);
+
+    if (version != null) {
+      query = query.eq('version', version);
+    }
+
+    final response = await query.select().single();
+
+    if (response.isEmpty) {
+      throw Exception(
+        'Esta orden fue modificada por otro dispositivo. Recarga e intenta de nuevo.',
+      );
+    }
+
     return Map<String, dynamic>.from(response);
   }
 
@@ -800,8 +859,16 @@ class ApiService {
         })
         .eq('id', cliente.id!)
         .eq('user_id', _userId!)
+        .eq('version', cliente.version)
         .select()
         .single();
+
+    if (response.isEmpty) {
+      throw Exception(
+        'Este cliente fue modificado por otro dispositivo. Recarga e intenta de nuevo.',
+      );
+    }
+
     return Cliente.fromJson(response);
   }
 
