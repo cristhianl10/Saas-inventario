@@ -110,6 +110,8 @@ class ApiService {
           'precio': producto.precio,
           'proveedor_id': producto.proveedorId,
           'costo': producto.costo,
+          'es_combo': producto.esCombo,
+          'umbral_alerta': producto.umbralAlerta,
           'user_id': _userId!,
         })
         .select()
@@ -134,6 +136,8 @@ class ApiService {
           'categoria_id': producto.categoriaId,
           'proveedor_id': producto.proveedorId,
           'costo': producto.costo,
+          'es_combo': producto.esCombo,
+          'umbral_alerta': producto.umbralAlerta,
           'fecha_actualizacion': DateTime.now().toIso8601String(),
         })
         .eq('id', producto.id!)
